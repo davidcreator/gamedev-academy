@@ -129,3 +129,12 @@ function showFlashMessages(): string {
     
     return $html;
 }
+
+function getUserAvatar($avatar = null, $username = '') {
+    if ($avatar && file_exists('uploads/avatars/' . $avatar)) {
+        return 'uploads/avatars/' . $avatar;
+    }
+    
+    // Gerar avatar padrão com iniciais
+    return 'https://ui-avatars.com/api/?name=' . urlencode($username) . '&background=6366f1&color=fff&size=200';
+}
