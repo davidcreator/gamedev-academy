@@ -1,6 +1,7 @@
 -- =====================================================
 -- GameDev Academy - Schema Completo do Banco de Dados
--- Versão: 1.0.0
+-- Versão: 2.0.0 (Atualizado)
+-- Total de Tabelas: 45
 -- =====================================================
 
 -- Criar banco de dados se não existir
@@ -11,7 +12,7 @@ COLLATE utf8mb4_unicode_ci;
 USE gamedev_academy;
 
 -- =====================================================
--- TABELAS PRINCIPAIS
+-- TABELAS PRINCIPAIS (1-25) - Suas tabelas originais
 -- =====================================================
 
 -- 1. Tabela de Usuários
@@ -514,11 +515,343 @@ CREATE TABLE IF NOT EXISTS course_reviews (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =====================================================
+-- TABELAS ADICIONAIS (26-45)
+-- =====================================================
+
+-- 26. Favoritos do Usuário
+CREATE TABLE IF NOT EXISTS user_favorites (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    course_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_favorite (user_id, course_id),
+    INDEX idx_user (user_id),
+    INDEX idx_course (course_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 27. Lista de Desejos (Wishlist)
+CREATE TABLE IF NOT EXISTS user_wishlist (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    course_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_wishlist (user_id, course_id),
+    INDEX idx_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 28. Histórico de Visualização
+CREATE TABLE IF NOT EXISTS view_history (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    viewable_type ENUM('course', 'lesson', 'news') NOT NULL,
+    viewable_id INT NOT NULL,
+    view_count INT DEFAULT 1,
+    last_viewed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_view (user_id, viewable_type, viewable_id),
+    INDEX idx_user (user_id),
+    INDEX idx_viewable (viewable_type, viewable_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 29. Certificados
+CREATE TABLE IF NOT EXISTS certificates (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    course_id INT NOT NULL,
+    enrollment_id INT NOT NULL,
+    certificate_code VARCHAR(50) UNIQUE NOT NULL,
+    certificate_url VARCHAR(255),
+    issued_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
+    FOREIGN KEY (enrollment_id) REFERENCES enrollments(id) ON DELETE CASCADE,
+    INDEX idx_user (user_id),
+    INDEX idx_course (course_id),
+    INDEX idx_code (certificate_code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 30. Cupons de Desconto
+CREATE TABLE IF NOT EXISTS coupons (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    code VARCHAR(50) UNIQUE NOT NULL,
+    description VARCHAR(255),
+    discount_type ENUM('percentage', 'fixed') DEFAULT 'percentage',
+    discount_value DECIMAL(10,2) NOT NULL,
+    max_uses INT DEFAULT NULL,
+    uses_count INT DEFAULT 0,
+    min_purchase DECIMAL(10,2) DEFAULT 0,
+    course_id INT DEFAULT NULL,
+    is_active TINYINT(1) DEFAULT 1,
+    starts_at TIMESTAMP NULL,
+    expires_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
+    INDEX idx_code (code),
+    INDEX idx_active (is_active)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 31. Uso de Cupons
+CREATE TABLE IF NOT EXISTS coupon_uses (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    coupon_id INT NOT NULL,
+    user_id INT NOT NULL,
+    order_id INT,
+    discount_applied DECIMAL(10,2) NOT NULL,
+    used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (coupon_id) REFERENCES coupons(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_coupon (coupon_id),
+    INDEX idx_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 32. Pedidos/Compras
+CREATE TABLE IF NOT EXISTS orders (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    order_number VARCHAR(50) UNIQUE NOT NULL,
+    subtotal DECIMAL(10,2) NOT NULL,
+    discount DECIMAL(10,2) DEFAULT 0,
+    total DECIMAL(10,2) NOT NULL,
+    status ENUM('pending', 'processing', 'completed', 'cancelled', 'refunded') DEFAULT 'pending',
+    payment_method VARCHAR(50),
+    payment_id VARCHAR(255),
+    coupon_id INT,
+    notes TEXT,
+    completed_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (coupon_id) REFERENCES coupons(id) ON DELETE SET NULL,
+    INDEX idx_user (user_id),
+    INDEX idx_order_number (order_number),
+    INDEX idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 33. Itens do Pedido
+CREATE TABLE IF NOT EXISTS order_items (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    order_id INT NOT NULL,
+    course_id INT NOT NULL,
+    price DECIMAL(10,2) NOT NULL,
+    discount DECIMAL(10,2) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
+    INDEX idx_order (order_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 34. Mensagens Diretas
+CREATE TABLE IF NOT EXISTS direct_messages (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    sender_id INT NOT NULL,
+    receiver_id INT NOT NULL,
+    subject VARCHAR(255),
+    message TEXT NOT NULL,
+    is_read TINYINT(1) DEFAULT 0,
+    read_at TIMESTAMP NULL,
+    deleted_by_sender TINYINT(1) DEFAULT 0,
+    deleted_by_receiver TINYINT(1) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_sender (sender_id),
+    INDEX idx_receiver (receiver_id),
+    INDEX idx_read (is_read)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 35. Anotações do Usuário nas Lições
+CREATE TABLE IF NOT EXISTS lesson_notes (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    lesson_id INT NOT NULL,
+    note TEXT NOT NULL,
+    timestamp_seconds INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (lesson_id) REFERENCES lessons(id) ON DELETE CASCADE,
+    INDEX idx_user_lesson (user_id, lesson_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 36. Bookmarks em Lições
+CREATE TABLE IF NOT EXISTS lesson_bookmarks (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    lesson_id INT NOT NULL,
+    title VARCHAR(200),
+    timestamp_seconds INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (lesson_id) REFERENCES lessons(id) ON DELETE CASCADE,
+    INDEX idx_user (user_id),
+    INDEX idx_lesson (lesson_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 37. Recursos/Downloads das Lições
+CREATE TABLE IF NOT EXISTS lesson_resources (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    lesson_id INT NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    description TEXT,
+    file_url VARCHAR(255) NOT NULL,
+    file_type VARCHAR(50),
+    file_size INT,
+    download_count INT DEFAULT 0,
+    order_index INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (lesson_id) REFERENCES lessons(id) ON DELETE CASCADE,
+    INDEX idx_lesson (lesson_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 38. Projetos dos Alunos
+CREATE TABLE IF NOT EXISTS student_projects (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    course_id INT,
+    lesson_id INT,
+    title VARCHAR(200) NOT NULL,
+    description TEXT,
+    project_url VARCHAR(255),
+    github_url VARCHAR(255),
+    demo_url VARCHAR(255),
+    thumbnail VARCHAR(255),
+    is_featured TINYINT(1) DEFAULT 0,
+    is_public TINYINT(1) DEFAULT 1,
+    likes_count INT DEFAULT 0,
+    views_count INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE SET NULL,
+    FOREIGN KEY (lesson_id) REFERENCES lessons(id) ON DELETE SET NULL,
+    INDEX idx_user (user_id),
+    INDEX idx_featured (is_featured),
+    INDEX idx_public (is_public)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 39. Likes em Projetos
+CREATE TABLE IF NOT EXISTS project_likes (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    project_id INT NOT NULL,
+    user_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (project_id) REFERENCES student_projects(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_like (project_id, user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 40. Fórum - Categorias
+CREATE TABLE IF NOT EXISTS forum_categories (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    slug VARCHAR(100) UNIQUE NOT NULL,
+    description TEXT,
+    icon VARCHAR(50),
+    color VARCHAR(7) DEFAULT '#6366f1',
+    order_index INT DEFAULT 0,
+    is_active TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_slug (slug),
+    INDEX idx_active (is_active)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 41. Fórum - Tópicos
+CREATE TABLE IF NOT EXISTS forum_topics (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    category_id INT NOT NULL,
+    user_id INT NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    is_pinned TINYINT(1) DEFAULT 0,
+    is_locked TINYINT(1) DEFAULT 0,
+    is_solved TINYINT(1) DEFAULT 0,
+    views_count INT DEFAULT 0,
+    replies_count INT DEFAULT 0,
+    last_reply_at TIMESTAMP NULL,
+    last_reply_user_id INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (category_id) REFERENCES forum_categories(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (last_reply_user_id) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_category (category_id),
+    INDEX idx_user (user_id),
+    INDEX idx_pinned (is_pinned),
+    FULLTEXT idx_search (title, content)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 42. Fórum - Respostas
+CREATE TABLE IF NOT EXISTS forum_replies (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    topic_id INT NOT NULL,
+    user_id INT NOT NULL,
+    content TEXT NOT NULL,
+    is_solution TINYINT(1) DEFAULT 0,
+    likes_count INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (topic_id) REFERENCES forum_topics(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_topic (topic_id),
+    INDEX idx_user (user_id),
+    INDEX idx_solution (is_solution)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 43. Tags
+CREATE TABLE IF NOT EXISTS tags (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(50) NOT NULL,
+    slug VARCHAR(50) UNIQUE NOT NULL,
+    description TEXT,
+    usage_count INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_slug (slug),
+    INDEX idx_usage (usage_count)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 44. Relacionamento Tags com Cursos
+CREATE TABLE IF NOT EXISTS course_tags (
+    course_id INT NOT NULL,
+    tag_id INT NOT NULL,
+    PRIMARY KEY (course_id, tag_id),
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
+    FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 45. Instrutores (dados adicionais)
+CREATE TABLE IF NOT EXISTS instructor_profiles (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL UNIQUE,
+    headline VARCHAR(255),
+    biography TEXT,
+    expertise TEXT,
+    website VARCHAR(255),
+    youtube_url VARCHAR(255),
+    twitter_url VARCHAR(255),
+    total_students INT DEFAULT 0,
+    total_courses INT DEFAULT 0,
+    total_reviews INT DEFAULT 0,
+    average_rating DECIMAL(3,2) DEFAULT 0,
+    is_verified TINYINT(1) DEFAULT 0,
+    payout_method VARCHAR(50),
+    payout_info TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =====================================================
 -- INSERÇÃO DE DADOS INICIAIS
 -- =====================================================
 
 -- Inserir níveis
-INSERT INTO levels (level_number, title, xp_required, badge_icon, color, perks) VALUES
+INSERT IGNORE INTO levels (level_number, title, xp_required, badge_icon, color, perks) VALUES
 (1, 'Iniciante', 0, '🌱', '#10b981', 'Acesso aos cursos básicos'),
 (2, 'Aprendiz', 100, '📚', '#6366f1', 'Desbloqueio de conquistas'),
 (3, 'Estudante', 300, '✏️', '#8b5cf6', 'Acesso a quizzes avançados'),
@@ -531,7 +864,7 @@ INSERT INTO levels (level_number, title, xp_required, badge_icon, color, perks) 
 (10, 'Lenda', 10000, '🏆', '#f59e0b', 'Reconhecimento especial na plataforma');
 
 -- Inserir conquistas
-INSERT INTO achievements (name, description, icon, xp_reward, coin_reward, requirement_type, requirement_value, order_index) VALUES
+INSERT IGNORE INTO achievements (name, description, icon, xp_reward, coin_reward, requirement_type, requirement_value, order_index) VALUES
 ('Primeiro Passo', 'Complete sua primeira lição', '🎯', 10, 5, 'lessons_completed', 1, 1),
 ('Estudante Dedicado', 'Complete 10 lições', '📖', 50, 15, 'lessons_completed', 10, 2),
 ('Maratonista', 'Complete 50 lições', '🏃', 150, 50, 'lessons_completed', 50, 3),
@@ -549,7 +882,7 @@ INSERT INTO achievements (name, description, icon, xp_reward, coin_reward, requi
 ('Gênio do Quiz', 'Acerte 100% em um quiz', '🧠', 30, 15, 'perfect_quiz', 1, 15);
 
 -- Inserir categorias
-INSERT INTO categories (name, slug, description, icon, color, order_index) VALUES
+INSERT IGNORE INTO categories (name, slug, description, icon, color, order_index) VALUES
 ('Phaser 3', 'phaser-3', 'Framework JavaScript para desenvolvimento de jogos 2D', '🎮', '#6366f1', 1),
 ('React', 'react', 'Biblioteca JavaScript para construção de interfaces', '⚛️', '#61dafb', 2),
 ('JavaScript', 'javascript', 'Linguagem de programação essencial para web', '📜', '#f7df1e', 3),
@@ -560,12 +893,20 @@ INSERT INTO categories (name, slug, description, icon, color, order_index) VALUE
 ('WebGL', 'webgl', 'Gráficos 3D na web', '🎯', '#990000', 8),
 ('Projetos Práticos', 'projetos', 'Projetos completos do início ao fim', '🚀', '#10b981', 9);
 
+-- Inserir categorias do fórum
+INSERT IGNORE INTO forum_categories (name, slug, description, icon, color, order_index) VALUES
+('Dúvidas Gerais', 'duvidas-gerais', 'Tire suas dúvidas sobre desenvolvimento de jogos', '❓', '#6366f1', 1),
+('Phaser 3', 'phaser-3', 'Discussões sobre o framework Phaser', '🎮', '#10b981', 2),
+('React', 'react', 'Discussões sobre React e React Native', '⚛️', '#61dafb', 3),
+('Mostre seu Projeto', 'mostre-seu-projeto', 'Compartilhe seus projetos com a comunidade', '🚀', '#f59e0b', 4),
+('Off-topic', 'off-topic', 'Conversas gerais fora do tema principal', '💬', '#8b5cf6', 5);
+
 -- Inserir usuário admin (senha: admin123)
-INSERT INTO users (username, email, password, full_name, role, xp_total, level, is_active, email_verified) VALUES
+INSERT IGNORE INTO users (username, email, password, full_name, role, xp_total, level, is_active, email_verified) VALUES
 ('admin', 'admin@gamedev.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Administrador', 'admin', 0, 1, 1, 1);
 
 -- Inserir cursos de exemplo
-INSERT INTO courses (category_id, title, slug, description, short_description, difficulty, estimated_hours, xp_reward, coin_reward, is_free, is_featured, is_published, instructor_id, published_at) VALUES
+INSERT IGNORE INTO courses (category_id, title, slug, description, short_description, difficulty, estimated_hours, xp_reward, coin_reward, is_free, is_featured, is_published, instructor_id, published_at) VALUES
 (1, 'Introdução ao Phaser 3', 'introducao-phaser-3', 
  'Aprenda os fundamentos do Phaser 3 e crie seu primeiro jogo 2D! Este curso é perfeito para iniciantes que querem entrar no mundo do desenvolvimento de jogos.', 
  'Curso completo para iniciantes em Phaser 3', 
@@ -591,60 +932,8 @@ INSERT INTO courses (category_id, title, slug, description, short_description, d
  'Fundamentos do design de jogos', 
  'beginner', 6, 250, 25, 0, 0, 1, 1, NOW());
 
--- Inserir notícias de exemplo
-INSERT INTO news (title, slug, excerpt, content, category, is_featured, is_published, author_id, published_at) VALUES
-('Bem-vindo ao GameDev Academy!', 'bem-vindo-gamedev-academy', 
- 'Conheça nossa plataforma de ensino gamificada focada em desenvolvimento de jogos.', 
- '<h2>Bem-vindo à nossa comunidade!</h2>
- <p>Estamos muito felizes em ter você aqui no GameDev Academy, a plataforma de ensino mais inovadora para desenvolvimento de jogos!</p>
- <h3>O que oferecemos:</h3>
- <ul>
-   <li>Cursos práticos e diretos ao ponto</li>
-   <li>Sistema de gamificação completo</li>
-   <li>Projetos reais do início ao fim</li>
-   <li>Comunidade ativa de desenvolvedores</li>
- </ul>
- <p>Comece sua jornada hoje mesmo e transforme sua paixão por jogos em habilidades profissionais!</p>', 
- 'announcement', 1, 1, 1, NOW()),
-
-('Novo Curso: Phaser 3 Avançado', 'novo-curso-phaser-3-avancado', 
- 'Lançamos um novo curso avançado de Phaser 3 com técnicas profissionais.', 
- '<p>Acabamos de lançar nosso curso mais avançado de Phaser 3! Aprenda técnicas profissionais usadas em jogos comerciais.</p>
- <h3>O que você aprenderá:</h3>
- <ul>
-   <li>Otimização de performance</li>
-   <li>Sistemas de partículas avançados</li>
-   <li>Integração com APIs externas</li>
-   <li>Monetização de jogos</li>
- </ul>', 
- 'update', 0, 1, 1, NOW()),
-
-('Dicas para Iniciantes em Game Dev', 'dicas-iniciantes-gamedev', 
- 'As melhores dicas para quem está começando no desenvolvimento de jogos.', 
- '<h2>Começando sua jornada no Game Dev</h2>
- <p>Se você está começando agora, aqui vão algumas dicas valiosas:</p>
- <ol>
-   <li><strong>Comece pequeno:</strong> Não tente fazer um MMORPG como primeiro projeto</li>
-   <li><strong>Termine seus projetos:</strong> Um jogo simples finalizado vale mais que 10 projetos abandonados</li>
-   <li><strong>Aprenda fazendo:</strong> A prática é fundamental no desenvolvimento de jogos</li>
-   <li><strong>Participe da comunidade:</strong> Troque experiências com outros desenvolvedores</li>
- </ol>', 
- 'tutorial', 0, 1, 1, NOW()),
-
-('Evento: Game Jam Mensal', 'evento-game-jam-mensal', 
- 'Participe da nossa Game Jam mensal e ganhe prêmios incríveis!', 
- '<p>Todo mês realizamos uma Game Jam exclusiva para membros da plataforma!</p>
- <h3>Como funciona:</h3>
- <ul>
-   <li>Tema revelado na sexta-feira</li>
-   <li>48 horas para desenvolver</li>
-   <li>Votação da comunidade</li>
-   <li>Prêmios para os 3 primeiros</li>
- </ul>', 
- 'event', 0, 1, 1, NOW());
-
 -- Inserir configurações do sistema
-INSERT INTO settings (setting_key, setting_value, setting_type, category, description, is_public) VALUES
+INSERT IGNORE INTO settings (setting_key, setting_value, setting_type, category, description, is_public) VALUES
 ('site_name', 'GameDev Academy', 'string', 'general', 'Nome do site', 1),
 ('site_description', 'Plataforma de ensino gamificada para desenvolvimento de jogos', 'text', 'general', 'Descrição do site', 1),
 ('maintenance_mode', 'false', 'boolean', 'general', 'Modo de manutenção', 0),
@@ -655,3 +944,7 @@ INSERT INTO settings (setting_key, setting_value, setting_type, category, descri
 ('default_coins_lesson', '1', 'integer', 'gamification', 'Moedas padrão por lição', 0),
 ('default_coins_course', '10', 'integer', 'gamification', 'Moedas padrão por curso', 0),
 ('streak_bonus_xp', '5', 'integer', 'gamification', 'XP bônus por dia de streak', 0);
+
+-- =====================================================
+-- FIM DO SCHEMA
+-- =====================================================
