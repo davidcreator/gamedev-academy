@@ -1,0 +1,43 @@
+<?php
+// admin/includes/sidebar.php
+?>
+<aside class="admin-sidebar">
+    <div class="admin-sidebar-header">
+        <div class="admin-sidebar-brand">
+            <span>🎮</span>
+            <span>Admin Panel</span>
+        </div>
+    </div>
+    
+    <nav class="admin-nav">
+        <a href="<?= url('admin/') ?>" class="admin-nav-item <?= $currentPage === 'index' ? 'active' : '' ?>">
+            <span>📊</span>
+            <span>Dashboard</span>
+        </a>
+        
+        <a href="<?= url('admin/users.php') ?>" class="admin-nav-item <?= $currentPage === 'users' ? 'active' : '' ?>">
+            <span>👥</span>
+            <span>Usuários</span>
+        </a>
+        
+        <a href="<?= url('admin/courses.php') ?>" class="admin-nav-item <?= $currentPage === 'courses' ? 'active' : '' ?>">
+            <span>📚</span>
+            <span>Cursos</span>
+        </a>
+        
+        <a href="<?= url('admin/news.php') ?>" class="admin-nav-item <?= $currentPage === 'news' ? 'active' : '' ?>">
+            <span>📰</span>
+            <span>Notícias</span>
+        </a>
+        
+        <a href="<?= url('admin/achievements.php') ?>" class="admin-nav-item <?= $currentPage === 'achievements' ? 'active' : '' ?>">
+            <span>🏆</span>
+            <span>Conquistas</span>
+        </a>
+        
+        <a href="<?= url('admin/settings.php') ?>" class="admin-nav-item <?= $currentPage === 'settings' ? 'active' : '' ?>">
+            <span>⚙️</span>
+            <span>Configurações</span>
+        </a>
+    </nav>
+</aside>
