@@ -122,22 +122,17 @@ try {
 // CONFIGURAÇÕES DE SESSÃO
 // ====================================================================
 
-// Configurações de segurança da sessão
-ini_set('session.use_only_cookies', 1);
-ini_set('session.use_strict_mode', 1);
-ini_set('session.cookie_httponly', 1);
-ini_set('session.cookie_samesite', 'Lax');
-
-if ($protocol === 'https://') {
-    ini_set('session.cookie_secure', 1);
-}
-
-// Configurações de tempo da sessão
-ini_set('session.gc_maxlifetime', 3600); // 1 hora
-ini_set('session.cookie_lifetime', 0); // Até fechar o navegador
-
-// Inicia a sessão se não estiver ativa
+// Configurações de sessão (aplicadas somente se a sessão não estiver ativa)
 if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.use_only_cookies', 1);
+    ini_set('session.use_strict_mode', 1);
+    ini_set('session.cookie_httponly', 1);
+    ini_set('session.cookie_samesite', 'Lax');
+    if ($protocol === 'https://') {
+        ini_set('session.cookie_secure', 1);
+    }
+    ini_set('session.gc_maxlifetime', 3600);
+    ini_set('session.cookie_lifetime', 0);
     session_start();
 }
 

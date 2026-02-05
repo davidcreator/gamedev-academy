@@ -232,6 +232,116 @@ if (!function_exists('timeAgo')) {
 }
 
 // ====================================================================
+// FUNÇÕES DE BANCO DE DADOS
+// ====================================================================
+
+/**
+ * Funções auxiliares do GameDev Academy
+ */
+
+/**
+ * Obtém conexão com o banco de dados
+ */
+function getDBConnection() {
+    if (isset($GLOBALS['pdo']) && $GLOBALS['pdo'] instanceof PDO) {
+        return $GLOBALS['pdo'];
+    }
+    
+    static $pdo = null;
+    if ($pdo === null) {
+        $host = defined('DB_HOST') ? DB_HOST : 'localhost';
+        $port = defined('DB_PORT') ? DB_PORT : '3306';
+        $dbname = defined('DB_NAME') ? DB_NAME : 'gamedev_academy';
+        $charset = defined('DB_CHARSET') ? DB_CHARSET : 'utf8mb4';
+        $user = defined('DB_USER') ? DB_USER : (defined('DB_USERNAME') ? DB_USERNAME : 'root');
+        $pass = defined('DB_PASS') ? DB_PASS : (defined('DB_PASSWORD') ? DB_PASSWORD : '');
+        
+        $dsn = "mysql:host={$host};port={$port};dbname={$dbname};charset={$charset}";
+        
+        $options = defined('PDO_OPTIONS') ? PDO_OPTIONS : [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES => false
+        ];
+        
+        $pdo = new PDO($dsn, $user, $pass, $options);
+        $GLOBALS['pdo'] = $pdo;
+    }
+    
+    return $pdo;
+}
+
+
+/**
+ * Gera URL amigável
+ */
+function slugify($text) {
+    $text = preg_replace('~[^\pL\d]+~u', '-', $text);
+    $text = iconv('utf-8', 'us-ascii//TRANSLIT', $text);
+    $text = preg_replace('~[^-\w]+~', '', $text);
+    $text = trim($text, '-');
+    $text = preg_replace('~-+~', '-', $text);
+    $text = strtolower($text);
+    return $text ?: 'n-a';
+}
+
+/**
+ * Formata número de forma amigável
+ */
+function formatNumber($number) {
+    if ($number >= 1000000) {
+        return round($number / 1000000, 1) . 'M';
+    }
+    if ($number >= 1000) {
+        return round($number / 1000, 1) . 'K';
+    }
+    return number_format($number);
+}
+
+
+
+/**
+ * Obtém usuário atual
+ */
+function getCurrentUser() {
+    if (!isLoggedIn()) {
+        return null;
+    }
+    
+    try {
+        $pdo = getDBConnection();
+        $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ? AND is_active = 1");
+        $stmt->execute([$_SESSION['user_id']]);
+        return $stmt->fetch();
+    } catch (Exception $e) {
+        return null;
+    }
+}
+
+
+/**
+ * Define mensagem flash
+ */
+function setFlash($type, $message) {
+    $_SESSION['flash'] = [
+        'type' => $type,
+        'message' => $message
+    ];
+}
+
+/**
+ * Obtém e limpa mensagem flash
+ */
+function getFlash() {
+    if (isset($_SESSION['flash'])) {
+        $flash = $_SESSION['flash'];
+        unset($_SESSION['flash']);
+        return $flash;
+    }
+    return null;
+}
+
+// ====================================================================
 // FUNÇÕES DE USUÁRIO E AUTENTICAÇÃO
 // ====================================================================
 

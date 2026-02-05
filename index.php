@@ -50,13 +50,13 @@ $totalCourses = $courseModel->count();
             
             <div class="navbar-actions">
                 <?php if ($auth->isLoggedIn()): ?>
-                    <?php $user = $auth->getCurrentUser(); ?>
+                    <?php $user = $auth->getCurrentUser() ?? []; ?>
                     <a href="<?= $auth->isAdmin() ? url('admin/') : url('user/') ?>" class="navbar-user">
                         <div class="navbar-user-info hide-mobile">
-                            <div class="navbar-user-name"><?= escape($user['username']) ?></div>
-                            <div class="navbar-user-level">Nível <?= $user['level'] ?> • <?= number_format($user['xp_total']) ?> XP</div>
+                            <div class="navbar-user-name"><?= escape($user['username'] ?? 'Usuário') ?></div>
+                            <div class="navbar-user-level">Nível <?= (int)($user['level'] ?? 1) ?> • <?= number_format((int)($user['xp_total'] ?? 0)) ?> XP</div>
                         </div>
-                        <img src="<?= getAvatar($user['avatar']) ?>" alt="Avatar" class="avatar">
+                        <img src="<?= getAvatar($user['avatar'] ?? 'default.png') ?>" alt="Avatar" class="avatar">
                     </a>
                 <?php else: ?>
                     <a href="<?= url('login.php') ?>" class="btn btn-secondary btn-sm">Entrar</a>
