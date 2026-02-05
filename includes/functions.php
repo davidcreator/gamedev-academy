@@ -110,6 +110,12 @@ if (!function_exists('e')) {
     }
 }
 
+if (!function_exists('esc')) {
+    function esc(?string $string): string {
+        return escape($string);
+    }
+}
+
 if (!function_exists('sanitize')) {
     function sanitize($input) {
         if (is_array($input)) {
