@@ -378,14 +378,8 @@ $memberSince = formatDate($user['created_at'], 'd/m/Y');
 // INCLUI O HEADER
 // ============================================================================
 
-require_once __DIR__ . '../includes/header.php';
+require_once __DIR__ . '/includes/header.php';
 ?>
-
-<!-- CSS específico do Profile -->
-<style>
-.profile-avatar-preview { width: 120px; height: 120px; object-fit: cover; }
-.profile-avatar-large { width: 200px; height: 200px; object-fit: cover; }
-</style>
 
 <!-- Conteúdo Principal -->
 <main class="main-content">
@@ -697,7 +691,7 @@ require_once __DIR__ . '../includes/header.php';
                                 
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
-                                        <label for="twitch" class="form-label"><i class="fab fa-twitch me-1" style="color:#9146FF"></i>Twitch</label>
+                                        <label for="twitch" class="form-label"><i class="fab fa-twitch me-1"></i>Twitch</label>
                                         <div class="input-group">
                                             <span class="input-group-text">twitch.tv/</span>
                                             <input type="text" class="form-control" id="twitch" name="twitch" 
@@ -705,7 +699,7 @@ require_once __DIR__ . '../includes/header.php';
                                         </div>
                                     </div>
                                     <div class="col-md-6 mb-3">
-                                        <label for="discord" class="form-label"><i class="fab fa-discord me-1" style="color:#5865F2"></i>Discord</label>
+                                        <label for="discord" class="form-label"><i class="fab fa-discord me-1"></i>Discord</label>
                                         <input type="text" class="form-control" id="discord" name="discord" 
                                                value="<?= esc($user['discord']) ?>" placeholder="usuario ou link do servidor">
                                     </div>
@@ -746,9 +740,9 @@ require_once __DIR__ . '../includes/header.php';
                                         </div>
                                     </div>
                                     <div class="col-md-6 mb-4">
-                                        <label for="gitlab" class="form-label"><i class="fab fa-gitlab me-2" style="color:#FC6D26"></i>GitLab</label>
+                                        <label for="gitlab" class="form-label"><i class="fab fa-gitlab me-2"></i>GitLab</label>
                                         <div class="input-group">
-                                            <span class="input-group-text" style="background:#FC6D26;color:#fff">gitlab.com/</span>
+                                            <span class="input-group-text">gitlab.com/</span>
                                             <input type="text" class="form-control" id="gitlab" name="gitlab" 
                                                    value="<?= esc($user['gitlab']) ?>" placeholder="seu-usuario">
                                         </div>
@@ -757,19 +751,19 @@ require_once __DIR__ . '../includes/header.php';
                                 
                                 <div class="row">
                                     <div class="col-md-6 mb-4">
-                                        <label for="bitbucket" class="form-label"><i class="fab fa-bitbucket me-2" style="color:#0052CC"></i>Bitbucket</label>
+                                        <label for="bitbucket" class="form-label"><i class="fab fa-bitbucket me-2"></i>Bitbucket</label>
                                         <div class="input-group">
-                                            <span class="input-group-text" style="background:#0052CC;color:#fff">bitbucket.org/</span>
+                                            <span class="input-group-text">bitbucket.org/</span>
                                             <input type="text" class="form-control" id="bitbucket" name="bitbucket" 
                                                    value="<?= esc($user['bitbucket']) ?>" placeholder="seu-usuario">
                                         </div>
                                     </div>
                                     <div class="col-md-6 mb-4">
-                                        <label for="itch_io" class="form-label"><i class="fab fa-itch-io me-2" style="color:#FA5C5C"></i>Itch.io</label>
+                                        <label for="itch_io" class="form-label"><i class="fab fa-itch-io me-2"></i>Itch.io</label>
                                         <div class="input-group">
                                             <input type="text" class="form-control" id="itch_io" name="itch_io" 
                                                    value="<?= esc($user['itch_io']) ?>" placeholder="seu-usuario">
-                                            <span class="input-group-text" style="background:#FA5C5C;color:#fff">.itch.io</span>
+                                            <span class="input-group-text">.itch.io</span>
                                         </div>
                                         <div class="form-text">Plataforma para publicar jogos indie.</div>
                                     </div>
