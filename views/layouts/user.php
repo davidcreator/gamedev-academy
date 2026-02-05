@@ -14,7 +14,7 @@
         <!-- Sidebar -->
         <aside class="user-sidebar">
             <div class="sidebar-header">
-                <img src="<?= url('assets/images/default-avatar.png') ?>" alt="Avatar" class="avatar">
+                <img src="<?= url('assets/images/avatars/default.png') ?>" alt="Avatar" class="avatar">
                 <h3><?= $user['username'] ?></h3>
                 <p>Nível <?= $user['level'] ?> • <?= number_format($user['xp_total']) ?> XP</p>
                 

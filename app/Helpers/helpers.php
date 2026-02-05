@@ -255,7 +255,7 @@ if (!function_exists('get_avatar')) {
     function get_avatar(?string $avatar): string
     {
         if (empty($avatar) || $avatar === 'default.png') {
-            return asset('images/default-avatar.png');
+            return asset('images/avatars/default.png');
         }
         return url('storage/uploads/avatars/' . $avatar);
     }

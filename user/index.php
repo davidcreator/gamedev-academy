@@ -319,9 +319,8 @@ include __DIR__ . '/includes/header.php';
         <div class="progress-card">
             <div class="user-info">
                 <div class="user-avatar">
-                    <img src="/assets/images/avatars/<?= htmlspecialchars($userAvatar) ?>" 
-                         alt="<?= htmlspecialchars($userName) ?>"
-                         onerror="this.src='/assets/images/avatars/default.png'">
+                    <img src="<?= getUserAvatar($userAvatar ?? null, $userName ?? '') ?>" 
+                         alt="<?= htmlspecialchars($userName) ?>">
                     <span class="level-badge" style="background: <?= htmlspecialchars($levelInfo['color'] ?? '#6366f1') ?>">
                         <?= htmlspecialchars($levelInfo['icon'] ?? '🌱') ?>
                     </span>
@@ -422,7 +421,7 @@ include __DIR__ . '/includes/header.php';
                     
                     <div class="course-footer">
                         <div class="instructor">
-                            <img src="/assets/images/avatars/<?= htmlspecialchars($course['instructor_avatar'] ?? 'default.png') ?>" 
+                            <img src="<?= getUserAvatar($course['instructor_avatar'] ?? null, $course['instructor_name'] ?? '') ?>" 
                                  alt="<?= htmlspecialchars($course['instructor_name'] ?? 'Instrutor') ?>"
                                  class="instructor-avatar">
                             <span><?= htmlspecialchars($course['instructor_name'] ?? 'Instrutor') ?></span>
@@ -499,10 +498,9 @@ include __DIR__ . '/includes/header.php';
                 </div>
                 
                 <div class="player-info">
-                    <img src="/assets/images/avatars/<?= htmlspecialchars($player['avatar'] ?? 'default.png') ?>" 
+                    <img src="<?= getUserAvatar($player['avatar'] ?? null, $player['username'] ?? '') ?>" 
                          alt="<?= htmlspecialchars($player['full_name'] ?? $player['username']) ?>"
-                         class="player-avatar"
-                         onerror="this.src='/assets/images/avatars/default.png'">
+                         class="player-avatar">
                     <div class="player-details">
                         <span class="player-name"><?= htmlspecialchars($player['full_name'] ?? $player['username']) ?></span>
                         <span class="player-level" style="color: <?= $player['level_color'] ?? '#6366f1' ?>">

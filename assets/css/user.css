@@ -1,9 +1,9 @@
 /* assets/css/user.css */
 
-.dashboard-layout {
+.user-layout {
     display: flex;
     min-height: 100vh;
-    padding-top: 70px;
+    background: var(--gray-900);
 }
 
 /* Sidebar */
@@ -99,12 +99,17 @@
 }
 
 /* Main Content */
-.main-content {
+.user-main {
     flex: 1;
     margin-left: 280px;
     padding: 2rem;
-    background: var(--gray-900);
-    min-height: calc(100vh - 70px);
+}
+
+.user-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
 }
 
 /* Profile Avatars */
@@ -258,6 +263,182 @@
 
 .activity-item:last-child {
     border-bottom: none;
+}
+
+/* User Index Page */
+.hero-section {
+    padding: 2rem 0 0;
+}
+.hero-content {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+    justify-content: space-between;
+}
+.hero-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+}
+.gradient-text {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.hero-subtitle {
+    color: var(--gray-400);
+    max-width: 700px;
+    margin: 0.5rem 0 1rem;
+}
+.hero-buttons .btn {
+    margin-right: 0.5rem;
+}
+.floating-cards {
+    display: none;
+}
+.stats-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+.stat-item {
+    background: var(--gray-800);
+    border: 1px solid var(--gray-700);
+    border-radius: var(--radius);
+    padding: 1rem;
+    text-align: center;
+}
+.stat-number {
+    font-weight: 800;
+    font-size: 1.5rem;
+}
+.stat-label {
+    color: var(--gray-400);
+    font-size: 0.85rem;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+.view-all-link {
+    color: var(--primary-light);
+}
+.view-all-link:hover {
+    color: var(--primary);
+}
+
+.courses-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+}
+.course-card {
+    background: var(--gray-800);
+    border: 1px solid var(--gray-700);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+.course-thumbnail img {
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+    display: block;
+}
+.course-content {
+    padding: 1rem;
+}
+.course-title a {
+    color: var(--white);
+}
+.course-title a:hover {
+    color: var(--primary-light);
+}
+.course-meta {
+    display: flex;
+    gap: 1rem;
+    color: var(--gray-400);
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+}
+.course-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 1rem;
+}
+.instructor-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius-full);
+    margin-right: 0.5rem;
+}
+.badge-free {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: var(--success);
+    color: var(--white);
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius);
+    font-size: 0.75rem;
+}
+
+.categories-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+.category-card {
+    background: var(--gray-800);
+    border: 1px solid var(--gray-700);
+    border-radius: var(--radius);
+    padding: 1rem;
+    text-align: center;
+}
+
+.leaderboard-list .activity-item .avatar {
+    width: 40px;
+    height: 40px;
+}
+
+.news-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+}
+.news-card {
+    background: var(--gray-800);
+    border: 1px solid var(--gray-700);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+.news-thumbnail img {
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+    display: block;
+}
+.news-content {
+    padding: 1rem;
+}
+
+.cta-section .cta-content {
+    background: var(--gray-800);
+    border: 1px solid var(--gray-700);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    text-align: center;
 }
 
 .activity-icon {

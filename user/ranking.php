@@ -1,6 +1,6 @@
 <?php
-require_once __DIR__ . '/includes/config.php';
-require_once __DIR__ . '/includes/functions.php';
+require_once __DIR__ . '/../includes/config.php';
+require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/includes/header.php';
 
 if (!isLoggedIn()) {
@@ -38,7 +38,6 @@ $topGeral = $topGeralStmt->fetchAll(PDO::FETCH_ASSOC);
 $pageTitle = 'Ranking';
 ?>
 
-<main class="main-content">
     <div class="container">
         <div class="card mb-3">
             <div class="card-body">
@@ -103,6 +102,5 @@ $pageTitle = 'Ranking';
             </div>
         </div>
     </div>
-</main>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>

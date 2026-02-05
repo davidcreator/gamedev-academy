@@ -111,7 +111,6 @@ $user = $stmt->fetch(PDO::FETCH_ASSOC);
 $pageTitle = 'Configurações';
 ?>
 
-<main class="main-content">
     <div class="container">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1 class="h3 mb-0"><i class="fas fa-cog text-primary me-2"></i>Configurações</h1>
@@ -309,7 +308,6 @@ $pageTitle = 'Configurações';
             </div>
         </div>
     </div>
-</main>
 
 <script>
     const tabs = {

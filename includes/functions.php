@@ -394,7 +394,7 @@ if (!function_exists('getUserAvatar')) {
         }
         
         // Avatar padrão
-        return asset('images/default-avatar.png');
+        return asset('images/avatars/default.png');
     }
 }
 

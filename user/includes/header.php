@@ -31,41 +31,16 @@ $progressToNext = $gamification->getProgressToNextLevel($currentUser['id']);
     <link rel="stylesheet" href="<?= asset('css/user.css') ?>">
 </head>
 <body>
-    <!-- Navbar -->
-    <nav class="navbar">
-        <div class="navbar-container">
-            <a href="<?= url() ?>" class="navbar-brand">
-                <span class="logo-icon">🎮</span>
-                <span>GameDev Academy</span>
-            </a>
-            
-            <ul class="navbar-nav hide-mobile">
-                <li><a href="<?= url() ?>" class="nav-link">Site</a></li>
-                <li><a href="<?= url('courses.php') ?>" class="nav-link">Cursos</a></li>
-                <li><a href="<?= url('news.php') ?>" class="nav-link">Novidades</a></li>
-            </ul>
-            
-            <div class="navbar-actions">
-                <div class="xp-display hide-mobile">
-                    ⚡ <?= number_format($currentUser['xp_total']) ?> XP
-                </div>
-                <div class="streak-display hide-mobile">
-                    🔥 <?= $currentUser['streak_days'] ?> dias
-                </div>
-                <div class="coins-display hide-mobile">
-                    🪙 <?= number_format($currentUser['coins']) ?>
-                </div>
-                
-                <div class="navbar-user">
-                    <img src="<?= getAvatar($currentUser['avatar']) ?>" alt="Avatar" class="avatar">
+    <div class="user-layout">
+        <?php include __DIR__ . '/sidebar.php'; ?>
+        <main class="user-main">
+            <div class="user-header">
+                <h1><?= $pageTitle ?? 'Dashboard' ?></h1>
+                <div class="d-flex align-center gap-2">
+                    <span>XP: <?= number_format($currentUser['xp_total']) ?></span>
+                    <span>🔥 <?= $currentUser['streak_days'] ?> dias</span>
+                    <span>🪙 <?= number_format($currentUser['coins']) ?></span>
+                    <a href="<?= url() ?>" class="btn btn-sm btn-outline">Ver Site</a>
+                    <a href="<?= url('logout.php') ?>" class="btn btn-sm btn-secondary">Sair</a>
                 </div>
             </div>
-        </div>
-    </nav>
-
-    <div class="dashboard-layout">
-        <!-- Sidebar -->
-        <?php include __DIR__ . '/sidebar.php'; ?>
-        
-        <!-- Main Content -->
-        <main class="main-content"></main>

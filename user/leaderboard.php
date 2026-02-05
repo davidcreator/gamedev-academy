@@ -1,6 +1,6 @@
 <?php
-require_once __DIR__ . '/includes/config.php';
-require_once __DIR__ . '/includes/functions.php';
+require_once __DIR__ . '/../includes/config.php';
+require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/includes/header.php';
 
 if (!isLoggedIn()) {
@@ -36,21 +36,38 @@ $topGeralStmt = $pdo->query("SELECT id, username, full_name, avatar, xp_total, l
 $topGeral = $topGeralStmt->fetchAll(PDO::FETCH_ASSOC);
 
 $weekStart = date('Y-m-d', strtotime('monday this week'));
-$weeklyStmt = $pdo->prepare("
-    SELECT u.id, u.username, u.full_name, u.avatar, u.level, wl.xp_earned 
-    FROM weekly_leaderboard wl 
-    JOIN users u ON wl.user_id = u.id 
-    WHERE wl.week_start = ? 
-    ORDER BY wl.xp_earned DESC 
-    LIMIT 20
-");
-$weeklyStmt->execute([$weekStart]);
-$topSemanal = $weeklyStmt->fetchAll(PDO::FETCH_ASSOC);
+$topSemanal = [];
+try {
+    $weeklyStmt = $pdo->prepare("
+        SELECT u.id, u.username, u.full_name, u.avatar, u.level, wl.xp_earned 
+        FROM weekly_leaderboard wl 
+        JOIN users u ON wl.user_id = u.id 
+        WHERE wl.week_start = ? 
+        ORDER BY wl.xp_earned DESC 
+        LIMIT 20
+    ");
+    $weeklyStmt->execute([$weekStart]);
+    $topSemanal = $weeklyStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+} catch (PDOException $e) {
+    $weekStartDT = date('Y-m-d 00:00:00', strtotime('monday this week'));
+    $fallbackStmt = $pdo->prepare("
+        SELECT 
+            u.id, u.username, u.full_name, u.avatar, u.level,
+            SUM(xh.xp_amount) AS xp_earned
+        FROM xp_history xh
+        JOIN users u ON xh.user_id = u.id
+        WHERE xh.created_at >= ?
+        GROUP BY u.id, u.username, u.full_name, u.avatar, u.level
+        ORDER BY xp_earned DESC
+        LIMIT 20
+    ");
+    $fallbackStmt->execute([$weekStartDT]);
+    $topSemanal = $fallbackStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+}
 
 $pageTitle = 'Ranking';
 ?>
 
-<main class="main-content">
     <div class="container">
         <div class="card">
             <div class="card-body">
@@ -152,7 +169,6 @@ $pageTitle = 'Ranking';
             </div>
         </div>
     </div>
-</main>
 
 <script>
     const btnGeral = document.getElementById('btnGeral');
