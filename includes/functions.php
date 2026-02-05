@@ -1,140 +1,651 @@
 <?php
-// includes/functions.php
+/**
+ * GameDev Academy - Funções Auxiliares
+ * 
+ * Biblioteca de funções utilitárias do sistema
+ * @author David Creator
+ * @version 3.1.0 - CORRIGIDO
+ */
 
-function redirect(string $url): void {
-    header("Location: {$url}");
-    exit;
+// ====================================================================
+// PREVENÇÃO DE REDECLARAÇÃO
+// ====================================================================
+
+if (defined('FUNCTIONS_LOADED')) {
+    return;
 }
+define('FUNCTIONS_LOADED', true);
 
-function asset(string $path): string {
-    return SITE_URL . '/assets/' . ltrim($path, '/');
-}
+// ====================================================================
+// FUNÇÕES DE NAVEGAÇÃO E URLS - CORRIGIDAS
+// ====================================================================
 
-function url(string $path = ''): string {
-    return SITE_URL . '/' . ltrim($path, '/');
-}
-
-function escape(string $string): string {
-    return htmlspecialchars($string, ENT_QUOTES, 'UTF-8');
-}
-
-function old(string $key, string $default = ''): string {
-    return escape($_POST[$key] ?? $_GET[$key] ?? $default);
-}
-
-function formatDate(string $date, string $format = 'd/m/Y'): string {
-    return date($format, strtotime($date));
-}
-
-function formatDateTime(string $date): string {
-    return date('d/m/Y H:i', strtotime($date));
-}
-
-function timeAgo(string $datetime): string {
-    $time = strtotime($datetime);
-    $diff = time() - $time;
-    
-    if ($diff < 60) {
-        return 'agora mesmo';
-    } elseif ($diff < 3600) {
-        $mins = floor($diff / 60);
-        return "{$mins} min atrás";
-    } elseif ($diff < 86400) {
-        $hours = floor($diff / 3600);
-        return "{$hours}h atrás";
-    } elseif ($diff < 604800) {
-        $days = floor($diff / 86400);
-        return "{$days}d atrás";
-    } else {
-        return formatDate($datetime);
+/**
+ * Gera URL completa do site
+ */
+if (!function_exists('url')) {
+    function url(string $path = ''): string {
+        $baseUrl = defined('BASE_URL') ? BASE_URL : 'http://localhost/gamedev-academy/';
+        return rtrim($baseUrl, '/') . '/' . ltrim($path, '/');
     }
 }
 
-function getDifficultyBadge(string $difficulty): string {
-    $badges = [
-        'beginner' => '<span class="badge badge-success">Iniciante</span>',
-        'intermediate' => '<span class="badge badge-warning">Intermediário</span>',
-        'advanced' => '<span class="badge badge-danger">Avançado</span>'
-    ];
-    return $badges[$difficulty] ?? $badges['beginner'];
+/**
+ * Gera URL para assets - VERSÃO ÚNICA E CORRIGIDA
+ */
+if (!function_exists('asset')) {
+    function asset(string $path): string {
+        // Remove barras extras
+        $path = ltrim($path, '/');
+        
+        // 1. Tenta usar ASSETS_URL (melhor opção)
+        if (defined('ASSETS_URL')) {
+            return rtrim(ASSETS_URL, '/') . '/' . $path;
+        }
+        
+        // 2. Tenta usar BASE_URL + assets/
+        if (defined('BASE_URL')) {
+            return rtrim(BASE_URL, '/') . '/assets/' . $path;
+        }
+        
+        // 3. Fallback: detecção automática
+        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https://' : 'http://';
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        
+        // Detecta a pasta do projeto baseado no SCRIPT_NAME
+        $scriptName = $_SERVER['SCRIPT_NAME']; // Ex: /gamedev-academy/user/profile.php
+        $pathParts = explode('/', trim($scriptName, '/'));
+        
+        // Pega a primeira parte que é o nome da pasta do projeto
+        $projectFolder = $pathParts[0] ?? '';
+        
+        // Se detectou a pasta, usa ela
+        if (!empty($projectFolder) && $projectFolder !== 'index.php') {
+            return $protocol . $host . '/' . $projectFolder . '/assets/' . $path;
+        }
+        
+        // Última opção: assets na raiz
+        return $protocol . $host . '/assets/' . $path;
+    }
 }
 
-function getDifficultyText(string $difficulty): string {
-    $texts = [
-        'beginner' => 'Iniciante',
-        'intermediate' => 'Intermediário',
-        'advanced' => 'Avançado'
-    ];
-    return $texts[$difficulty] ?? 'Iniciante';
+/**
+ * Redireciona para uma URL
+ */
+if (!function_exists('redirect')) {
+    function redirect(string $url, int $statusCode = 302): void {
+        $url = trim($url);
+        
+        // Se for URL relativa, adiciona base URL
+        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+            $url = url($url);
+        }
+        
+        // Limpa buffer de saída
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
+        
+        header("Location: {$url}", true, $statusCode);
+        exit;
+    }
 }
 
-function getAvatar(string $avatar): string {
-    if (empty($avatar) || $avatar === 'default.png') {
+// ====================================================================
+// FUNÇÕES DE SEGURANÇA E SANITIZAÇÃO
+// ====================================================================
+
+if (!function_exists('escape')) {
+    function escape(?string $string): string {
+        if ($string === null) {
+            return '';
+        }
+        return htmlspecialchars($string, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    }
+}
+
+if (!function_exists('e')) {
+    function e(?string $string): string {
+        return escape($string);
+    }
+}
+
+if (!function_exists('sanitize')) {
+    function sanitize($input) {
+        if (is_array($input)) {
+            return array_map('sanitize', $input);
+        }
+        return htmlspecialchars(trim($input ?? ''), ENT_QUOTES, 'UTF-8');
+    }
+}
+
+if (!function_exists('old')) {
+    function old(string $key, string $default = ''): string {
+        if (isset($_SESSION['old_input'][$key])) {
+            $value = $_SESSION['old_input'][$key];
+            unset($_SESSION['old_input'][$key]);
+            return escape($value);
+        }
+        return escape($_POST[$key] ?? $_GET[$key] ?? $default);
+    }
+}
+
+// ====================================================================
+// FUNÇÕES CSRF
+// ====================================================================
+
+if (!function_exists('csrf_token')) {
+    function csrf_token(): string {
+        if (!isset($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        }
+        return $_SESSION['csrf_token'];
+    }
+}
+
+if (!function_exists('generateCSRFToken')) {
+    function generateCSRFToken(): string {
+        return csrf_token();
+    }
+}
+
+if (!function_exists('csrf_field')) {
+    function csrf_field(): string {
+        return '<input type="hidden" name="csrf_token" value="' . csrf_token() . '">';
+    }
+}
+
+if (!function_exists('verify_csrf')) {
+    function verify_csrf(?string $token): bool {
+        if ($token === null) {
+            return false;
+        }
+        return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
+    }
+}
+
+if (!function_exists('verifyCSRFToken')) {
+    function verifyCSRFToken(?string $token): bool {
+        return verify_csrf($token);
+    }
+}
+
+// ====================================================================
+// FUNÇÕES DE DATA E HORA
+// ====================================================================
+
+if (!function_exists('formatDate')) {
+    function formatDate(?string $date, string $format = 'd/m/Y'): string {
+        if (empty($date)) {
+            return '';
+        }
+        $timestamp = is_numeric($date) ? $date : strtotime($date);
+        if ($timestamp === false) {
+            return '';
+        }
+        return date($format, $timestamp);
+    }
+}
+
+if (!function_exists('formatDateTime')) {
+    function formatDateTime(?string $date, string $format = 'd/m/Y H:i'): string {
+        return formatDate($date, $format);
+    }
+}
+
+if (!function_exists('timeAgo')) {
+    function timeAgo(?string $datetime, bool $full = false): string {
+        if (empty($datetime)) {
+            return 'nunca';
+        }
+        
+        $now = new DateTime();
+        $ago = new DateTime($datetime);
+        $diff = $now->diff($ago);
+        
+        if ($diff->days > 30) {
+            return formatDate($datetime);
+        }
+        
+        $units = [
+            'y' => ['ano', 'anos'],
+            'm' => ['mês', 'meses'],
+            'd' => ['dia', 'dias'],
+            'h' => ['hora', 'horas'],
+            'i' => ['minuto', 'minutos'],
+            's' => ['segundo', 'segundos']
+        ];
+        
+        foreach ($units as $unit => $labels) {
+            $value = $diff->$unit;
+            if ($value > 0) {
+                $label = $value == 1 ? $labels[0] : $labels[1];
+                if ($unit == 's' && $value < 30) {
+                    return 'agora mesmo';
+                }
+                return "há {$value} {$label}";
+            }
+        }
+        
+        return 'agora mesmo';
+    }
+}
+
+// ====================================================================
+// FUNÇÕES DE USUÁRIO E AUTENTICAÇÃO
+// ====================================================================
+
+if (!function_exists('isLoggedIn')) {
+    function isLoggedIn(): bool {
+        return isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
+    }
+}
+
+if (!function_exists('isAdmin')) {
+    function isAdmin(): bool {
+        return isLoggedIn() && 
+               isset($_SESSION['user_role']) && 
+               $_SESSION['user_role'] === 'admin';
+    }
+}
+
+if (!function_exists('getCurrentUserId')) {
+    function getCurrentUserId(): ?int {
+        return $_SESSION['user_id'] ?? null;
+    }
+}
+
+if (!function_exists('getUserAvatar')) {
+    function getUserAvatar(?string $avatar = null, string $username = '', int $size = 200): string {
+        // Avatar personalizado
+        if (!empty($avatar) && $avatar !== 'default.png') {
+            $avatarPath = 'uploads/avatars/' . $avatar;
+            if (defined('ROOT_PATH') && file_exists(ROOT_PATH . $avatarPath)) {
+                return url($avatarPath);
+            }
+        }
+        
+        // Gravatar
+        if (isset($_SESSION['user_email'])) {
+            $hash = md5(strtolower(trim($_SESSION['user_email'])));
+            return "https://www.gravatar.com/avatar/{$hash}?s={$size}&d=mp";
+        }
+        
+        // Avatar com iniciais
+        if (!empty($username)) {
+            $name = urlencode($username);
+            return "https://ui-avatars.com/api/?name={$name}&background=6366f1&color=fff&size={$size}&bold=true";
+        }
+        
+        // Avatar padrão
         return asset('images/default-avatar.png');
     }
-    return SITE_URL . '/uploads/avatars/' . $avatar;
 }
 
-function truncate(string $text, int $length = 100): string {
-    if (strlen($text) <= $length) {
-        return $text;
+if (!function_exists('getAvatar')) {
+    function getAvatar(?string $avatar = null, string $username = ''): string {
+        return getUserAvatar($avatar, $username);
     }
-    return substr($text, 0, $length) . '...';
 }
 
-function csrf_token(): string {
-    if (!isset($_SESSION['csrf_token'])) {
-        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+// ====================================================================
+// FUNÇÕES DE CURSO
+// ====================================================================
+
+if (!function_exists('getDifficultyBadge')) {
+    function getDifficultyBadge(?string $difficulty): string {
+        $badges = [
+            'beginner' => '<span class="badge bg-success">Iniciante</span>',
+            'intermediate' => '<span class="badge bg-warning text-dark">Intermediário</span>',
+            'advanced' => '<span class="badge bg-danger">Avançado</span>',
+            'expert' => '<span class="badge bg-dark">Expert</span>'
+        ];
+        return $badges[$difficulty] ?? $badges['beginner'];
     }
-    return $_SESSION['csrf_token'];
 }
 
-function csrf_field(): string {
-    return '<input type="hidden" name="csrf_token" value="' . csrf_token() . '">';
+if (!function_exists('getDifficultyText')) {
+    function getDifficultyText(?string $difficulty): string {
+        $texts = [
+            'beginner' => 'Iniciante',
+            'intermediate' => 'Intermediário',
+            'advanced' => 'Avançado',
+            'expert' => 'Expert'
+        ];
+        return $texts[$difficulty] ?? 'Iniciante';
+    }
 }
 
-function verify_csrf(string $token): bool {
-    return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
+if (!function_exists('getDifficultyColor')) {
+    function getDifficultyColor(?string $difficulty): string {
+        $colors = [
+            'beginner' => 'success',
+            'intermediate' => 'warning',
+            'advanced' => 'danger',
+            'expert' => 'dark'
+        ];
+        return $colors[$difficulty] ?? 'success';
+    }
 }
 
-function flash(string $key, ?string $message = null): ?string {
-    if ($message !== null) {
-        $_SESSION['flash'][$key] = $message;
+// ====================================================================
+// FUNÇÕES DE TEXTO
+// ====================================================================
+
+if (!function_exists('truncate')) {
+    function truncate(?string $text, int $length = 100, string $suffix = '...'): string {
+        if (empty($text)) {
+            return '';
+        }
+        if (mb_strlen($text) <= $length) {
+            return $text;
+        }
+        return mb_substr($text, 0, $length) . $suffix;
+    }
+}
+
+if (!function_exists('limitWords')) {
+    function limitWords(?string $text, int $limit = 20, string $suffix = '...'): string {
+        if (empty($text)) {
+            return '';
+        }
+        $words = explode(' ', $text);
+        if (count($words) <= $limit) {
+            return $text;
+        }
+        return implode(' ', array_slice($words, 0, $limit)) . $suffix;
+    }
+}
+
+if (!function_exists('createSlug')) {
+    function createSlug(?string $text): string {
+        if (empty($text)) {
+            return '';
+        }
+        $text = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $text);
+        $text = strtolower($text);
+        $text = preg_replace('/[^a-z0-9-]/', '-', $text);
+        $text = preg_replace('/-+/', '-', $text);
+        return trim($text, '-');
+    }
+}
+
+// ====================================================================
+// FUNÇÕES DE MENSAGEM FLASH
+// ====================================================================
+
+if (!function_exists('flash')) {
+    function flash(string $key, ?string $message = null) {
+        if ($message !== null) {
+            if (!isset($_SESSION['flash'])) {
+                $_SESSION['flash'] = [];
+            }
+            $_SESSION['flash'][$key] = $message;
+            return null;
+        }
+        
+        if (isset($_SESSION['flash'][$key])) {
+            $msg = $_SESSION['flash'][$key];
+            unset($_SESSION['flash'][$key]);
+            return $msg;
+        }
+        
         return null;
     }
-    
-    if (isset($_SESSION['flash'][$key])) {
-        $msg = $_SESSION['flash'][$key];
-        unset($_SESSION['flash'][$key]);
-        return $msg;
-    }
-    
-    return null;
 }
 
-function showFlashMessages(): string {
-    $html = '';
-    
-    if ($success = flash('success')) {
-        $html .= "<div class='alert alert-success'>{$success}</div>";
+if (!function_exists('addFlashMessage')) {
+    function addFlashMessage(string $message, string $type = 'info'): void {
+        flash($type, $message);
     }
-    
-    if ($error = flash('error')) {
-        $html .= "<div class='alert alert-danger'>{$error}</div>";
-    }
-    
-    if ($warning = flash('warning')) {
-        $html .= "<div class='alert alert-warning'>{$warning}</div>";
-    }
-    
-    return $html;
 }
 
-function getUserAvatar($avatar = null, $username = '') {
-    if ($avatar && file_exists('uploads/avatars/' . $avatar)) {
-        return 'uploads/avatars/' . $avatar;
+if (!function_exists('showFlashMessages')) {
+    function showFlashMessages(): string {
+        $html = '';
+        $types = [
+            'success' => 'success',
+            'error' => 'danger',
+            'warning' => 'warning',
+            'info' => 'info'
+        ];
+        
+        foreach ($types as $type => $class) {
+            if ($message = flash($type)) {
+                $icon = match($type) {
+                    'success' => 'check-circle',
+                    'error' => 'exclamation-circle',
+                    'warning' => 'exclamation-triangle',
+                    default => 'info-circle'
+                };
+                
+                $html .= "<div class='alert alert-{$class} alert-dismissible fade show' role='alert'>";
+                $html .= "<i class='fas fa-{$icon} me-2'></i>{$message}";
+                $html .= "<button type='button' class='btn-close' data-bs-dismiss='alert'></button>";
+                $html .= "</div>";
+            }
+        }
+        
+        if (isset($_SESSION['flash_messages']) && is_array($_SESSION['flash_messages'])) {
+            foreach ($_SESSION['flash_messages'] as $msg) {
+                $type = $msg['type'] ?? 'info';
+                $text = $msg['message'] ?? '';
+                $class = $types[$type] ?? 'info';
+                
+                $html .= "<div class='alert alert-{$class} alert-dismissible fade show' role='alert'>";
+                $html .= "{$text}";
+                $html .= "<button type='button' class='btn-close' data-bs-dismiss='alert'></button>";
+                $html .= "</div>";
+            }
+            $_SESSION['flash_messages'] = [];
+        }
+        
+        return $html;
     }
-    
-    // Gerar avatar padrão com iniciais
-    return 'https://ui-avatars.com/api/?name=' . urlencode($username) . '&background=6366f1&color=fff&size=200';
 }
+
+// ====================================================================
+// FUNÇÕES UTILITÁRIAS
+// ====================================================================
+
+if (!function_exists('dd')) {
+    function dd($data, bool $die = true): void {
+        echo '<pre style="background:#1a1a1a; color:#4fc3f7; padding:15px; margin:10px; border-radius:5px;">';
+        var_dump($data);
+        echo '</pre>';
+        if ($die) exit;
+    }
+}
+
+if (!function_exists('formatBytes')) {
+    function formatBytes(int $bytes, int $precision = 2): string {
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        for ($i = 0; $bytes > 1024 && $i < count($units) - 1; $i++) {
+            $bytes /= 1024;
+        }
+        return round($bytes, $precision) . ' ' . $units[$i];
+    }
+}
+
+if (!function_exists('generateUniqueCode')) {
+    function generateUniqueCode(string $prefix = '', int $length = 8): string {
+        $code = $prefix . strtoupper(bin2hex(random_bytes($length / 2)));
+        return substr($code, 0, $prefix ? strlen($prefix) + $length : $length);
+    }
+}
+
+if (!function_exists('isValidEmail')) {
+    function isValidEmail(?string $email): bool {
+        if (empty($email)) return false;
+        return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
+    }
+}
+
+if (!function_exists('isValidUrl')) {
+    function isValidUrl(?string $url): bool {
+        if (empty($url)) return false;
+        return filter_var($url, FILTER_VALIDATE_URL) !== false;
+    }
+}
+
+if (!function_exists('getUserIP')) {
+    function getUserIP(): string {
+        $ipKeys = ['HTTP_CLIENT_IP', 'HTTP_X_FORWARDED_FOR', 'REMOTE_ADDR'];
+        foreach ($ipKeys as $key) {
+            if (!empty($_SERVER[$key])) {
+                $ip = $_SERVER[$key];
+                if (strpos($ip, ',') !== false) {
+                    $ip = explode(',', $ip)[0];
+                }
+                return trim($ip);
+            }
+        }
+        return '0.0.0.0';
+    }
+}
+
+if (!function_exists('isAjax')) {
+    function isAjax(): bool {
+        return !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+               strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
+    }
+}
+
+if (!function_exists('formatNumber')) {
+    function formatNumber($number, int $decimals = 0): string {
+        return number_format($number, $decimals, ',', '.');
+    }
+}
+
+if (!function_exists('formatCurrency')) {
+    function formatCurrency($value): string {
+        return 'R$ ' . number_format($value, 2, ',', '.');
+    }
+}
+
+if (!function_exists('logActivity')) {
+    function logActivity(string $action, string $details = '', ?int $userId = null): bool {
+        global $pdo;
+        if (!isset($pdo)) return false;
+        
+        if ($userId === null && isset($_SESSION['user_id'])) {
+            $userId = $_SESSION['user_id'];
+        }
+        
+        try {
+            $stmt = $pdo->query("SHOW TABLES LIKE 'activity_logs'");
+            if ($stmt->rowCount() == 0) {
+                $pdo->exec("
+                    CREATE TABLE activity_logs (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        user_id INT,
+                        action VARCHAR(100),
+                        details TEXT,
+                        ip_address VARCHAR(45),
+                        user_agent TEXT,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        INDEX idx_user_id (user_id)
+                    )
+                ");
+            }
+            
+            $stmt = $pdo->prepare("
+                INSERT INTO activity_logs (user_id, action, details, ip_address, user_agent, created_at)
+                VALUES (?, ?, ?, ?, ?, NOW())
+            ");
+            
+            $stmt->execute([
+                $userId,
+                $action,
+                $details,
+                getUserIP(),
+                $_SERVER['HTTP_USER_AGENT'] ?? ''
+            ]);
+            
+            return true;
+        } catch (Exception $e) {
+            error_log("Activity log error: " . $e->getMessage());
+            return false;
+        }
+    }
+}
+
+if (!function_exists('isValidCPF')) {
+    function isValidCPF(?string $cpf): bool {
+        if (empty($cpf)) return false;
+        $cpf = preg_replace('/[^0-9]/', '', $cpf);
+        if (strlen($cpf) != 11) return false;
+        if (preg_match('/(\d)\1{10}/', $cpf)) return false;
+        
+        for ($t = 9; $t < 11; $t++) {
+            for ($d = 0, $c = 0; $c < $t; $c++) {
+                $d += $cpf[$c] * (($t + 1) - $c);
+            }
+            $d = ((10 * $d) % 11) % 10;
+            if ($cpf[$c] != $d) return false;
+        }
+        return true;
+    }
+}
+
+if (!function_exists('formatCPF')) {
+    function formatCPF(?string $cpf): string {
+        if (empty($cpf)) return '';
+        $cpf = preg_replace('/[^0-9]/', '', $cpf);
+        if (strlen($cpf) != 11) return $cpf;
+        
+        return sprintf('%s.%s.%s-%s',
+            substr($cpf, 0, 3),
+            substr($cpf, 3, 3),
+            substr($cpf, 6, 3),
+            substr($cpf, 9, 2)
+        );
+    }
+}
+
+if (!function_exists('createPagination')) {
+    function createPagination(int $totalItems, int $currentPage, int $itemsPerPage, string $url): string {
+        $totalPages = ceil($totalItems / $itemsPerPage);
+        if ($totalPages <= 1) return '';
+        
+        $currentPage = max(1, min($currentPage, $totalPages));
+        $html = '<nav><ul class="pagination justify-content-center">';
+        
+        // Anterior
+        $prevDisabled = $currentPage <= 1 ? 'disabled' : '';
+        $prevUrl = $currentPage > 1 ? $url . '?page=' . ($currentPage - 1) : '#';
+        $html .= "<li class='page-item {$prevDisabled}'><a class='page-link' href='{$prevUrl}'>&laquo;</a></li>";
+        
+        // Páginas
+        $range = 2;
+        for ($i = 1; $i <= $totalPages; $i++) {
+            if ($i == 1 || $i == $totalPages || abs($i - $currentPage) <= $range) {
+                $active = $i == $currentPage ? 'active' : '';
+                $pageUrl = $url . '?page=' . $i;
+                $html .= "<li class='page-item {$active}'><a class='page-link' href='{$pageUrl}'>{$i}</a></li>";
+            } elseif (abs($i - $currentPage) == $range + 1) {
+                $html .= "<li class='page-item disabled'><span class='page-link'>...</span></li>";
+            }
+        }
+        
+        // Próximo
+        $nextDisabled = $currentPage >= $totalPages ? 'disabled' : '';
+        $nextUrl = $currentPage < $totalPages ? $url . '?page=' . ($currentPage + 1) : '#';
+        $html .= "<li class='page-item {$nextDisabled}'><a class='page-link' href='{$nextUrl}'>&raquo;</a></li>";
+        
+        $html .= '</ul></nav>';
+        return $html;
+    }
+}
+
+if (!function_exists('isProduction')) {
+    function isProduction(): bool {
+        return (defined('ENVIRONMENT') && ENVIRONMENT === 'production') ||
+               ($_SERVER['SERVER_NAME'] ?? 'localhost') !== 'localhost';
+    }
+}
+
+// ====================================================================
+// FIM DO ARQUIVO
+// ====================================================================
+?>
