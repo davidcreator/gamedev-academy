@@ -167,37 +167,82 @@ class Gamification {
     
     private function updateWeeklyLeaderboard(int $userId, int $xpAmount): void {
         $weekStart = date('Y-m-d', strtotime('monday this week'));
-        
-        $existing = $this->db->fetch(
-            "SELECT id FROM weekly_leaderboard WHERE user_id = ? AND week_start = ?",
-            [$userId, $weekStart]
-        );
-        
-        if ($existing) {
-            $this->db->query(
-                "UPDATE weekly_leaderboard SET xp_earned = xp_earned + ? WHERE id = ?",
-                [$xpAmount, $existing['id']]
+        try {
+            $existing = $this->db->fetch(
+                "SELECT id FROM weekly_leaderboard WHERE user_id = ? AND week_start = ?",
+                [$userId, $weekStart]
             );
-        } else {
-            $this->db->insert('weekly_leaderboard', [
-                'user_id' => $userId,
-                'week_start' => $weekStart,
-                'xp_earned' => $xpAmount
-            ]);
+            if ($existing) {
+                $this->db->query(
+                    "UPDATE weekly_leaderboard SET xp_earned = xp_earned + ? WHERE id = ?",
+                    [$xpAmount, $existing['id']]
+                );
+            } else {
+                $this->db->insert('weekly_leaderboard', [
+                    'user_id' => $userId,
+                    'week_start' => $weekStart,
+                    'xp_earned' => $xpAmount
+                ]);
+            }
+        } catch (\PDOException $e) {
+            $this->ensureWeeklyLeaderboardTable();
+            $existing = $this->db->fetch(
+                "SELECT id FROM weekly_leaderboard WHERE user_id = ? AND week_start = ?",
+                [$userId, $weekStart]
+            );
+            if ($existing) {
+                $this->db->query(
+                    "UPDATE weekly_leaderboard SET xp_earned = xp_earned + ? WHERE id = ?",
+                    [$xpAmount, $existing['id']]
+                );
+            } else {
+                $this->db->insert('weekly_leaderboard', [
+                    'user_id' => $userId,
+                    'week_start' => $weekStart,
+                    'xp_earned' => $xpAmount
+                ]);
+            }
         }
     }
     
     public function getWeeklyLeaderboard(int $limit = 10): array {
         $weekStart = date('Y-m-d', strtotime('monday this week'));
-        
-        return $this->db->fetchAll(
-            "SELECT u.id, u.username, u.full_name, u.avatar, u.level, wl.xp_earned 
-             FROM weekly_leaderboard wl 
-             JOIN users u ON wl.user_id = u.id 
-             WHERE wl.week_start = ? 
-             ORDER BY wl.xp_earned DESC 
-             LIMIT ?",
-            [$weekStart, $limit]
-        );
+        try {
+            return $this->db->fetchAll(
+                "SELECT u.id, u.username, u.full_name, u.avatar, u.level, wl.xp_earned 
+                 FROM weekly_leaderboard wl 
+                 JOIN users u ON wl.user_id = u.id 
+                 WHERE wl.week_start = ? 
+                 ORDER BY wl.xp_earned DESC 
+                 LIMIT ?",
+                [$weekStart, $limit]
+            );
+        } catch (\PDOException $e) {
+            $this->ensureWeeklyLeaderboardTable();
+            return $this->db->fetchAll(
+                "SELECT u.id, u.username, u.full_name, u.avatar, u.level, wl.xp_earned 
+                 FROM weekly_leaderboard wl 
+                 JOIN users u ON wl.user_id = u.id 
+                 WHERE wl.week_start = ? 
+                 ORDER BY wl.xp_earned DESC 
+                 LIMIT ?",
+                [$weekStart, $limit]
+            );
+        }
+    }
+
+    private function ensureWeeklyLeaderboardTable(): void {
+        $sql = "
+            CREATE TABLE IF NOT EXISTS weekly_leaderboard (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                user_id INT NOT NULL,
+                week_start DATE NOT NULL,
+                xp_earned INT DEFAULT 0,
+                lessons_completed INT DEFAULT 0,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                UNIQUE KEY unique_weekly (user_id, week_start)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ";
+        $this->db->query($sql);
     }
 }

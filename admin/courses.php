@@ -66,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <td>
                     <div>
                         <div><?= escape($course['title']) ?></div>
-                        <div style="font-size: 0.8rem; color: var(--gray-500);">
+                        <div class="text-muted">
                             <?= escape(truncate($course['description'], 50)) ?>
                         </div>
                     </div>
@@ -78,15 +78,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <span class="badge badge-primary"><?= $course['total_students'] ?></span>
                 </td>
                 <td>
-                    <form method="POST" style="display: inline;">
+                    <form method="POST" class="d-inline">
                         <input type="hidden" name="action" value="toggle_publish">
                         <input type="hidden" name="course_id" value="<?= $course['id'] ?>">
                         <?php if ($course['is_published']): ?>
-                            <button type="submit" class="badge badge-success" style="cursor: pointer; border: none;">
+                            <button type="submit" class="badge badge-success">
                                 Publicado
                             </button>
                         <?php else: ?>
-                            <button type="submit" class="badge badge-warning" style="cursor: pointer; border: none;">
+                            <button type="submit" class="badge badge-warning">
                                 Rascunho
                             </button>
                         <?php endif; ?>
@@ -99,7 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                            class="btn-action edit" title="Editar">✏️</a>
                         <a href="<?= url('admin/modules.php?course_id=' . $course['id']) ?>" 
                            class="btn-action" title="Módulos">📚</a>
-                        <form method="POST" style="display: inline;" 
+                        <form method="POST" class="d-inline" 
                               onsubmit="return confirm('Tem certeza que deseja excluir este curso?')">
                             <input type="hidden" name="action" value="delete">
                             <input type="hidden" name="course_id" value="<?= $course['id'] ?>">

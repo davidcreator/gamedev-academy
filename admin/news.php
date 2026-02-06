@@ -79,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <td>
                     <div>
                         <div><?= escape($article['title']) ?></div>
-                        <div style="font-size: 0.8rem; color: var(--gray-500);">
+                        <div class="text-muted">
                             <?= escape(truncate($article['excerpt'], 60)) ?>
                         </div>
                     </div>
@@ -90,24 +90,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <td><?= escape($article['author_name'] ?? 'Admin') ?></td>
                 <td><?= number_format($article['views']) ?></td>
                 <td>
-                    <form method="POST" style="display: inline;">
+                    <form method="POST" class="d-inline">
                         <input type="hidden" name="action" value="toggle_featured">
                         <input type="hidden" name="news_id" value="<?= $article['id'] ?>">
-                        <button type="submit" style="background: none; border: none; cursor: pointer; font-size: 1.25rem;">
+                        <button type="submit" class="btn btn-sm btn-outline">
                             <?= $article['is_featured'] ? '⭐' : '☆' ?>
                         </button>
                     </form>
                 </td>
                 <td>
-                    <form method="POST" style="display: inline;">
+                    <form method="POST" class="d-inline">
                         <input type="hidden" name="action" value="toggle_publish">
                         <input type="hidden" name="news_id" value="<?= $article['id'] ?>">
                         <?php if ($article['is_published']): ?>
-                            <button type="submit" class="badge badge-success" style="cursor: pointer; border: none;">
+                            <button type="submit" class="badge badge-success">
                                 Publicado
                             </button>
                         <?php else: ?>
-                            <button type="submit" class="badge badge-warning" style="cursor: pointer; border: none;">
+                            <button type="submit" class="badge badge-warning">
                                 Rascunho
                             </button>
                         <?php endif; ?>
@@ -120,7 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="admin-actions">
                         <a href="<?= url('admin/news-edit.php?id=' . $article['id']) ?>" 
                            class="btn-action edit" title="Editar">✏️</a>
-                        <form method="POST" style="display: inline;" 
+                        <form method="POST" class="d-inline" 
                               onsubmit="return confirm('Tem certeza que deseja excluir esta notícia?')">
                             <input type="hidden" name="action" value="delete">
                             <input type="hidden" name="news_id" value="<?= $article['id'] ?>">
