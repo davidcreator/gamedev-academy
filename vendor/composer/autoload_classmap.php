@@ -6,6 +6,11 @@ $vendorDir = dirname(__DIR__);
 $baseDir = dirname($vendorDir);
 
 return array(
+    'App\\Controllers\\AdminController' => $baseDir . '/app/Controllers/AdminController.php',
+    'App\\Controllers\\AuthController' => $baseDir . '/app/Controllers/AuthController.php',
+    'App\\Controllers\\Controller' => $baseDir . '/app/Controllers/Controller.php',
+    'App\\Controllers\\HomeController' => $baseDir . '/app/Controllers/HomeController.php',
+    'App\\Controllers\\UserController' => $baseDir . '/app/Controllers/UserController.php',
     'Attribute' => $vendorDir . '/symfony/polyfill-php80/Resources/stubs/Attribute.php',
     'Brick\\Math\\BigDecimal' => $vendorDir . '/brick/math/src/BigDecimal.php',
     'Brick\\Math\\BigInteger' => $vendorDir . '/brick/math/src/BigInteger.php',
@@ -134,7 +139,6 @@ return array(
     'Core\\Router' => $baseDir . '/core/Router.php',
     'Core\\Session' => $baseDir . '/core/Session.php',
     'Core\\Validator' => $baseDir . '/core/Validator.php',
-    'Core\\View' => $baseDir . '/core/View.php',
     'DeepCopy\\DeepCopy' => $vendorDir . '/myclabs/deep-copy/src/DeepCopy/DeepCopy.php',
     'DeepCopy\\Exception\\CloneException' => $vendorDir . '/myclabs/deep-copy/src/DeepCopy/Exception/CloneException.php',
     'DeepCopy\\Exception\\PropertyException' => $vendorDir . '/myclabs/deep-copy/src/DeepCopy/Exception/PropertyException.php',

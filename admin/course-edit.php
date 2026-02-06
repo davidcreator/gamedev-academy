@@ -124,6 +124,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <div class="mb-3">
             <label class="form-label">Descrição Completa</label>
+            <div class="d-flex align-center gap-2 mb-2">
+                <label class="d-flex align-center gap-1">
+                    <input type="checkbox" id="course-markdown-toggle"> Salvar como Markdown
+                </label>
+            </div>
             <div class="editor-toolbar" data-editor-for="description">
                 <button type="button" class="btn btn-sm btn-secondary" data-cmd="bold">Negrito</button>
                 <button type="button" class="btn btn-sm btn-secondary" data-cmd="italic">Itálico</button>
@@ -140,7 +145,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <button type="button" class="btn btn-sm btn-secondary" data-cmd="removeFormat">Limpar</button>
             </div>
             <div id="editor-description" class="editor-area" contenteditable="true"><?= $course ? ($course['description'] ?? '') : '' ?></div>
-            <textarea name="description" id="textarea-description" class="form-control" hidden></textarea>
+            <textarea name="description" id="textarea-description" class="form-control" hidden><?= $course ? ($course['description'] ?? '') : '' ?></textarea>
         </div>
 
         <div class="row">
@@ -201,15 +206,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </form>
 </div>
+<script type="module">
+import { ClassicEditor, Essentials, Paragraph, Bold, Italic, Underline, Strikethrough, Link, List, BlockQuote, Table, TableToolbar, Image, ImageToolbar, ImageCaption, ImageStyle, ImageResize, ImageInsert, Autoformat, Markdown } from 'https://cdn.ckeditor.com/ckeditor5/47.1.1/ckeditor5.js';
+window.CKEDITOR5_ACTIVE = true;
+const textarea = document.getElementById('textarea-description');
+const toggle = document.getElementById('course-markdown-toggle');
+let editorInstance = null;
+const basePlugins = [ Essentials, Paragraph, Bold, Italic, Underline, Strikethrough, Link, List, BlockQuote, Table, TableToolbar, Image, ImageToolbar, ImageCaption, ImageStyle, ImageResize, ImageInsert, Autoformat ];
+const baseToolbar = [ 'heading','|','bold','italic','underline','strikethrough','link','bulletedList','numberedList','blockQuote','insertTable','imageInsert','undo','redo' ];
+function initEditor(useMarkdown) {
+  if (editorInstance) editorInstance.destroy();
+  const plugins = useMarkdown ? [ Markdown, ...basePlugins ] : basePlugins;
+  ClassicEditor.create(textarea, {
+    plugins,
+    toolbar: baseToolbar,
+    image: { toolbar: [ 'imageTextAlternative','toggleImageCaption','imageStyle:inline','imageStyle:block','imageStyle:side' ] }
+  }).then(ed => {
+    editorInstance = ed;
+    document.getElementById('editor-description').style.display = 'none';
+    document.querySelector('.editor-toolbar[data-editor-for=\"description\"]').style.display = 'none';
+  });
+}
+initEditor(false);
+toggle.addEventListener('change', () => initEditor(toggle.checked));
+document.querySelector('form').addEventListener('submit', () => {
+  if (editorInstance) textarea.value = editorInstance.getData();
+});
+</script>
 
+<script src="/vendor/ckeditor/ckeditor/ckeditor.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    if (window.AdminEditor && typeof window.AdminEditor.init === 'function') {
+    if (window.CKEDITOR && !window.CKEDITOR5_ACTIVE) {
+        document.getElementById('editor-description').style.display = 'none';
+        document.querySelector('.editor-toolbar[data-editor-for=\"description\"]').style.display = 'none';
+        CKEDITOR.replace('textarea-description', {
+            height: 400,
+            removePlugins: 'imageUpload',
+            toolbar: [
+                { name: 'document', items: ['Source','-','Preview'] },
+                { name: 'clipboard', items: ['Cut','Copy','Paste','Undo','Redo'] },
+                { name: 'basicstyles', items: ['Bold','Italic','Underline','Strike','RemoveFormat'] },
+                { name: 'paragraph', items: ['NumberedList','BulletedList','Blockquote'] },
+                { name: 'links', items: ['Link','Unlink'] },
+                { name: 'insert', items: ['Image','Table','HorizontalRule','SpecialChar'] },
+                { name: 'styles', items: ['Format','Font','FontSize'] },
+                { name: 'colors', items: ['TextColor','BGColor'] }
+            ]
+        });
+    } else if (window.AdminEditor && typeof window.AdminEditor.init === 'function') {
         window.AdminEditor.init('description', 'editor-description', 'textarea-description');
     } else {
         var area = document.getElementById('editor-description');
         var ta = document.getElementById('textarea-description');
-        var toolbar = document.querySelector('.editor-toolbar[data-editor-for="description"]');
+        var toolbar = document.querySelector('.editor-toolbar[data-editor-for=\"description\"]');
         function sync() { ta.value = area.innerHTML; }
         area.addEventListener('input', sync);
         toolbar.addEventListener('click', function (e) {
@@ -227,7 +277,5 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         sync();
     }
-});
 </script>
-
 <?php include 'includes/footer.php'; ?>

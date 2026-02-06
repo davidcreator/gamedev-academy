@@ -73,6 +73,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <div class="mb-3">
             <label class="form-label">Conteúdo</label>
+            <div class="d-flex align-center gap-2 mb-2">
+                <label class="d-flex align-center gap-1">
+                    <input type="checkbox" id="lesson-markdown-toggle"> Salvar como Markdown
+                </label>
+            </div>
             <div class="editor-toolbar" data-editor-for="content">
                 <button type="button" class="btn btn-sm btn-secondary" data-cmd="bold">Negrito</button>
                 <button type="button" class="btn btn-sm btn-secondary" data-cmd="italic">Itálico</button>
@@ -89,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <button type="button" class="btn btn-sm btn-secondary" data-cmd="removeFormat">Limpar</button>
             </div>
             <div id="editor-content" class="editor-area" contenteditable="true"><?= $lesson['content'] ?? '' ?></div>
-            <textarea name="content" id="textarea-content" class="form-control" hidden></textarea>
+            <textarea name="content" id="textarea-content" class="form-control" hidden><?= $lesson['content'] ?? '' ?></textarea>
         </div>
 
         <div class="row">
@@ -136,31 +141,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </form>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    if (window.AdminEditor && typeof window.AdminEditor.init === 'function') {
-        window.AdminEditor.init('content', 'editor-content', 'textarea-content');
-    } else {
-        var area = document.getElementById('editor-content');
-        var ta = document.getElementById('textarea-content');
-        var toolbar = document.querySelector('.editor-toolbar[data-editor-for="content"]');
-        function sync() { ta.value = area.innerHTML; }
-        area.addEventListener('input', sync);
-        toolbar.addEventListener('click', function (e) {
-            var btn = e.target.closest('button[data-cmd]');
-            if (!btn) return;
-            var cmd = btn.getAttribute('data-cmd');
-            var val = btn.getAttribute('data-value');
-            var promptVal = btn.getAttribute('data-prompt');
-            if (cmd === 'createLink') {
-                val = prompt(promptVal || 'URL', 'https://');
-                if (!val) return;
-            }
-            document.execCommand(cmd, false, val);
-            sync();
-        });
-        sync();
-    }
+<script type="module">
+import { ClassicEditor, Essentials, Paragraph, Bold, Italic, Underline, Strikethrough, Link, List, BlockQuote, Table, TableToolbar, Image, ImageToolbar, ImageCaption, ImageStyle, ImageResize, ImageInsert, Autoformat, Markdown } from 'https://cdn.ckeditor.com/ckeditor5/47.1.1/ckeditor5.js';
+const textarea = document.getElementById('textarea-content');
+const toggle = document.getElementById('lesson-markdown-toggle');
+let editorInstance = null;
+const basePlugins = [ Essentials, Paragraph, Bold, Italic, Underline, Strikethrough, Link, List, BlockQuote, Table, TableToolbar, Image, ImageToolbar, ImageCaption, ImageStyle, ImageResize, ImageInsert, Autoformat ];
+const baseToolbar = [ 'heading','|','bold','italic','underline','strikethrough','link','bulletedList','numberedList','blockQuote','insertTable','imageInsert','undo','redo' ];
+function initEditor(useMarkdown) {
+  if (editorInstance) editorInstance.destroy();
+  const plugins = useMarkdown ? [ Markdown, ...basePlugins ] : basePlugins;
+  ClassicEditor.create(textarea, {
+    plugins,
+    toolbar: baseToolbar,
+    image: { toolbar: [ 'imageTextAlternative','toggleImageCaption','imageStyle:inline','imageStyle:block','imageStyle:side' ] }
+  }).then(ed => {
+    editorInstance = ed;
+    document.getElementById('editor-content').style.display = 'none';
+    document.querySelector('.editor-toolbar[data-editor-for="content"]').style.display = 'none';
+  });
+}
+initEditor(false);
+toggle.addEventListener('change', () => initEditor(toggle.checked));
+document.querySelector('form').addEventListener('submit', () => {
+  if (editorInstance) textarea.value = editorInstance.getData();
 });
 </script>
 

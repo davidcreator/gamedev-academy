@@ -73,6 +73,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <div class="mb-3">
             <label class="form-label">Conteúdo</label>
+            <div class="d-flex align-center gap-2 mb-2">
+                <label class="d-flex align-center gap-1">
+                    <input type="checkbox" id="content-markdown-toggle"> Salvar como Markdown
+                </label>
+            </div>
             <textarea name="content" id="editor-content" class="form-control" rows="12"><?= $article['content'] ?? '' ?></textarea>
         </div>
 
@@ -108,24 +113,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </form>
 </div>
 
-<script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
-<script>
-  if (window.CKEDITOR) {
-    CKEDITOR.replace('editor-content', {
-      height: 400,
-      removePlugins: 'imageUpload',
-      toolbar: [
-        { name: 'document', items: ['Source','-','Preview'] },
-        { name: 'clipboard', items: ['Cut','Copy','Paste','Undo','Redo'] },
-        { name: 'basicstyles', items: ['Bold','Italic','Underline','Strike','RemoveFormat'] },
-        { name: 'paragraph', items: ['NumberedList','BulletedList','Blockquote'] },
-        { name: 'links', items: ['Link','Unlink'] },
-        { name: 'insert', items: ['Image','Table','HorizontalRule','SpecialChar'] },
-        { name: 'styles', items: ['Format','Font','FontSize'] },
-        { name: 'colors', items: ['TextColor','BGColor'] }
-      ]
-    });
-  }
+<script type="module">
+import { ClassicEditor, Essentials, Paragraph, Bold, Italic, Underline, Strikethrough, Link, List, BlockQuote, Table, TableToolbar, Image, ImageToolbar, ImageCaption, ImageStyle, ImageResize, ImageInsert, Autoformat, Markdown } from 'https://cdn.ckeditor.com/ckeditor5/47.1.1/ckeditor5.js';
+const textarea = document.getElementById('editor-content');
+const toggle = document.getElementById('content-markdown-toggle');
+let editorInstance = null;
+const basePlugins = [ Essentials, Paragraph, Bold, Italic, Underline, Strikethrough, Link, List, BlockQuote, Table, TableToolbar, Image, ImageToolbar, ImageCaption, ImageStyle, ImageResize, ImageInsert, Autoformat ];
+const baseToolbar = [ 'heading','|','bold','italic','underline','strikethrough','link','bulletedList','numberedList','blockQuote','insertTable','imageInsert','undo','redo' ];
+function initEditor(useMarkdown) {
+  if (editorInstance) editorInstance.destroy();
+  const plugins = useMarkdown ? [ Markdown, ...basePlugins ] : basePlugins;
+  ClassicEditor.create(textarea, {
+    plugins,
+    toolbar: baseToolbar,
+    image: { toolbar: [ 'imageTextAlternative','toggleImageCaption','imageStyle:inline','imageStyle:block','imageStyle:side' ] }
+  }).then(ed => {
+    editorInstance = ed;
+  });
+}
+initEditor(false);
+toggle.addEventListener('change', () => initEditor(toggle.checked));
+document.querySelector('form').addEventListener('submit', () => {
+  if (editorInstance) textarea.value = editorInstance.getData();
+});
 </script>
 
 <?php include 'includes/footer.php'; ?>

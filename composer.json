@@ -12,18 +12,19 @@
     ],
     "require": {
         "php": ">=8.1",
-        "vlucas/phpdotenv": "^5.5",
-        "nikic/fast-route": "^1.3",
-        "league/plates": "^3.5",
-        "monolog/monolog": "^3.4",
-        "respect/validation": "^2.2",
-        "intervention/image": "^2.7",
-        "phpmailer/phpmailer": "^6.8",
+        "ckeditor/ckeditor": "^4.25",
+        "cocur/slugify": "^4.4",
         "firebase/php-jwt": "^6.8",
         "guzzlehttp/guzzle": "^7.8",
-        "ramsey/uuid": "^4.7",
+        "intervention/image": "^2.7",
+        "league/plates": "^3.5",
+        "monolog/monolog": "^3.4",
         "nesbot/carbon": "^2.69",
-        "cocur/slugify": "^4.4"
+        "nikic/fast-route": "^1.3",
+        "phpmailer/phpmailer": "^6.8",
+        "ramsey/uuid": "^4.7",
+        "respect/validation": "^2.2",
+        "vlucas/phpdotenv": "^5.5"
     },
     "require-dev": {
         "symfony/var-dumper": "^6.3",

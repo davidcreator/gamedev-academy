@@ -28,6 +28,15 @@
             'aliases' => array(),
             'dev_requirement' => false,
         ),
+        'ckeditor/ckeditor' => array(
+            'pretty_version' => '4.25.1',
+            'version' => '4.25.1.0',
+            'reference' => '3fa1987d35342526e4eb2e64f6ec7172561b7328',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../ckeditor/ckeditor',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
         'cocur/slugify' => array(
             'pretty_version' => 'v4.7.1',
             'version' => '4.7.1.0',
