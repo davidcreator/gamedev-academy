@@ -53,6 +53,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         flash('success', 'Cargo do usuário atualizado!');
         redirect(url('admin/users.php'));
     }
+
+    if ($action === 'delete_user' && $userId) {
+        // Impedir deletar o próprio usuário logado
+        if ($userId == $currentUser['id']) {
+            flash('error', 'Você não pode deletar sua própria conta!');
+        } else {
+            $userModel->delete($userId);
+            flash('success', 'Usuário removido com sucesso!');
+        }
+        redirect(url('admin/users.php'));
+    }
 }
 ?>
 
@@ -63,9 +74,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     <!-- Busca -->
     <form method="GET" class="d-flex gap-2">
-        <input type="text" name="search" class="form-control" 
+        <input type="text" name="search" class="form-control input-search-width" 
                placeholder="Buscar usuários..." 
-               value="<?= escape($search) ?>" style="width: 300px;">
+               value="<?= escape($search) ?>">
         <button type="submit" class="btn btn-primary">Buscar</button>
         <?php if ($search): ?>
             <a href="<?= url('admin/users.php') ?>" class="btn btn-secondary">Limpar</a>
@@ -107,10 +118,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </td>
                 <td><?= escape($user['email']) ?></td>
                 <td>
-                    <form method="POST" style="display: inline;">
+                    <form method="POST" class="d-inline">
                         <input type="hidden" name="action" value="change_role">
                         <input type="hidden" name="user_id" value="<?= $user['id'] ?>">
-                        <select name="role" onchange="this.form.submit()" class="form-control" style="width: auto; padding: 0.25rem;">
+                        <select name="role" onchange="this.form.submit()" class="form-control form-select-sm">
                             <option value="student" <?= $user['role'] === 'student' ? 'selected' : '' ?>>Estudante</option>
                             <option value="instructor" <?= $user['role'] === 'instructor' ? 'selected' : '' ?>>Instrutor</option>
                             <option value="admin" <?= $user['role'] === 'admin' ? 'selected' : '' ?>>Admin</option>
@@ -122,15 +133,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </td>
                 <td><?= number_format($user['xp_total']) ?></td>
                 <td>
-                    <form method="POST" style="display: inline;">
+                    <form method="POST" class="d-inline">
                         <input type="hidden" name="action" value="toggle_status">
                         <input type="hidden" name="user_id" value="<?= $user['id'] ?>">
                         <?php if ($user['is_active']): ?>
-                            <button type="submit" class="badge badge-success" style="cursor: pointer; border: none;">
+                            <button type="submit" class="badge badge-success btn-unstyled">
                                 Ativo
                             </button>
                         <?php else: ?>
-                            <button type="submit" class="badge badge-danger" style="cursor: pointer; border: none;">
+                            <button type="submit" class="badge badge-danger btn-unstyled">
                                 Inativo
                             </button>
                         <?php endif; ?>
@@ -141,8 +152,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="admin-actions">
                         <a href="<?= url('admin/user-edit.php?id=' . $user['id']) ?>" 
                            class="btn-action edit" title="Editar">✏️</a>
-                        <button class="btn-action delete" title="Deletar" 
-                                onclick="if(confirm('Tem certeza?')) deleteUser(<?= $user['id'] ?>)">🗑️</button>
+                        
+                        <form method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.');">
+                            <input type="hidden" name="action" value="delete_user">
+                            <input type="hidden" name="user_id" value="<?= $user['id'] ?>">
+                            <button type="submit" class="btn-action delete" title="Deletar">🗑️</button>
+                        </form>
                     </div>
                 </td>
             </tr>
@@ -164,12 +179,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php endfor; ?>
 </div>
 <?php endif; ?>
-
-<script>
-function deleteUser(id) {
-    // Implementar exclusão via AJAX ou form
-    alert('Função de exclusão a ser implementada');
-}
-</script>
 
 <?php include 'includes/footer.php'; ?>

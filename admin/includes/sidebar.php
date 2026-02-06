@@ -35,6 +35,11 @@
             <span>Conquistas</span>
         </a>
         
+        <a href="<?= url('admin/levels.php') ?>" class="admin-nav-item <?= $currentPage === 'levels' ? 'active' : '' ?>">
+            <span>🎯</span>
+            <span>Níveis</span>
+        </a>
+        
         <a href="<?= url('admin/settings.php') ?>" class="admin-nav-item <?= $currentPage === 'settings' ? 'active' : '' ?>">
             <span>⚙️</span>
             <span>Configurações</span>
