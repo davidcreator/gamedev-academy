@@ -171,10 +171,4 @@ $_SESSION['requirements_passed'] = $allPassed;
 </div>
 <?php endif; ?>
 
-<script>
-// Desabilitar botão se não passou nos requisitos
-<?php if (!$allPassed): ?>
-document.getElementById('next-btn').disabled = true;
-document.getElementById('next-btn').innerHTML = 'Corrija os erros para continuar';
-<?php endif; ?>
-</script>
+<!-- Prosseguir mesmo com pendências: remoção da restrição do botão -->
