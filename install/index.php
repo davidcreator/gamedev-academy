@@ -1,258 +1,314 @@
 <?php
 /**
- * GameDev Academy - Instalador
- * 
- * @package    GameDevAcademy
- * @version    2.0.0
- * @author     David Creator
- * @license    MIT
+ * GameDev Academy - Sistema de Instalação
+ * Arquivo principal do instalador
+ * @version 2.0
  */
 
-// Definir constantes
-define('GDA_INSTALL', true);
-define('GDA_VERSION', '2.0.0');
-define('GDA_MIN_PHP', '7.4.0');
-define('GDA_ROOT', dirname(__DIR__));
-
-// Configurações de segurança
-ini_set('display_errors', 0);
+// Configurações de erro para desenvolvimento (remover em produção)
 error_reporting(E_ALL);
+ini_set('display_errors', 0); // Não mostrar erros direto na tela
+ini_set('log_errors', 1);
 
-// Prevenir execução múltipla
-$lockFile = GDA_ROOT . '/storage/installed.lock';
-if (file_exists($lockFile)) {
-    die('
+// Definir constante de segurança
+define('INSTALLER', true);
+define('INSTALL_PATH', __DIR__);
+define('ROOT_PATH', dirname(__DIR__));
+
+// Iniciar sessão com configurações seguras
+if (session_status() === PHP_SESSION_NONE) {
+    session_start([
+        'cookie_httponly' => true,
+        'cookie_secure' => isset($_SERVER['HTTPS']),
+        'use_strict_mode' => true
+    ]);
+}
+
+// Gerar token CSRF se não existir
+if (!isset($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
+// Regenerar ID da sessão para evitar fixação
+if (!isset($_SESSION['installer_started'])) {
+    session_regenerate_id(true);
+    $_SESSION['installer_started'] = true;
+}
+
+// Incluir arquivos necessários com verificação
+$required_files = [
+    'includes/functions.php',
+    'includes/requirements.php',
+    'includes/database.php'
+];
+
+foreach ($required_files as $file) {
+    $file_path = INSTALL_PATH . '/' . $file;
+    if (!file_exists($file_path)) {
+        die("Erro: Arquivo necessário não encontrado: {$file}");
+    }
+    require_once $file_path;
+}
+
+// Verificar se o sistema já está instalado
+if (file_exists(ROOT_PATH . '/config.php') && !isset($_GET['force'])) {
+    // Verificar se o config.php tem conteúdo válido
+    $config_content = @file_get_contents(ROOT_PATH . '/config.php');
+    if (strlen($config_content) > 100 && strpos($config_content, 'DB_HOST') !== false) {
+        ?>
         <!DOCTYPE html>
         <html lang="pt-BR">
         <head>
             <meta charset="UTF-8">
-            <title>Instalação Concluída</title>
-            <style>
-                body { font-family: system-ui; max-width: 600px; margin: 100px auto; text-align: center; }
-                .warning { background: #fff3cd; border: 2px solid #ffc107; padding: 2rem; border-radius: 8px; }
-            </style>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Sistema já instalado</title>
+            <!-- Bootstrap CSS -->
+            <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+            <!-- Custom CSS -->
+            <link rel="stylesheet" href="assets/css/installer.css">
+            <link rel="stylesheet" href="assets/css/step3-tables.css">
+            <!-- Font Awesome -->
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
         </head>
         <body>
-            <div class="warning">
-                <h1>⚠️ Instalação já concluída</h1>
-                <p>O sistema já foi instalado. Por segurança, remova a pasta <code>/install</code>.</p>
-                <p><a href="../">Ir para página inicial</a></p>
+            <div class="container">
+                <div class="alert alert-warning mt-5">
+                    <h2>⚠️ Sistema já instalado</h2>
+                    <p>O sistema já foi instalado anteriormente.</p>
+                    <p>Por segurança, remova a pasta <code>/install</code> do servidor.</p>
+                    <hr>
+                    <p><a href="../" class="btn btn-primary">Ir para o Sistema</a></p>
+                    <p><small>Para reinstalar, remova o arquivo config.php ou <a href="?force=1">force a reinstalação</a></small></p>
+                </div>
             </div>
         </body>
         </html>
-    ');
+        <?php
+        exit;
+    }
 }
 
-// Incluir dependências
-require_once 'functions.php';
-
-// Iniciar sessão segura
-session_start([
-    'cookie_httponly' => true,
-    'cookie_secure' => isset($_SERVER['HTTPS']),
-    'cookie_samesite' => 'Strict',
-    'use_strict_mode' => true
-]);
-
-// CSRF Token
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
-
-// Processar instalação
+// Determinar etapa atual
 $step = isset($_GET['step']) ? (int)$_GET['step'] : 1;
-$errors = [];
-$success = [];
+$step = max(1, min(5, $step)); // Limitar entre 1 e 5
 
+// Processar formulários POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Verificar CSRF
-    if (!hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'] ?? '')) {
-        die('Token CSRF inválido');
+    // Verificar token CSRF
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        die('Erro de segurança: Token CSRF inválido');
     }
     
-    switch ($step) {
-        case 1:
-            // Não bloquear avanço por requisitos; apenas coletar erros (se houver)
-            $errors = validateRequirements();
-            $step = 2;
-            $success[] = 'Prosseguindo para configuração do banco.';
-            break;
-        case 2:
-            $errors = validateRequirements();
-            if (empty($errors)) {
-                $step = 3;
-                $success[] = 'Requisitos verificados com sucesso!';
-            }
-            break;
+    // Incluir processador com verificação
+    $processor_file = INSTALL_PATH . '/includes/process.php';
+    if (file_exists($processor_file)) {
+        require_once $processor_file;
+        
+        // Processar baseado na etapa
+        $process_function = 'process_step_' . $step;
+        if (function_exists($process_function)) {
+            $result = $process_function($_POST);
             
-        case 3:
-            $result = setupDatabase($_POST);
             if ($result['success']) {
-                $step = 4;
-                $_SESSION['db_config'] = $result['config'];
-                $success[] = 'Banco de dados configurado com sucesso!';
-            } else {
-                $errors = $result['errors'];
-            }
-            break;
-            
-        case 4:
-            $result = createAdminUser($_POST, $_SESSION['db_config']);
-            if ($result['success']) {
-                $step = 5;
-                $success[] = 'Administrador criado com sucesso!';
-            } else {
-                $errors = $result['errors'];
-            }
-            break;
-            
-        case 5:
-            $result = finalizeInstallation($_SESSION['db_config'], $_POST);
-            if ($result['success']) {
-                // Criar arquivo de lock
-                @mkdir(GDA_ROOT . '/storage', 0755, true);
-                file_put_contents($lockFile, date('Y-m-d H:i:s'));
-                
-                // Limpar sessão
-                session_destroy();
-                
-                // Redirecionar
-                header('Location: ../admin/login.php');
+                // Avançar para próxima etapa
+                header('Location: index.php?step=' . ($step + 1));
                 exit;
             } else {
-                $errors = $result['errors'];
+                // Armazenar erro para exibir
+                $_SESSION['error'] = $result['message'];
             }
-            break;
+        }
     }
 }
+
+// Array com informações das etapas
+$steps_info = [
+    1 => [
+        'title' => 'Verificação de Requisitos',
+        'description' => 'Verificando se o servidor atende aos requisitos mínimos',
+        'file' => 'steps/step1_requirements.php'
+    ],
+    2 => [
+        'title' => 'Configuração do Banco de Dados',
+        'description' => 'Configure a conexão com o banco de dados MySQL',
+        'file' => 'steps/step2_database.php'
+    ],
+    3 => [
+        'title' => 'Criação das Tabelas',
+        'description' => 'Criando estrutura do banco de dados',
+        'file' => 'steps/step3_tables.php'
+    ],
+    4 => [
+        'title' => 'Configuração do Administrador',
+        'description' => 'Configure a conta de administrador do sistema',
+        'file' => 'steps/step4_admin.php'
+    ],
+    5 => [
+        'title' => 'Instalação Concluída',
+        'description' => 'Sistema instalado com sucesso',
+        'file' => 'steps/step5_complete.php'
+    ]
+];
+
+// Verificar se o arquivo da etapa existe
+$step_file = INSTALL_PATH . '/' . $steps_info[$step]['file'];
+if (!file_exists($step_file)) {
+    die("Erro: Arquivo da etapa {$step} não encontrado: {$steps_info[$step]['file']}");
+}
 ?>
+
+<!-- Step-specific CSS -->
+<?php if ($step == 3): ?>
+    <link rel="stylesheet" href="assets/css/step3-tables.css">
+<?php endif; ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
-    <title>Instalação - GameDev Academy</title>
-    <link rel="stylesheet" href="assets/install.css">
+    <title>Instalação - <?php echo htmlspecialchars($steps_info[$step]['title']); ?></title>
+    
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="assets/css/installer.css">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="assets/images/favicon.png">
 </head>
 <body>
-    <div class="installer">
+    <div class="installer-wrapper">
+        <!-- Header -->
         <header class="installer-header">
-            <div class="logo">
-                <svg width="48" height="48" viewBox="0 0 48 48">
-                    <rect width="48" height="48" rx="8" fill="url(#gradient)"/>
-                    <path d="M24 12l8 8-8 8-8-8z" fill="white"/>
-                    <defs>
-                        <linearGradient id="gradient">
-                            <stop offset="0%" stop-color="#667eea"/>
-                            <stop offset="100%" stop-color="#764ba2"/>
-                        </linearGradient>
-                    </defs>
-                </svg>
-                <h1>GameDev Academy</h1>
+            <div class="container">
+                <div class="header-content">
+                    <img src="assets/images/logo.png" alt="GameDev Academy" class="installer-logo">
+                    <h1>GameDev Academy</h1>
+                    <p>Assistente de Instalação v2.0</p>
+                </div>
             </div>
-            <div class="version">v<?= GDA_VERSION ?></div>
         </header>
 
-        <div class="progress-bar">
-            <div class="progress-step <?= $step >= 1 ? 'active' : '' ?>">
-                <div class="step-number">1</div>
-                <div class="step-label">Bem-vindo</div>
-            </div>
-            <div class="progress-step <?= $step >= 2 ? 'active' : '' ?>">
-                <div class="step-number">2</div>
-                <div class="step-label">Requisitos</div>
-            </div>
-            <div class="progress-step <?= $step >= 3 ? 'active' : '' ?>">
-                <div class="step-number">3</div>
-                <div class="step-label">Banco de Dados</div>
-            </div>
-            <div class="progress-step <?= $step >= 4 ? 'active' : '' ?>">
-                <div class="step-number">4</div>
-                <div class="step-label">Admin</div>
-            </div>
-            <div class="progress-step <?= $step >= 5 ? 'active' : '' ?>">
-                <div class="step-number">5</div>
-                <div class="step-label">Finalizar</div>
+        <!-- Progress Bar -->
+        <div class="progress-wrapper">
+            <div class="container">
+                <div class="progress installer-progress">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                         role="progressbar" 
+                         style="width: <?php echo ($step * 20); ?>%;" 
+                         aria-valuenow="<?php echo $step; ?>" 
+                         aria-valuemin="0" 
+                         aria-valuemax="100">
+                        Etapa <?php echo $step; ?> de 5
+                    </div>
+                </div>
+                
+                <!-- Steps Navigation -->
+                <div class="steps-nav">
+                    <?php foreach ($steps_info as $num => $info): ?>
+                        <div class="step-item <?php echo $num == $step ? 'active' : ($num < $step ? 'completed' : ''); ?>">
+                            <span class="step-number"><?php echo $num; ?></span>
+                            <span class="step-name"><?php echo htmlspecialchars($info['title']); ?></span>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
             </div>
         </div>
 
+        <!-- Main Content -->
         <main class="installer-content">
-            <?php $config = $_SESSION['install_config'] ?? []; ?>
-            <?php if (!empty($errors)): ?>
-                <div class="alert alert-error">
-                    <strong>❌ Erros encontrados:</strong>
-                    <ul>
-                        <?php foreach ($errors as $error): ?>
-                            <li><?= htmlspecialchars($error) ?></li>
-                        <?php endforeach; ?>
-                    </ul>
+            <div class="container">
+                <div class="card installer-card">
+                    <div class="card-header">
+                        <h2><?php echo htmlspecialchars($steps_info[$step]['title']); ?></h2>
+                        <p class="mb-0"><?php echo htmlspecialchars($steps_info[$step]['description']); ?></p>
+                    </div>
+                    
+                    <div class="card-body">
+                        <?php
+                        // Exibir mensagens de erro se houver
+                        if (isset($_SESSION['error'])): ?>
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <i class="fas fa-exclamation-circle"></i>
+                                <?php 
+                                echo htmlspecialchars($_SESSION['error']); 
+                                unset($_SESSION['error']);
+                                ?>
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <?php
+                        // Exibir mensagens de sucesso se houver
+                        if (isset($_SESSION['success'])): ?>
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                <i class="fas fa-check-circle"></i>
+                                <?php 
+                                echo htmlspecialchars($_SESSION['success']); 
+                                unset($_SESSION['success']);
+                                ?>
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <?php
+                        // Incluir arquivo da etapa
+                        include $step_file;
+                        ?>
+                    </div>
                 </div>
-            <?php endif; ?>
-
-            <?php if (!empty($success)): ?>
-                <div class="alert alert-success">
-                    <strong>✅ Sucesso:</strong>
-                    <ul>
-                        <?php foreach ($success as $msg): ?>
-                            <li><?= htmlspecialchars($msg) ?></li>
-                        <?php endforeach; ?>
-                    </ul>
-                </div>
-            <?php endif; ?>
-
-            <form method="post" action="index.php?step=<?= (int)$step ?>">
-                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
-                <?php if ($step === 5): ?>
-                    <input type="hidden" name="app_name" value="<?= htmlspecialchars($config['app_name'] ?? 'GameDev Academy') ?>">
-                    <input type="hidden" name="app_url" value="<?= htmlspecialchars($config['app_url'] ?? '') ?>">
-                    <input type="hidden" name="timezone" value="<?= htmlspecialchars($config['timezone'] ?? 'America/Sao_Paulo') ?>">
-                <?php endif; ?>
-                <?php
-                switch ($step) {
-                    case 1:
-                        include 'steps/step1.php';
-                        break;
-                    case 2:
-                        include 'steps/step2.php';
-                        break;
-                    case 3:
-                        include 'steps/step3.php';
-                        break;
-                    case 4:
-                        include 'steps/step4.php';
-                        break;
-                    case 5:
-                        include 'steps/step5.php';
-                        break;
-                }
-                ?>
-                <div style="display:flex; justify-content: space-between; gap: 1rem; margin-top: 2rem;">
-                    <a class="btn btn-secondary" href="index.php?step=<?= max(1, $step - 1) ?>" <?= $step === 1 ? 'style="pointer-events:none;opacity:0.5;"' : '' ?>>
-                        Voltar
-                    </a>
-                    <?php if ($step < 5): ?>
-                        <button type="submit" id="next-btn" class="btn btn-primary">
-                            Continuar
-                        </button>
-                    <?php else: ?>
-                        <button type="submit" class="btn btn-success">
-                            Finalizar Instalação
-                        </button>
-                    <?php endif; ?>
-                </div>
-            </form>
+            </div>
         </main>
 
+        <!-- Footer -->
         <footer class="installer-footer">
-            <p>&copy; <?= date('Y') ?> GameDev Academy. Todos os direitos reservados.</p>
-            <p>
-                <a href="https://github.com/davidcreator/gamedev-academy" target="_blank">GitHub</a> |
-                <a href="https://gamedevacademy.com.br/docs" target="_blank">Documentação</a>
-            </p>
+            <div class="container">
+                <div class="footer-content">
+                    <p>&copy; <?php echo date('Y'); ?> GameDev Academy. Todos os direitos reservados.</p>
+                    <p class="footer-info">
+                        <small>
+                            PHP <?php echo PHP_VERSION; ?> | 
+                            MySQL <?php echo isset($_SESSION['mysql_version']) ? $_SESSION['mysql_version'] : 'N/A'; ?> | 
+                            Servidor: <?php echo $_SERVER['SERVER_SOFTWARE']; ?>
+                        </small>
+                    </p>
+                </div>
+            </div>
         </footer>
     </div>
 
-    <!-- Script opcional removido: assets/install.js não encontrado -->
+    <!-- jQuery -->
+    <script src="assets/js/jquery-3.6.0.min.js"></script>
+    
+    <!-- Bootstrap Bundle JS (includes Popper) -->
+    <script src="assets/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom Installer JS -->
+    <script src="assets/js/installer.js"></script>
+    
+    <!-- Step-specific JS -->
+    <?php if ($step == 2): ?>
+        <script src="assets/js/database.js"></script>
+    <?php elseif ($step == 3): ?>
+        <script src="assets/js/tables-installer.js"></script>
+    <?php elseif ($step == 4): ?>
+        <script src="assets/js/admin.js"></script>
+    <?php endif; ?>
+    
+    <script>
+    // Proteção contra resubmissão de formulário
+    if (window.history.replaceState) {
+        window.history.replaceState(null, null, window.location.href);
+    }
+    </script>
 </body>
 </html>
