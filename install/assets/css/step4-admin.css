@@ -1,0 +1,175 @@
+/**
+ * Step 4 - Admin Setup Styles
+ */
+
+/* Password Strength Bar */
+.password-strength-container {
+    margin-top: 0.5rem;
+}
+
+.password-strength-bar {
+    height: 6px;
+    background: var(--light-color);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.password-strength-fill {
+    height: 100%;
+    border-radius: var(--radius-full);
+    transition: width 0.3s ease, background-color 0.3s ease;
+    width: 0%;
+}
+
+.password-strength-fill.weak {
+    width: 25%;
+    background: var(--danger-color);
+}
+
+.password-strength-fill.fair {
+    width: 50%;
+    background: var(--warning-color);
+}
+
+.password-strength-fill.good {
+    width: 75%;
+    background: var(--info-color);
+}
+
+.password-strength-fill.strong {
+    width: 100%;
+    background: var(--success-color);
+}
+
+.password-strength-text {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-top: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-muted);
+}
+
+.password-strength-text.weak { color: var(--danger-color); }
+.password-strength-text.fair { color: var(--warning-color); }
+.password-strength-text.good { color: var(--info-color); }
+.password-strength-text.strong { color: var(--success-color); }
+
+/* Password Requirements */
+.password-requirements {
+    background: var(--lighter-color);
+    padding: 1rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+}
+
+.password-requirements-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 0.5rem;
+}
+
+.password-requirements ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+
+.password-requirements li {
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: color 0.3s ease;
+}
+
+.password-requirements li i {
+    width: 16px;
+    font-size: 0.75rem;
+}
+
+.password-requirements li.invalid {
+    color: var(--danger-color);
+}
+
+.password-requirements li.invalid i {
+    color: var(--danger-color);
+}
+
+.password-requirements li.valid {
+    color: var(--success-color);
+}
+
+.password-requirements li.valid i {
+    color: var(--success-color);
+}
+
+/* Password Generator */
+.password-generator {
+    margin-top: 0.75rem;
+}
+
+.generated-password-container {
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+    border: 1px solid var(--info-color);
+    border-radius: var(--radius-lg);
+}
+
+.generated-password-box {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.generated-password-box code {
+    flex: 1;
+    padding: 0.5rem 0.75rem;
+    background: var(--white);
+    border-radius: var(--radius-md);
+    font-size: 0.9rem;
+    font-family: var(--font-mono);
+    color: var(--dark-color);
+    word-break: break-all;
+}
+
+/* Validation Status */
+.validation-status {
+    font-size: 0.85rem;
+    min-height: 1.5rem;
+}
+
+/* Email Config Section */
+#emailConfigSection {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: var(--lighter-color);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+}
+
+#emailTestResult {
+    margin-top: 0.75rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .password-requirements ul {
+        grid-template-columns: 1fr;
+    }
+    
+    .generated-password-box {
+        flex-wrap: wrap;
+    }
+    
+    .generated-password-box code {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+}

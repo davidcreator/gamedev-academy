@@ -1028,15 +1028,15 @@ function createGamificationTables($pdo, &$results) {
             courses_completed INT DEFAULT 0,
             quizzes_perfect INT DEFAULT 0,
             streak_days INT DEFAULT 0,
-            rank_position INT,
-            previous_rank INT,
+            `rank_position` INT,
+            `previous_rank` INT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
             UNIQUE KEY unique_user_period (user_id, period_type, period_start),
             INDEX idx_user (user_id),
             INDEX idx_period (period_type, period_start),
-            INDEX idx_rank (rank_position)
+            INDEX `idx_rank` (`rank_position`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     ");
 }
@@ -1506,14 +1506,14 @@ function createSocialTables($pdo, &$results) {
             lessons_completed INT DEFAULT 0,
             quizzes_passed INT DEFAULT 0,
             time_spent INT DEFAULT 0,
-            rank INT,
+            `rank` INT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
             UNIQUE KEY unique_weekly (user_id, week_start),
             INDEX idx_user (user_id),
             INDEX idx_week (week_start),
             INDEX idx_xp (xp_earned),
-            INDEX idx_rank (rank)
+            INDEX `idx_rank` (`rank`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     ");
 }

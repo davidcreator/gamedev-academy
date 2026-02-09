@@ -1,3 +1,2 @@
-# install/ajax/.htaccess
-Order allow,deny
-Allow from all
+# Disable directory listing
+Options -Indexes

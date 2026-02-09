@@ -67,6 +67,7 @@ if (file_exists(ROOT_PATH . '/config.php') && !isset($_GET['force'])) {
             <!-- Custom CSS -->
             <link rel="stylesheet" href="assets/css/installer.css">
             <link rel="stylesheet" href="assets/css/step3-tables.css">
+            <link rel="stylesheet" href="assets/css/step4-admin.css">            
             <!-- Font Awesome -->
             <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
         </head>
