@@ -1553,30 +1553,29 @@ INSERT IGNORE INTO users (username, email, password, full_name, name, role, xp_t
 -- NOTICIAS
 -- =====================================================
 -- Tabela de Notícias
-CREATE TABLE IF NOT EXISTS `news` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `title` VARCHAR(255) NOT NULL,
-    `slug` VARCHAR(255) UNIQUE NOT NULL,
-    `content` LONGTEXT NOT NULL,
-    `excerpt` TEXT,
-    `category` VARCHAR(50) DEFAULT 'geral',
-    `tags` TEXT,
-    `image` VARCHAR(255),
-    `thumbnail` VARCHAR(255),
-    `author_id` INT,
-    `status` ENUM('draft', 'published', 'archived') DEFAULT 'draft',
-    `featured` BOOLEAN DEFAULT FALSE,
-    `views` INT DEFAULT 0,
-    `published_at` DATETIME,
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_status (status),
-    INDEX idx_slug (slug),
-    INDEX idx_published (published_at),
-    INDEX idx_category (category),
-    INDEX idx_featured (featured),
-    FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `news` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `title` varchar(255) NOT NULL,
+  `slug` varchar(255) NOT NULL,
+  `summary` text,                     -- ⚠️ Campo summary, não meta_description
+  `content` longtext NOT NULL,
+  `image_url` varchar(500) DEFAULT NULL, -- ⚠️ Campo image_url, não image
+  `category` varchar(100) DEFAULT NULL,
+  `tags` text,                        -- ⚠️ Campo tags adicional
+  `author_id` int(11) DEFAULT NULL,
+  `status` enum('draft','published','archived') DEFAULT 'draft',
+  `featured` tinyint(1) DEFAULT '0',
+  `views_count` int(11) DEFAULT '0',  -- ⚠️ Campo views_count, não views
+  `published_at` datetime DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `slug` (`slug`),
+  KEY `author_id` (`author_id`),
+  KEY `idx_news_status_published` (`status`,`published_at`),
+  KEY `idx_news_featured` (`featured`),
+  FOREIGN KEY (`author_id`) REFERENCES `users`(`id`) ON DELETE SET NULL
+)
 
 -- Tabela de Visualizações de Notícias
 CREATE TABLE IF NOT EXISTS `news_views` (
