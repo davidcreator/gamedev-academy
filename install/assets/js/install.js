@@ -1169,4 +1169,72 @@
         TablesInstaller
     };
 
+    // ========================================
+    // NAVIGATION STEPS
+    // ========================================
+
+    // Corrigir navegação entre steps
+document.addEventListener('DOMContentLoaded', function() {
+    // Obter step atual
+    var urlParams = new URLSearchParams(window.location.search);
+    var currentStep = parseInt(urlParams.get('step')) || 1;
+    
+    // Sobrescrever funções de navegação
+    window.nextStep = function(step) {
+        var targetStep = (step || currentStep) + 1;
+        window.location.href = 'index.php?step=' + targetStep;
+    };
+    
+    window.previousStep = function(step) {
+        var targetStep = (step || currentStep) - 1;
+        window.location.href = 'index.php?step=' + targetStep;
+    };
+    
+    window.goToStep = function(step) {
+        window.location.href = 'index.php?step=' + step;
+    };
+    
+    // Configurar botões que possam existir
+    var nextBtn = document.getElementById('step' + currentStep + 'Next');
+    if (nextBtn) {
+        nextBtn.onclick = function() { nextStep(currentStep); };
+        // Se no step 1 e requisitos OK, habilitar
+        if (currentStep === 1 && sessionStorage.getItem('requirements_passed') === 'true') {
+            nextBtn.disabled = false;
+        }
+    }
+    
+    // Verificar requisitos no step 1
+    if (currentStep === 1) {
+        checkRequirements();
+    }
+});
+
+// Atualizar checkRequirements
+function checkRequirements() {
+    fetch('check-requirements.php')
+        .then(response => response.json())
+        .then(data => {
+            displayRequirements(data);
+            
+            if (data.all_passed) {
+                sessionStorage.setItem('requirements_passed', 'true');
+                // Habilitar botão
+                var btn = document.getElementById('step1Next');
+                if (btn) {
+                    btn.disabled = false;
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            // Em caso de erro, habilitar mesmo assim
+            var btn = document.getElementById('step1Next');
+            if (btn) {
+                btn.disabled = false;
+            }
+        });
+}
+
 })();
+
