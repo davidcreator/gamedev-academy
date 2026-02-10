@@ -2,6 +2,43 @@
 // admin/news.php - Gerenciamento de notícias
 
 session_start();
+
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
+    header('Location: ../login.php');
+    exit();
+}
+
+// ADICIONE ESTAS LINHAS - CORREÇÃO DA CONEXÃO
+require_once '../config/database.php';
+
+// Verificar se a conexão existe
+if (!isset($pdo) && !isset($conn)) {
+    // Tentar criar conexão diretamente se não existir
+    try {
+        $pdo = new PDO(
+            "mysql:host=localhost;dbname=gamedev_academy;charset=utf8mb4",
+            "root",
+            "",
+            [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES => false
+            ]
+        );
+    } catch (PDOException $e) {
+        die("Erro de conexão: " . $e->getMessage());
+    }
+}
+
+// Garantir que $pdo existe para o resto do script
+if (isset($conn) && !isset($pdo)) {
+    $pdo = $conn;
+}
+// FIM DA CORREÇÃO
+
+$page_title = "Gerenciar Notícias";
+$current_page = 'news';
+
 require_once '../config/database.php';
 require_once '../classes/Database.php';
 require_once '../classes/User.php';
