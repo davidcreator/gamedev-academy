@@ -5,6 +5,16 @@
  * Data: 2026-02-09 19:34:28
  */
 
+// Configurações de Email SMTP (configurar após instalação)
+/*if (!defined('SMTP_HOST')) define('SMTP_HOST', '');
+if (!defined('SMTP_PORT')) define('SMTP_PORT', 587);
+if (!defined('SMTP_USER')) define('SMTP_USER', '');
+if (!defined('SMTP_PASS')) define('SMTP_PASS', '');
+if (!defined('SMTP_SECURITY')) define('SMTP_SECURITY', 'tls');
+if (!defined('SMTP_FROM_EMAIL')) define('SMTP_FROM_EMAIL', 'noreply@localhost');
+if (!defined('SMTP_FROM_NAME')) define('SMTP_FROM_NAME', SITE_NAME);
+*/
+
 // Configurações do Banco de Dados
 define('DB_HOST', '');
 define('DB_USER', '');
@@ -13,6 +23,7 @@ define('DB_NAME', '');
 define('DB_PORT', 3306);
 define('DB_PREFIX', '');
 define('DB_CHARSET', 'utf8mb4');
+
 
 // Configurações do Sistema
 define('SITE_URL', 'http://localhost/gamedev-academy');
