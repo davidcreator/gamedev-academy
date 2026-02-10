@@ -1,9 +1,19 @@
 <?php
 session_start();
+
+// Includes necessários
 require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/functions.php';
 require_once __DIR__ . '/includes/mail/Mailer.php';
+
+// Verificar conexão
+if (!isset($pdo) && !isset($conn)) {
+    die("Erro: Conexão com banco de dados não estabelecida.");
+}
+
+// Usar a variável de conexão disponível
+$db = isset($pdo) ? $pdo : $conn;
 
 $error = '';
 $success = '';
@@ -15,7 +25,7 @@ if ($token) {
     
     try {
         // Verificar se o token é válido
-        $stmt = $conn->prepare("
+        $stmt = $db->prepare("
             SELECT email, expires_at 
             FROM password_resets 
             WHERE token = ? 
@@ -54,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && $valid_token) {
             $token_hash = hash('sha256', $token);
             
             // Buscar email do token
-            $stmt = $conn->prepare("
+            $stmt = $db->prepare("
                 SELECT email FROM password_resets 
                 WHERE token = ? AND expires_at > NOW() AND used = 0
             ");
@@ -64,21 +74,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && $valid_token) {
             if ($reset) {
                 // Atualizar senha
                 $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-                $stmt = $conn->prepare("UPDATE users SET password = ? WHERE email = ?");
+                $stmt = $db->prepare("UPDATE users SET password = ? WHERE email = ?");
                 $stmt->execute([$hashed_password, $reset['email']]);
                 
                 // Marcar token como usado
-                $stmt = $conn->prepare("UPDATE password_resets SET used = 1 WHERE token = ?");
+                $stmt = $db->prepare("UPDATE password_resets SET used = 1 WHERE token = ?");
                 $stmt->execute([$token_hash]);
                 
                 // Buscar nome do usuário
-                $stmt = $conn->prepare("SELECT name FROM users WHERE email = ?");
+                $stmt = $db->prepare("SELECT name FROM users WHERE email = ?");
                 $stmt->execute([$reset['email']]);
                 $user = $stmt->fetch();
                 
                 // Enviar notificação
-                $mailer = new Mailer();
-                $mailer->sendPasswordChangedNotification($reset['email'], $user['name']);
+                try {
+                    $mailer = new Mailer();
+                    $mailer->sendPasswordChangedNotification($reset['email'], $user['name']);
+                } catch (Exception $mailError) {
+                    error_log("Erro ao enviar notificação: " . $mailError->getMessage());
+                }
                 
                 $success = "Senha alterada com sucesso! Redirecionando para o login...";
                 header("refresh:3;url=login.php");
@@ -97,210 +111,154 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && $valid_token) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Crie sua nova senha">
-    <title>Nova Senha - <?php echo SITE_NAME; ?></title>
+    <title>Nova Senha - GameDev Academy</title>
     
-    <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="assets/img/favicon.ico">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     
-    <!-- CSS Files -->
-    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
-    <link rel="stylesheet" href="assets/css/style.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="assets/css/main.css">
     <link rel="stylesheet" href="assets/css/auth.css">
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-<body class="auth-page">
-    
-    <!-- Main Container -->
-    <div class="auth-wrapper">
-        <div class="auth-container">
-            <!-- Logo Section -->
-            <div class="auth-logo">
-                <a href="index.php">
-                    <img src="assets/img/logo.png" alt="GameDev Academy">
-                    <h2>GameDev Academy</h2>
-                </a>
-            </div>
-            
-            <!-- Form Card -->
-            <div class="auth-card">
-                <div class="auth-card-header">
-                    <h3 class="auth-title">Criar Nova Senha</h3>
-                    <?php if ($valid_token): ?>
-                        <p class="auth-subtitle">
-                            Escolha uma senha forte para sua conta
-                            <?php if (isset($time_left)): ?>
-                                <br>
-                                <small class="text-warning">
-                                    <i class="fas fa-clock"></i> 
-                                    Tempo restante: <span id="countdown"><?php echo gmdate("i:s", $time_left); ?></span>
-                                </small>
-                            <?php endif; ?>
-                        </p>
-                    <?php endif; ?>
-                </div>
-                
-                <div class="auth-card-body">
-                    <!-- Alerts -->
-                    <?php if ($error): ?>
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            <i class="fas fa-exclamation-circle"></i>
-                            <?php echo htmlspecialchars($error); ?>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    <?php endif; ?>
+<body class="auth-bg">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-12">
+                <div class="login-container">
+                    <!-- Header -->
+                    <div class="login-header">
+                        <h2><i class="fas fa-gamepad"></i> GameDev Academy</h2>
+                        <p>Criar Nova Senha</p>
+                        <?php if ($valid_token && isset($time_left) && $time_left > 0): ?>
+                            <small class="countdown">
+                                <i class="fas fa-clock"></i> 
+                                Tempo restante: <span id="countdown"><?php echo gmdate("i:s", $time_left); ?></span>
+                            </small>
+                        <?php endif; ?>
+                    </div>
                     
-                    <?php if ($success): ?>
-                        <div class="alert alert-success alert-dismissible fade show" role="alert">
-                            <i class="fas fa-check-circle"></i>
-                            <?php echo htmlspecialchars($success); ?>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    <?php endif; ?>
-                    
-                    <?php if ($valid_token && !$success): ?>
-                        <!-- Password Reset Form -->
-                        <form method="POST" action="" class="auth-form" id="resetPasswordForm">
-                            <input type="hidden" name="token" value="<?php echo htmlspecialchars($token); ?>">
-                            
-                            <!-- Password Field -->
-                            <div class="form-group mb-3">
-                                <label for="password" class="form-label">
-                                    <i class="fas fa-lock"></i> Nova Senha
-                                </label>
-                                <div class="input-group">
-                                    <input 
-                                        type="password" 
-                                        class="form-control form-control-lg" 
-                                        id="password" 
-                                        name="password" 
-                                        placeholder="Mínimo 8 caracteres"
-                                        required
-                                        minlength="8"
-                                    >
-                                    <button class="btn btn-outline-secondary" type="button" id="togglePassword">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                </div>
-                                
-                                <!-- Password Strength Indicator -->
-                                <div class="password-strength mt-2">
-                                    <div class="strength-bar">
-                                        <div class="strength-bar-fill" id="strengthBar"></div>
-                                    </div>
-                                    <small class="strength-text" id="strengthText">Digite uma senha</small>
-                                </div>
-                                
-                                <!-- Password Requirements -->
-                                <div class="password-requirements mt-2">
-                                    <small class="text-muted">A senha deve conter:</small>
-                                    <ul class="requirements-list">
-                                        <li id="length" class="requirement">
-                                            <i class="fas fa-circle"></i> Mínimo 8 caracteres
-                                        </li>
-                                        <li id="uppercase" class="requirement">
-                                            <i class="fas fa-circle"></i> Uma letra maiúscula
-                                        </li>
-                                        <li id="lowercase" class="requirement">
-                                            <i class="fas fa-circle"></i> Uma letra minúscula
-                                        </li>
-                                        <li id="number" class="requirement">
-                                            <i class="fas fa-circle"></i> Um número
-                                        </li>
-                                    </ul>
-                                </div>
+                    <!-- Body -->
+                    <div class="login-body">
+                        <?php if ($error): ?>
+                            <div class="alert alert-danger" role="alert">
+                                <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($error); ?>
                             </div>
-                            
-                            <!-- Confirm Password Field -->
-                            <div class="form-group mb-4">
-                                <label for="confirm_password" class="form-label">
-                                    <i class="fas fa-check-double"></i> Confirmar Senha
-                                </label>
-                                <div class="input-group">
-                                    <input 
-                                        type="password" 
-                                        class="form-control form-control-lg" 
-                                        id="confirm_password" 
-                                        name="confirm_password" 
-                                        placeholder="Digite a senha novamente"
-                                        required
-                                    >
-                                    <button class="btn btn-outline-secondary" type="button" id="toggleConfirmPassword">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                </div>
-                                <div class="invalid-feedback" id="confirmError">
-                                    As senhas não coincidem
-                                </div>
-                            </div>
-                            
-                            <!-- Submit Button -->
-                            <div class="form-group mb-3">
-                                <button type="submit" class="btn btn-primary btn-lg btn-block w-100" id="submitBtn">
-                                    <i class="fas fa-save"></i> Alterar Senha
-                                </button>
-                            </div>
-                        </form>
+                        <?php endif; ?>
                         
-                    <?php else: ?>
-                        <?php if (!$success): ?>
-                            <!-- Invalid Token Message -->
-                            <div class="text-center py-4">
-                                <div class="mb-4">
-                                    <i class="fas fa-exclamation-triangle text-warning" style="font-size: 4rem;"></i>
+                        <?php if ($success): ?>
+                            <div class="alert alert-success" role="alert">
+                                <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($success); ?>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <?php if ($valid_token && !$success): ?>
+                            <form method="POST" action="" id="resetPasswordForm">
+                                <input type="hidden" name="token" value="<?php echo htmlspecialchars($token); ?>">
+                                
+                                <div class="mb-3">
+                                    <div class="form-floating position-relative">
+                                        <input 
+                                            type="password" 
+                                            class="form-control" 
+                                            id="password" 
+                                            name="password" 
+                                            placeholder="Nova senha"
+                                            required
+                                            minlength="8"
+                                        >
+                                        <label for="password">
+                                            <i class="fas fa-lock"></i> Nova Senha
+                                        </label>
+                                        <span class="password-toggle" onclick="togglePassword('password')">
+                                            <i class="fas fa-eye" id="togglePasswordIcon"></i>
+                                        </span>
+                                    </div>
+                                    <div class="password-strength">
+                                        <div class="password-strength-bar" id="strengthBar"></div>
+                                    </div>
+                                    <small class="form-text">
+                                        Mínimo de 8 caracteres
+                                    </small>
                                 </div>
-                                <h4>Link Inválido ou Expirado</h4>
+                                
+                                <div class="mb-3">
+                                    <div class="form-floating position-relative">
+                                        <input 
+                                            type="password" 
+                                            class="form-control" 
+                                            id="confirm_password" 
+                                            name="confirm_password" 
+                                            placeholder="Confirmar senha"
+                                            required
+                                        >
+                                        <label for="confirm_password">
+                                            <i class="fas fa-check-double"></i> Confirmar Senha
+                                        </label>
+                                        <span class="password-toggle" onclick="togglePassword('confirm_password')">
+                                            <i class="fas fa-eye" id="toggleConfirmPasswordIcon"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-grid mb-3">
+                                    <button type="submit" class="btn btn-primary btn-lg">
+                                        <i class="fas fa-save"></i> Alterar Senha
+                                    </button>
+                                </div>
+                            </form>
+                        <?php elseif (!$success): ?>
+                            <div class="text-center py-4">
+                                <div class="mb-3">
+                                    <i class="fas fa-exclamation-triangle text-warning icon-lg"></i>
+                                </div>
+                                <h5>Link Inválido ou Expirado</h5>
                                 <p class="text-muted">
-                                    Este link de recuperação não é válido ou já expirou.
-                                    <br>Por favor, solicite um novo link.
+                                    Este link de recuperação não é mais válido.
                                 </p>
-                                <a href="forgot-password.php" class="btn btn-primary btn-lg">
+                                <a href="forgot-password.php" class="btn btn-primary">
                                     <i class="fas fa-redo"></i> Solicitar Novo Link
                                 </a>
                             </div>
                         <?php endif; ?>
-                    <?php endif; ?>
+                        
+                        <div class="auth-links">
+                            <a href="login.php">
+                                <i class="fas fa-arrow-left"></i> Voltar ao Login
+                            </a>
+                        </div>
+                    </div>
                     
-                    <!-- Links -->
-                    <div class="auth-links text-center mt-4">
-                        <a href="login.php" class="auth-link">
-                            <i class="fas fa-arrow-left"></i> Voltar ao Login
-                        </a>
+                    <!-- Footer -->
+                    <div class="login-footer">
+                        <small class="text-muted">
+                            <i class="fas fa-shield-alt"></i> Sua senha será criptografada
+                        </small>
                     </div>
                 </div>
                 
-                <!-- Card Footer -->
-                <div class="auth-card-footer">
-                    <p class="text-muted text-center small mb-0">
-                        <i class="fas fa-shield-alt"></i> Sua senha será criptografada
-                    </p>
+                <!-- Links do rodapé -->
+                <div class="footer-links">
+                    <small>
+                        <a href="index.php">Home</a> | 
+                        <a href="about.php">Sobre</a> | 
+                        <a href="contact.php">Contato</a>
+                    </small>
+                    <div class="footer-copyright">
+                        © <?php echo date('Y'); ?> GameDev Academy. Todos os direitos reservados.
+                    </div>
                 </div>
-            </div>
-            
-            <!-- Footer Links -->
-            <div class="auth-footer">
-                <div class="auth-footer-links">
-                    <a href="index.php">Home</a>
-                    <span class="separator">•</span>
-                    <a href="about.php">Sobre</a>
-                    <span class="separator">•</span>
-                    <a href="contact.php">Contato</a>
-                    <span class="separator">•</span>
-                    <a href="privacy.php">Privacidade</a>
-                </div>
-                <p class="copyright">
-                    © <?php echo date('Y'); ?> GameDev Academy. Todos os direitos reservados.
-                </p>
             </div>
         </div>
     </div>
     
-    <!-- Scripts -->
-    <script src="assets/js/bootstrap.bundle.min.js"></script>
-    <script src="assets/js/jquery.min.js"></script>
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JavaScript -->
     <script src="assets/js/main.js"></script>
-    <script src="assets/js/password-reset.js"></script>
+    <script src="assets/js/auth.js"></script>
 </body>
 </html>
