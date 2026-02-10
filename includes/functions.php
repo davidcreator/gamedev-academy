@@ -277,6 +277,63 @@ function getDBConnection() {
     return $pdo;
 }
 
+/**
+ * Enviar email de recuperação de senha
+ */
+function sendPasswordResetEmail($email, $name, $reset_link) {
+    $subject = "Recuperação de Senha - GameDev Academy";
+    
+    // Template HTML do email
+    $message = '
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+            .button { display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+            .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🎮 GameDev Academy</h1>
+                <p>Recuperação de Senha</p>
+            </div>
+            <div class="content">
+                <h2>Olá, ' . htmlspecialchars($name) . '!</h2>
+                <p>Recebemos uma solicitação para redefinir sua senha.</p>
+                <p>Clique no botão abaixo para criar uma nova senha:</p>
+                <center>
+                    <a href="' . $reset_link . '" class="button">Redefinir Senha</a>
+                </center>
+                <p>Ou copie e cole este link no seu navegador:</p>
+                <p style="word-break: break-all; background: #fff; padding: 10px; border: 1px solid #ddd;">
+                    ' . $reset_link . '
+                </p>
+                <div class="footer">
+                    <p><strong>Importante:</strong> Este link expira em 1 hora.</p>
+                    <p>Se você não solicitou esta recuperação, ignore este email.</p>
+                    <p>© ' . date('Y') . ' GameDev Academy. Todos os direitos reservados.</p>
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>';
+    
+    // Headers para HTML
+    $headers = "MIME-Version: 1.0" . "\r\n";
+    $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
+    $headers .= "From: GameDev Academy <noreply@gamedevacademy.com>" . "\r\n";
+    $headers .= "Reply-To: support@gamedevacademy.com" . "\r\n";
+    
+    // Enviar email
+    return mail($email, $subject, $message, $headers);
+}
 
 /**
  * Gera URL amigável

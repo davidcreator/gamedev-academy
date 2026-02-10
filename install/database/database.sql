@@ -1907,6 +1907,24 @@ CREATE TABLE `gda_course_favorites` (
         REFERENCES `gda_courses` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Criar tabela de reset de senha se não existir
+CREATE TABLE IF NOT EXISTS `password_resets` (
+    `id` INT(11) NOT NULL AUTO_INCREMENT,
+    `email` VARCHAR(255) NOT NULL,
+    `token` VARCHAR(255) NOT NULL,
+    `expires_at` DATETIME NOT NULL,
+    `used` BOOLEAN DEFAULT 0,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    INDEX `idx_token` (`token`),
+    INDEX `idx_email` (`email`),
+    INDEX `idx_expires` (`expires_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Limpar tokens expirados (executar periodicamente)
+DELETE FROM password_resets 
+WHERE expires_at < NOW() OR used = 1;
+
 -- =========================================================================
 -- Agora temos as 51 tabelas completas!
 -- =========================================================================
