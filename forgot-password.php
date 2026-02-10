@@ -1,9 +1,9 @@
 <?php
 session_start();
-require_once 'includes/config.php';
-require_once 'config/database.php';
-require_once 'includes/functions.php';
-require_once 'includes/mail/Mailer.php';
+require_once __DIR__ . '/includes/config.php';
+require_once __DIR__ . '/config/database.php';
+require_once __DIR__ . '/includes/functions.php';
+require_once __DIR__ . '/includes/mail/Mailer.php';
 
 // Se já estiver logado, redirecionar
 if (isset($_SESSION['user_id'])) {
@@ -18,39 +18,46 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $email = filter_input(INPUT_POST, 'email', FILTER_VALIDATE_EMAIL);
     
     if ($email) {
-        // Rate limiting check
-        if (!checkRateLimit($email, 'password_reset', 3, 900)) {
-            $error = "Muitas tentativas. Tente novamente em 15 minutos.";
-        } else {
+        try {
+            global $conn;
+            
             // Verificar se o email existe
-            $stmt = $pdo->prepare("SELECT id, name FROM users WHERE email = ? AND active = 1");
+            $stmt = $conn->prepare("SELECT id, name FROM users WHERE email = ?");
             $stmt->execute([$email]);
             $user = $stmt->fetch();
             
             if ($user) {
-                // Gerar token
+                // Gerar token único
                 $token = bin2hex(random_bytes(32));
                 $token_hash = hash('sha256', $token);
                 $expires = date('Y-m-d H:i:s', strtotime('+1 hour'));
                 
                 // Limpar tokens antigos
-                $stmt = $pdo->prepare("DELETE FROM password_resets WHERE email = ?");
+                $stmt = $conn->prepare("DELETE FROM password_resets WHERE email = ?");
                 $stmt->execute([$email]);
                 
                 // Inserir novo token
-                $stmt = $pdo->prepare("
-                    INSERT INTO password_resets (email, token, expires_at) 
-                    VALUES (?, ?, ?)
+                $stmt = $conn->prepare("
+                    INSERT INTO password_resets (email, token, expires_at, created_at) 
+                    VALUES (?, ?, ?, NOW())
                 ");
                 $stmt->execute([$email, $token_hash, $expires]);
                 
                 // Enviar email
                 $mailer = new Mailer();
-                $mailer->sendPasswordResetEmail($email, $user['name'], $token);
+                if ($mailer->sendPasswordResetEmail($email, $user['name'], $token)) {
+                    $success = "Um link de recuperação foi enviado para seu email.";
+                } else {
+                    $success = "Se o email estiver cadastrado, você receberá as instruções.";
+                }
+            } else {
+                // Por segurança, mostrar mensagem genérica
+                $success = "Se o email estiver cadastrado, você receberá as instruções de recuperação.";
             }
             
-            // Sempre mostrar mensagem de sucesso por segurança
-            $success = "Se o email estiver cadastrado, você receberá as instruções de recuperação.";
+        } catch (Exception $e) {
+            error_log("Erro na recuperação de senha: " . $e->getMessage());
+            $error = "Ocorreu um erro ao processar sua solicitação. Tente novamente.";
         }
     } else {
         $error = "Por favor, insira um email válido.";
@@ -63,80 +70,137 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Recupere sua senha da GameDev Academy">
-    <title>Recuperar Senha - GameDev Academy</title>
+    <title>Recuperar Senha - <?php echo SITE_NAME; ?></title>
     
-    <!-- CSS -->
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="assets/img/favicon.ico">
+    
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="assets/css/auth.css">
     
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="assets/img/favicon.png">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-<body>
-    <?php include 'includes/header.php'; ?>
+<body class="auth-page">
     
-    <div class="auth-container">
-        <div class="auth-box">
-            <h2>🔐 Recuperar Senha</h2>
-            <p class="text-muted">Digite seu email cadastrado para receber o link de recuperação</p>
-            
-            <?php if ($error): ?>
-                <div class="alert alert-danger" role="alert">
-                    <?php echo htmlspecialchars($error); ?>
-                </div>
-            <?php endif; ?>
-            
-            <?php if ($success): ?>
-                <div class="alert alert-success" role="alert">
-                    <?php echo htmlspecialchars($success); ?>
-                </div>
-            <?php endif; ?>
-            
-            <form id="forgot-password-form" method="POST" action="">
-                <?php // CSRF Token ?>
-                <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
-                
-                <div class="form-group">
-                    <label for="email">
-                        Email
-                        <span class="help-tooltip">
-                            <span class="tooltip-content">
-                                Use o email cadastrado em sua conta
-                            </span>
-                        </span>
-                    </label>
-                    <input 
-                        type="email" 
-                        id="email" 
-                        name="email" 
-                        class="form-control" 
-                        required 
-                        autocomplete="email"
-                        placeholder="seu@email.com"
-                        autofocus
-                    >
-                </div>
-                
-                <button type="submit" class="btn btn-primary btn-block">
-                    Enviar Link de Recuperação
-                </button>
-            </form>
-            
-            <div class="divider">
-                <span>ou</span>
+    <!-- Main Container -->
+    <div class="auth-wrapper">
+        <div class="auth-container">
+            <!-- Logo Section -->
+            <div class="auth-logo">
+                <a href="index.php">
+                    <img src="assets/img/logo.png" alt="GameDev Academy">
+                    <h2>GameDev Academy</h2>
+                </a>
             </div>
             
-            <div class="auth-links">
-                <a href="login.php">← Voltar ao Login</a>
-                <span class="mx-2">|</span>
-                <a href="register.php">Criar Conta</a>
+            <!-- Form Card -->
+            <div class="auth-card">
+                <div class="auth-card-header">
+                    <h3 class="auth-title">Recuperar Senha</h3>
+                    <p class="auth-subtitle">Digite seu email para receber o link de recuperação</p>
+                </div>
+                
+                <div class="auth-card-body">
+                    <!-- Alerts -->
+                    <?php if ($error): ?>
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <?php echo htmlspecialchars($error); ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    <?php endif; ?>
+                    
+                    <?php if ($success): ?>
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="fas fa-check-circle"></i>
+                            <?php echo htmlspecialchars($success); ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    <?php endif; ?>
+                    
+                    <!-- Form -->
+                    <form method="POST" action="" class="auth-form" id="forgotPasswordForm">
+                        <div class="form-group mb-3">
+                            <label for="email" class="form-label">
+                                <i class="fas fa-envelope"></i> Email
+                            </label>
+                            <input 
+                                type="email" 
+                                class="form-control form-control-lg" 
+                                id="email" 
+                                name="email" 
+                                placeholder="seu@email.com"
+                                required
+                                autofocus
+                                value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>"
+                            >
+                            <div class="form-text">
+                                Digite o email associado à sua conta
+                            </div>
+                        </div>
+                        
+                        <div class="form-group mb-4">
+                            <button type="submit" class="btn btn-primary btn-lg btn-block w-100">
+                                <i class="fas fa-paper-plane"></i> Enviar Link de Recuperação
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <!-- Divider -->
+                    <div class="auth-divider">
+                        <span>ou</span>
+                    </div>
+                    
+                    <!-- Links -->
+                    <div class="auth-links text-center">
+                        <p class="mb-2">
+                            Lembrou a senha? 
+                            <a href="login.php" class="auth-link">
+                                <i class="fas fa-sign-in-alt"></i> Fazer Login
+                            </a>
+                        </p>
+                        <p>
+                            Não tem uma conta? 
+                            <a href="register.php" class="auth-link">
+                                <i class="fas fa-user-plus"></i> Cadastrar-se
+                            </a>
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Card Footer -->
+                <div class="auth-card-footer">
+                    <p class="text-muted text-center small mb-0">
+                        <i class="fas fa-lock"></i> Conexão segura e criptografada
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Footer Links -->
+            <div class="auth-footer">
+                <div class="auth-footer-links">
+                    <a href="index.php">Home</a>
+                    <span class="separator">•</span>
+                    <a href="about.php">Sobre</a>
+                    <span class="separator">•</span>
+                    <a href="contact.php">Contato</a>
+                    <span class="separator">•</span>
+                    <a href="privacy.php">Privacidade</a>
+                </div>
+                <p class="copyright">
+                    © <?php echo date('Y'); ?> GameDev Academy. Todos os direitos reservados.
+                </p>
             </div>
         </div>
     </div>
     
-    <?php include 'includes/footer.php'; ?>
-    
-    <!-- JavaScript -->
-    <script src="assets/js/auth.js"></script>
+    <!-- Scripts -->
+    <script src="assets/js/bootstrap.bundle.min.js"></script>
+    <script src="assets/js/jquery.min.js"></script>
+    <script src="assets/js/main.js"></script>
+    <script src="assets/js/auth-validation.js"></script>
 </body>
 </html>
