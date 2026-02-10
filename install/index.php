@@ -288,13 +288,13 @@ if (!file_exists($step_file)) {
     </div>
 
     <!-- jQuery -->
-    <script src="assets/js/jquery-3.6.0.min.js"></script>
+    <!-- <script src="assets/js/jquery-3.6.0.min.js"></script> -->
     
     <!-- Bootstrap Bundle JS (includes Popper) -->
-    <script src="assets/js/bootstrap.bundle.min.js"></script>
+    <!--<script src="assets/js/bootstrap.bundle.min.js"></script>-->
     
     <!-- Custom Installer JS -->
-    <script src="assets/js/installer.js"></script>
+    <script src="assets/js/install.js"></script>
     
     <!-- Step-specific JS -->
     <?php if ($step == 2): ?>
