@@ -180,7 +180,7 @@ $db_prefix = $_SESSION['db_config']['prefix'] ?? '';
                     <i class="fas fa-arrow-left"></i> Voltar
                 </a>
                 
-                <button type="submit" class="btn btn-primary" id="submitBtn">
+                <button type="button" class="btn btn-primary" id="submitBtn" onclick="goToStep(3)">
                     Continuar <i class="fas fa-arrow-right"></i>
                 </button>
             </div>

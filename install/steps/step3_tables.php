@@ -249,7 +249,7 @@ $tables = [
                         <i class="fas fa-database"></i> 
                         Criar Tabelas
                     </button>
-                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                    <button type="button" class="btn btn-primary" id="submitBtn" onclick="goToStep(4)">
                         Continuar <i class="fas fa-arrow-right"></i>
                     </button>
                 </div>

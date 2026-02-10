@@ -172,7 +172,7 @@ $summary = $checker->getSummary();
                 </button>
                 
                 <?php if ($summary['can_continue']): ?>
-                <button type="submit" class="btn btn-primary">
+                <button type="button" class="btn btn-primary" onclick="goToStep(2)">
                     Continuar <i class="fas fa-arrow-right"></i>
                 </button>
                 <?php else: ?>

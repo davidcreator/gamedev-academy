@@ -1,1240 +1,867 @@
 /**
- * GameDev Academy - Installation Wizard JavaScript
- * Handles form validation, password strength, email validation, etc.
+ * GameDev Academy - Installation Script
+ * Sistema de instalação multi-step com navegação por URL
+ * 
+ * @author GameDev Academy
+ * @version 2.0
  */
 
 (function() {
     'use strict';
 
-    // ========================================
-    // Configuration
-    // ========================================
-    const Config = {
-        passwordMinLength: 8,
-        passwordMaxLength: 128,
-        usernameMinLength: 3,
-        usernameMaxLength: 20,
-        animationDuration: 300,
-        debounceDelay: 300
+    // Configurações globais
+    const CONFIG = {
+        totalSteps: 5,
+        baseUrl: 'index.php',
+        requirementsUrl: 'check-requirements.php',
+        testDbUrl: 'test-database.php',
+        installUrl: 'install.php'
     };
 
-    // ========================================
-    // Utility Functions
-    // ========================================
-    const Utils = {
-        /**
-         * Debounce function to limit execution rate
-         */
-        debounce: function(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-            };
-        },
-
-        /**
-         * Show element with animation
-         */
-        show: function(element) {
-            if (!element) return;
-            element.style.display = 'block';
-            element.classList.add('show');
-        },
-
-        /**
-         * Hide element with animation
-         */
-        hide: function(element) {
-            if (!element) return;
-            element.classList.remove('show');
-            setTimeout(() => {
-                element.style.display = 'none';
-            }, Config.animationDuration);
-        },
-
-        /**
-         * Add class to element
-         */
-        addClass: function(element, className) {
-            if (element) element.classList.add(className);
-        },
-
-        /**
-         * Remove class from element
-         */
-        removeClass: function(element, className) {
-            if (element) element.classList.remove(className);
-        },
-
-        /**
-         * Toggle class on element
-         */
-        toggleClass: function(element, className, condition) {
-            if (element) {
-                if (condition) {
-                    element.classList.add(className);
-                } else {
-                    element.classList.remove(className);
-                }
-            }
-        },
-
-        /**
-         * Copy text to clipboard
-         */
-        copyToClipboard: function(text) {
-            if (navigator.clipboard && window.isSecureContext) {
-                return navigator.clipboard.writeText(text);
-            } else {
-                const textArea = document.createElement('textarea');
-                textArea.value = text;
-                textArea.style.position = 'fixed';
-                textArea.style.left = '-999999px';
-                document.body.appendChild(textArea);
-                textArea.focus();
-                textArea.select();
-                
-                return new Promise((resolve, reject) => {
-                    document.execCommand('copy') ? resolve() : reject();
-                    textArea.remove();
-                });
-            }
-        }
-    };
-
-    // ========================================
-    // Form Validator Class
-    // ========================================
-    class FormValidator {
-        constructor(form) {
-            this.form = form;
-            this.errors = [];
-            this.init();
-        }
-
-        init() {
-            if (!this.form) return;
-
-            // Add novalidate to use custom validation
-            this.form.setAttribute('novalidate', true);
-
-            // Bind submit event
-            this.form.addEventListener('submit', (e) => this.handleSubmit(e));
-
-            // Bind real-time validation
-            const inputs = this.form.querySelectorAll('input, select, textarea');
-            inputs.forEach(input => {
-                input.addEventListener('blur', () => this.validateField(input));
-                input.addEventListener('input', Utils.debounce(() => {
-                    if (input.classList.contains('is-invalid')) {
-                        this.validateField(input);
-                    }
-                }, Config.debounceDelay));
-            });
-        }
-
-        handleSubmit(e) {
-            this.errors = [];
-            const inputs = this.form.querySelectorAll('input[required], select[required], textarea[required]');
-            let isValid = true;
-
-            inputs.forEach(input => {
-                if (!this.validateField(input)) {
-                    isValid = false;
-                }
-            });
-
-            if (!isValid) {
-                e.preventDefault();
-                this.showErrors();
-                
-                // Focus first invalid field
-                const firstInvalid = this.form.querySelector('.is-invalid');
-                if (firstInvalid) {
-                    firstInvalid.focus();
-                    firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-            }
-        }
-
-        validateField(input) {
-            const value = input.value.trim();
-            const type = input.type;
-            const name = input.name;
-            let isValid = true;
-            let errorMessage = '';
-
-            // Remove previous validation classes
-            Utils.removeClass(input, 'is-valid');
-            Utils.removeClass(input, 'is-invalid');
-
-            // Check if required and empty
-            if (input.hasAttribute('required') && !value) {
-                isValid = false;
-                errorMessage = this.getFieldLabel(input) + ' é obrigatório';
-            }
-            // Validate email
-            else if (type === 'email' && value) {
-                if (!EmailValidator.isValid(value)) {
-                    isValid = false;
-                    errorMessage = 'Por favor, insira um email válido';
-                }
-            }
-            // Validate password
-            else if (type === 'password' && value && name.includes('password') && !name.includes('confirm')) {
-                if (value.length < Config.passwordMinLength) {
-                    isValid = false;
-                    errorMessage = `A senha deve ter no mínimo ${Config.passwordMinLength} caracteres`;
-                }
-            }
-            // Validate password confirmation
-            else if (name.includes('password_confirm') || name.includes('confirm_password')) {
-                const passwordField = this.form.querySelector('input[name*="password"]:not([name*="confirm"])');
-                if (passwordField && value !== passwordField.value) {
-                    isValid = false;
-                    errorMessage = 'As senhas não coincidem';
-                }
-            }
-            // Validate username
-            else if (name.includes('username') && value) {
-                if (value.length < Config.usernameMinLength) {
-                    isValid = false;
-                    errorMessage = `O nome de usuário deve ter no mínimo ${Config.usernameMinLength} caracteres`;
-                } else if (!/^[a-zA-Z0-9_]+$/.test(value)) {
-                    isValid = false;
-                    errorMessage = 'Use apenas letras, números e underscore';
-                }
-            }
-            // Validate URL
-            else if (type === 'url' && value) {
-                if (!this.isValidURL(value)) {
-                    isValid = false;
-                    errorMessage = 'Por favor, insira uma URL válida';
-                }
-            }
-            // Validate pattern
-            else if (input.hasAttribute('pattern') && value) {
-                const pattern = new RegExp(input.getAttribute('pattern'));
-                if (!pattern.test(value)) {
-                    isValid = false;
-                    errorMessage = input.getAttribute('title') || 'Formato inválido';
-                }
-            }
-            // Validate minlength
-            else if (input.hasAttribute('minlength') && value) {
-                const minLength = parseInt(input.getAttribute('minlength'));
-                if (value.length < minLength) {
-                    isValid = false;
-                    errorMessage = `Mínimo de ${minLength} caracteres`;
-                }
-            }
-
-            // Apply validation classes
-            if (value) {
-                Utils.addClass(input, isValid ? 'is-valid' : 'is-invalid');
-            }
-
-            // Show/hide error message
-            this.updateFieldError(input, isValid ? '' : errorMessage);
-
-            if (!isValid && errorMessage) {
-                this.errors.push({ field: input, message: errorMessage });
-            }
-
-            return isValid;
-        }
-
-        getFieldLabel(input) {
-            const label = this.form.querySelector(`label[for="${input.id}"]`);
-            if (label) {
-                return label.textContent.replace('*', '').trim();
-            }
-            return input.name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-        }
-
-        updateFieldError(input, message) {
-            let feedback = input.parentElement.querySelector('.invalid-feedback');
-            
-            if (!feedback && message) {
-                feedback = document.createElement('div');
-                feedback.className = 'invalid-feedback';
-                
-                // Insert after input or input-group
-                const parent = input.closest('.input-group') || input;
-                parent.parentNode.insertBefore(feedback, parent.nextSibling);
-            }
-
-            if (feedback) {
-                feedback.textContent = message;
-                feedback.style.display = message ? 'block' : 'none';
-            }
-        }
-
-        isValidURL(string) {
-            try {
-                new URL(string);
-                return true;
-            } catch (_) {
-                return false;
-            }
-        }
-
-        showErrors() {
-            if (this.errors.length > 0) {
-                console.log('Validation errors:', this.errors);
-            }
-        }
-    }
-
-    // ========================================
-    // Email Validator
-    // ========================================
-    const EmailValidator = {
-        // RFC 5322 compliant email regex (simplified)
-        pattern: /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/,
-
-        /**
-         * Validate email format
-         */
-        isValid: function(email) {
-            if (!email || typeof email !== 'string') return false;
-            
-            email = email.trim().toLowerCase();
-            
-            // Check basic format
-            if (!this.pattern.test(email)) return false;
-            
-            // Check length
-            if (email.length > 254) return false;
-            
-            // Check parts
-            const parts = email.split('@');
-            if (parts[0].length > 64) return false;
-            
-            // Check domain parts
-            const domainParts = parts[1].split('.');
-            if (domainParts.some(part => part.length > 63)) return false;
-            
-            // Check for valid TLD (at least 2 characters)
-            const tld = domainParts[domainParts.length - 1];
-            if (tld.length < 2) return false;
-            
-            return true;
-        },
-
-        /**
-         * Get validation message
-         */
-        getMessage: function(email) {
-            if (!email) return 'Email é obrigatório';
-            if (!email.includes('@')) return 'Email deve conter @';
-            if (!this.isValid(email)) return 'Formato de email inválido';
-            return '';
-        },
-
-        /**
-         * Initialize email field validation
-         */
-        init: function(input) {
-            if (!input) return;
-
-            const validate = () => {
-                const value = input.value.trim();
-                const isValid = !value || this.isValid(value);
-                
-                Utils.removeClass(input, 'is-valid');
-                Utils.removeClass(input, 'is-invalid');
-                
-                if (value) {
-                    Utils.addClass(input, isValid ? 'is-valid' : 'is-invalid');
-                }
-
-                // Update feedback
-                let feedback = input.parentElement.querySelector('.email-feedback');
-                if (!feedback) {
-                    feedback = document.createElement('div');
-                    feedback.className = 'email-feedback invalid-feedback';
-                    input.parentNode.insertBefore(feedback, input.nextSibling);
-                }
-                feedback.textContent = isValid ? '' : this.getMessage(value);
-                feedback.style.display = isValid ? 'none' : 'block';
-            };
-
-            input.addEventListener('blur', validate);
-            input.addEventListener('input', Utils.debounce(validate, Config.debounceDelay));
-        }
-    };
-
-    // ========================================
-    // Password Strength Checker
-    // ========================================
-    const PasswordStrength = {
-        levels: {
-            0: { label: 'Muito fraca', class: 'weak', color: '#ef4444' },
-            1: { label: 'Fraca', class: 'weak', color: '#ef4444' },
-            2: { label: 'Razoável', class: 'fair', color: '#f59e0b' },
-            3: { label: 'Boa', class: 'good', color: '#0ea5e9' },
-            4: { label: 'Forte', class: 'strong', color: '#10b981' },
-            5: { label: 'Muito forte', class: 'strong', color: '#10b981' }
-        },
-
-        requirements: {
-            minLength: { test: (p) => p.length >= 8, label: 'Mínimo 8 caracteres' },
-            hasUppercase: { test: (p) => /[A-Z]/.test(p), label: 'Uma letra maiúscula' },
-            hasLowercase: { test: (p) => /[a-z]/.test(p), label: 'Uma letra minúscula' },
-            hasNumber: { test: (p) => /[0-9]/.test(p), label: 'Um número' },
-            hasSpecial: { test: (p) => /[!@#$%^&*(),.?":{}|<>]/.test(p), label: 'Um caractere especial' },
-            noSpaces: { test: (p) => !/\s/.test(p), label: 'Sem espaços' }
-        },
-
-        /**
-         * Calculate password strength score (0-5)
-         */
-        getScore: function(password) {
-            if (!password) return 0;
-            
-            let score = 0;
-            
-            // Length scoring
-            if (password.length >= 8) score++;
-            if (password.length >= 12) score++;
-            if (password.length >= 16) score++;
-            
-            // Character variety
-            if (/[a-z]/.test(password)) score += 0.5;
-            if (/[A-Z]/.test(password)) score += 0.5;
-            if (/[0-9]/.test(password)) score += 0.5;
-            if (/[^a-zA-Z0-9]/.test(password)) score += 0.5;
-            
-            // Bonus for mixing
-            const hasLower = /[a-z]/.test(password);
-            const hasUpper = /[A-Z]/.test(password);
-            const hasDigit = /[0-9]/.test(password);
-            const hasSpecial = /[^a-zA-Z0-9]/.test(password);
-            
-            if (hasLower && hasUpper && hasDigit) score += 0.5;
-            if (hasLower && hasUpper && hasDigit && hasSpecial) score += 0.5;
-            
-            // Penalty for common patterns
-            if (/^[a-zA-Z]+$/.test(password)) score -= 0.5;
-            if (/^[0-9]+$/.test(password)) score -= 1;
-            if (/(.)\1{2,}/.test(password)) score -= 0.5; // Repeated chars
-            if (/^(123|abc|qwerty|password|admin)/i.test(password)) score -= 1;
-            
-            return Math.max(0, Math.min(5, Math.round(score)));
-        },
-
-        /**
-         * Get strength level info
-         */
-        getLevel: function(password) {
-            const score = this.getScore(password);
-            return this.levels[score];
-        },
-
-        /**
-         * Check requirements
-         */
-        checkRequirements: function(password) {
-            const results = {};
-            for (const [key, req] of Object.entries(this.requirements)) {
-                results[key] = {
-                    passed: req.test(password || ''),
-                    label: req.label
-                };
-            }
-            return results;
-        },
-
-        /**
-         * Initialize password strength UI
-         */
-        init: function(passwordInput, options = {}) {
-            if (!passwordInput) return;
-
-            const container = options.container || passwordInput.parentElement;
-            
-            // Create strength UI
-            this.createStrengthUI(container, passwordInput);
-            
-            // Create requirements UI if enabled
-            if (options.showRequirements !== false) {
-                this.createRequirementsUI(container);
-            }
-
-            // Bind events
-            passwordInput.addEventListener('input', () => {
-                this.updateStrength(passwordInput.value);
-                this.updateRequirements(passwordInput.value);
-            });
-
-            passwordInput.addEventListener('focus', () => {
-                const reqContainer = container.querySelector('.password-requirements');
-                if (reqContainer) Utils.show(reqContainer);
-            });
-        },
-
-        createStrengthUI: function(container, input) {
-            // Check if already exists
-            if (container.querySelector('.password-strength-container')) return;
-
-            const html = `
-                <div class="password-strength-container">
-                    <div class="password-strength-bar">
-                        <div class="password-strength-fill"></div>
-                    </div>
-                    <div class="password-strength-text">
-                        <i class="fas fa-shield-alt"></i>
-                        <span class="strength-label">Digite uma senha</span>
-                    </div>
-                </div>
-            `;
-            
-            // Insert after input or input-group
-            const insertAfter = input.closest('.input-group') || input;
-            insertAfter.insertAdjacentHTML('afterend', html);
-        },
-
-        createRequirementsUI: function(container) {
-            // Check if already exists
-            if (container.querySelector('.password-requirements')) return;
-
-            let html = `
-                <div class="password-requirements" style="display: none;">
-                    <div class="password-requirements-title">A senha deve conter:</div>
-                    <ul>
-            `;
-            
-            for (const [key, req] of Object.entries(this.requirements)) {
-                html += `
-                    <li data-requirement="${key}" class="invalid">
-                        <i class="fas fa-times"></i>
-                        <span>${req.label}</span>
-                    </li>
-                `;
-            }
-            
-            html += `
-                    </ul>
-                </div>
-            `;
-            
-            container.insertAdjacentHTML('beforeend', html);
-        },
-
-        updateStrength: function(password) {
-            const container = document.querySelector('.password-strength-container');
-            if (!container) return;
-
-            const fill = container.querySelector('.password-strength-fill');
-            const label = container.querySelector('.strength-label');
-            const textContainer = container.querySelector('.password-strength-text');
-            
-            if (!password) {
-                fill.className = 'password-strength-fill';
-                fill.style.width = '0%';
-                label.textContent = 'Digite uma senha';
-                textContainer.className = 'password-strength-text';
-                return;
-            }
-
-            const level = this.getLevel(password);
-            const score = this.getScore(password);
-            const width = Math.max(5, (score / 5) * 100);
-
-            fill.className = `password-strength-fill ${level.class}`;
-            fill.style.width = `${width}%`;
-            label.textContent = level.label;
-            textContainer.className = `password-strength-text ${level.class}`;
-        },
-
-        updateRequirements: function(password) {
-            const results = this.checkRequirements(password);
-            
-            for (const [key, result] of Object.entries(results)) {
-                const li = document.querySelector(`[data-requirement="${key}"]`);
-                if (li) {
-                    const icon = li.querySelector('i');
-                    
-                    if (result.passed) {
-                        li.classList.remove('invalid');
-                        li.classList.add('valid');
-                        icon.className = 'fas fa-check';
-                    } else {
-                        li.classList.remove('valid');
-                        li.classList.add('invalid');
-                        icon.className = 'fas fa-times';
-                    }
-                }
-            }
-        }
-    };
-
-    // ========================================
-    // Password Generator
-    // ========================================
-    const PasswordGenerator = {
-        charsets: {
-            lowercase: 'abcdefghijklmnopqrstuvwxyz',
-            uppercase: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
-            numbers: '0123456789',
-            symbols: '!@#$%^&*()_+-=[]{}|;:,.<>?'
-        },
-
-        /**
-         * Generate a strong password
-         */
-        generate: function(length = 16, options = {}) {
-            const opts = {
-                lowercase: true,
-                uppercase: true,
-                numbers: true,
-                symbols: true,
-                ...options
-            };
-
-            let charset = '';
-            let password = '';
-            const required = [];
-
-            // Build charset and required characters
-            if (opts.lowercase) {
-                charset += this.charsets.lowercase;
-                required.push(this.getRandomChar(this.charsets.lowercase));
-            }
-            if (opts.uppercase) {
-                charset += this.charsets.uppercase;
-                required.push(this.getRandomChar(this.charsets.uppercase));
-            }
-            if (opts.numbers) {
-                charset += this.charsets.numbers;
-                required.push(this.getRandomChar(this.charsets.numbers));
-            }
-            if (opts.symbols) {
-                charset += this.charsets.symbols;
-                required.push(this.getRandomChar(this.charsets.symbols));
-            }
-
-            if (!charset) {
-                charset = this.charsets.lowercase + this.charsets.numbers;
-            }
-
-            // Generate password
-            const remainingLength = length - required.length;
-            for (let i = 0; i < remainingLength; i++) {
-                password += this.getRandomChar(charset);
-            }
-
-            // Add required characters
-            password += required.join('');
-
-            // Shuffle password
-            return this.shuffle(password);
-        },
-
-        /**
-         * Get cryptographically secure random character
-         */
-        getRandomChar: function(charset) {
-            const array = new Uint32Array(1);
-            window.crypto.getRandomValues(array);
-            return charset[array[0] % charset.length];
-        },
-
-        /**
-         * Shuffle string
-         */
-        shuffle: function(str) {
-            const array = str.split('');
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-            return array.join('');
-        },
-
-        /**
-         * Create generator button
-         */
-        createButton: function(passwordInput, confirmInput = null) {
-            const container = passwordInput.closest('.form-group');
-            if (!container || container.querySelector('.password-generator')) return;
-
-            const button = document.createElement('button');
-            button.type = 'button';
-            button.className = 'btn-generate-password';
-            button.innerHTML = '<i class="fas fa-key"></i> Gerar senha forte';
-            
-            const wrapper = document.createElement('div');
-            wrapper.className = 'password-generator';
-            wrapper.appendChild(button);
-
-            container.appendChild(wrapper);
-
-            button.addEventListener('click', () => {
-                const newPassword = this.generate(16);
-                passwordInput.value = newPassword;
-                passwordInput.type = 'text';
-                
-                // Update confirm field if exists
-                if (confirmInput) {
-                    confirmInput.value = newPassword;
-                }
-
-                // Trigger input event to update strength meter
-                passwordInput.dispatchEvent(new Event('input'));
-
-                // Show copy notification
-                this.showCopyNotification(container, newPassword);
-
-                // Revert to password type after 3 seconds
-                setTimeout(() => {
-                    passwordInput.type = 'password';
-                }, 3000);
-            });
-        },
-
-        showCopyNotification: function(container, password) {
-            // Remove existing notification
-            const existing = container.querySelector('.password-notification');
-            if (existing) existing.remove();
-
-            const notification = document.createElement('div');
-            notification.className = 'password-notification';
-            notification.innerHTML = `
-                <span>Senha gerada! </span>
-                <button type="button" class="btn-copy-password">
-                    <i class="fas fa-copy"></i> Copiar
-                </button>
-            `;
-            notification.style.cssText = `
-                margin-top: 0.5rem;
-                padding: 0.5rem 0.75rem;
-                background: #ecfdf5;
-                border: 1px solid #10b981;
-                border-radius: 0.375rem;
-                font-size: 0.875rem;
-                color: #065f46;
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                animation: fadeIn 0.3s ease;
-            `;
-
-            const copyBtn = notification.querySelector('.btn-copy-password');
-            copyBtn.style.cssText = `
-                background: #10b981;
-                color: white;
-                border: none;
-                padding: 0.25rem 0.5rem;
-                border-radius: 0.25rem;
-                cursor: pointer;
-                font-size: 0.75rem;
-            `;
-
-            copyBtn.addEventListener('click', async () => {
-                try {
-                    await Utils.copyToClipboard(password);
-                    copyBtn.innerHTML = '<i class="fas fa-check"></i> Copiado!';
-                    setTimeout(() => {
-                        notification.remove();
-                    }, 2000);
-                } catch (err) {
-                    copyBtn.innerHTML = '<i class="fas fa-times"></i> Erro';
-                }
-            });
-
-            container.appendChild(notification);
-
-            // Auto remove after 5 seconds
-            setTimeout(() => {
-                if (notification.parentElement) {
-                    notification.remove();
-                }
-            }, 5000);
-        }
-    };
-
-    // ========================================
-    // Toggle Password Visibility
-    // ========================================
-    const PasswordToggle = {
-        init: function() {
-            document.querySelectorAll('.btn-toggle-password').forEach(button => {
-                button.addEventListener('click', function() {
-                    const targetId = this.getAttribute('data-target');
-                    const input = document.getElementById(targetId);
-                    const icon = this.querySelector('i');
-                    
-                    if (input) {
-                        if (input.type === 'password') {
-                            input.type = 'text';
-                            icon.classList.remove('fa-eye');
-                            icon.classList.add('fa-eye-slash');
-                        } else {
-                            input.type = 'password';
-                            icon.classList.remove('fa-eye-slash');
-                            icon.classList.add('fa-eye');
-                        }
-                    }
-                });
-            });
-        }
-    };
-
-    // ========================================
-    // Alert Handler
-    // ========================================
-    const AlertHandler = {
-        init: function() {
-            // Auto dismiss alerts after 5 seconds
-            document.querySelectorAll('.alert:not(.alert-permanent)').forEach(alert => {
-                setTimeout(() => {
-                    this.dismiss(alert);
-                }, 5000);
-            });
-
-            // Dismiss button handler
-            document.querySelectorAll('.alert .close').forEach(button => {
-                button.addEventListener('click', function() {
-                    const alert = this.closest('.alert');
-                    AlertHandler.dismiss(alert);
-                });
-            });
-        },
-
-        dismiss: function(alert) {
-            if (!alert) return;
-            alert.style.opacity = '0';
-            alert.style.transform = 'translateY(-10px)';
-            setTimeout(() => {
-                alert.remove();
-            }, 300);
-        },
-
-        show: function(message, type = 'info', container = null) {
-            const alertHTML = `
-                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-                    <i class="fas fa-${this.getIcon(type)}"></i>
-                    <div class="alert-content">${message}</div>
-                    <button type="button" class="close" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-            `;
-
-            const targetContainer = container || document.querySelector('.card-body');
-            if (targetContainer) {
-                targetContainer.insertAdjacentHTML('afterbegin', alertHTML);
-                const newAlert = targetContainer.querySelector('.alert');
-                
-                // Bind close button
-                newAlert.querySelector('.close').addEventListener('click', () => {
-                    this.dismiss(newAlert);
-                });
-
-                // Auto dismiss
-                setTimeout(() => {
-                    this.dismiss(newAlert);
-                }, 5000);
-            }
-        },
-
-        getIcon: function(type) {
-            const icons = {
-                success: 'check-circle',
-                danger: 'exclamation-circle',
-                warning: 'exclamation-triangle',
-                info: 'info-circle'
-            };
-            return icons[type] || 'info-circle';
-        }
-    };
-
-    // ========================================
-    // Database Connection Tester
-    // ========================================
-    const DatabaseTester = {
-        init: function() {
-            const testBtn = document.getElementById('testConnectionBtn');
-            if (!testBtn) return;
-
-            testBtn.addEventListener('click', () => this.test());
-        },
-
-        test: function() {
-            const form = document.getElementById('databaseForm');
-            if (!form) return;
-
-            const resultsDiv = document.getElementById('testResults');
-            const testBtn = document.getElementById('testConnectionBtn');
-            
-            // Show loading state
-            testBtn.disabled = true;
-            testBtn.innerHTML = '<i class="fas fa-spinner spinner"></i> Testando...';
-            
-            Utils.show(resultsDiv);
-            resultsDiv.className = 'test-results';
-            resultsDiv.innerHTML = '<i class="fas fa-spinner spinner"></i> Testando conexão com o banco de dados...';
-
-            // Collect form data
-            const formData = new FormData(form);
-            formData.append('action', 'test_connection');
-
-            // Make AJAX request
-            fetch('ajax/test_connection.php', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    resultsDiv.className = 'test-results success';
-                    resultsDiv.innerHTML = `
-                        <div class="result-item">
-                            <i class="fas fa-check-circle"></i>
-                            <strong>Conexão estabelecida com sucesso!</strong>
-                        </div>
-                        ${data.server_info ? `
-                        <div class="result-item">
-                            <i class="fas fa-server"></i>
-                            <span>Servidor: ${data.server_info}</span>
-                        </div>
-                        ` : ''}
-                        ${data.database ? `
-                        <div class="result-item">
-                            <i class="fas fa-database"></i>
-                            <span>Banco de dados: ${data.database}</span>
-                        </div>
-                        ` : ''}
-                    `;
-                    
-                    document.getElementById('submitBtn').disabled = false;
-                } else {
-                    resultsDiv.className = 'test-results error';
-                    resultsDiv.innerHTML = `
-                        <div class="result-item">
-                            <i class="fas fa-times-circle"></i>
-                            <strong>Falha na conexão</strong>
-                        </div>
-                        <div class="result-item">
-                            <i class="fas fa-exclamation-triangle"></i>
-                            <span>${data.message || 'Erro desconhecido'}</span>
-                        </div>
-                    `;
-                }
-            })
-            .catch(error => {
-                resultsDiv.className = 'test-results error';
-                resultsDiv.innerHTML = `
-                    <div class="result-item">
-                        <i class="fas fa-times-circle"></i>
-                        <strong>Erro ao testar conexão</strong>
-                    </div>
-                    <div class="result-item">
-                        <span>${error.message}</span>
-                    </div>
-                `;
-            })
-            .finally(() => {
-                testBtn.disabled = false;
-                testBtn.innerHTML = '<i class="fas fa-plug"></i> Testar Conexão';
-            });
-        }
-    };
-
-    // ========================================
-    // Tables Installation
-    // ========================================
-    const TablesInstaller = {
-        tables: [],
-        currentIndex: 0,
-        isRunning: false,
-
-        init: function() {
-            const startBtn = document.getElementById('startInstallBtn');
-            if (!startBtn) return;
-
-            const tablesData = document.getElementById('tablesData');
-            if (tablesData) {
-                try {
-                    this.tables = JSON.parse(tablesData.value);
-                } catch (e) {
-                    console.error('Error parsing tables data:', e);
-                }
-            }
-
-            startBtn.addEventListener('click', () => this.start());
-        },
-
-        start: function() {
-            if (this.isRunning) return;
-            this.isRunning = true;
-            this.currentIndex = 0;
-
-            // Show progress, hide list
-            document.getElementById('tablesList').style.display = 'none';
-            document.getElementById('installProgress').style.display = 'block';
-            
-            // Clear log
-            document.getElementById('installLog').innerHTML = '';
-            
-            this.log('Iniciando instalação do banco de dados...', 'info');
-            this.log('─'.repeat(50), 'info');
-            
-            this.processNext();
-        },
-
-        processNext: function() {
-            if (this.currentIndex >= this.tables.length) {
-                this.complete();
-                return;
-            }
-
-            const table = this.tables[this.currentIndex];
-            const progress = Math.round((this.currentIndex / this.tables.length) * 100);
-            
-            this.updateProgress(progress);
-            this.updateTableStatus(table, 'processing');
-            this.log(`Criando tabela: ${table}...`, 'info');
-
-            // Make AJAX request to create table
-            const formData = new FormData();
-            formData.append('action', 'create_table');
-            formData.append('table', table);
-            formData.append('csrf_token', document.querySelector('[name="csrf_token"]').value);
-
-            fetch('ajax/create_table.php', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    this.updateTableStatus(table, 'success');
-                    this.log(`✓ Tabela ${table} criada com sucesso`, 'success');
-                } else {
-                    this.updateTableStatus(table, 'error');
-                    this.log(`✗ Erro ao criar tabela ${table}: ${data.message}`, 'error');
-                }
-            })
-            .catch(error => {
-                this.updateTableStatus(table, 'error');
-                this.log(`✗ Erro ao criar tabela ${table}: ${error.message}`, 'error');
-            })
-            .finally(() => {
-                this.currentIndex++;
-                setTimeout(() => this.processNext(), 300);
-            });
-        },
-
-        updateProgress: function(percent) {
-            const bar = document.getElementById('progressBar');
-            if (bar) {
-                bar.style.width = `${percent}%`;
-                bar.setAttribute('aria-valuenow', percent);
-                bar.textContent = `${percent}%`;
-            }
-        },
-
-        updateTableStatus: function(table, status) {
-            const item = document.querySelector(`[data-table="${table}"]`);
-            if (item) {
-                item.className = `table-item ${status}`;
-                const icon = item.querySelector('.status-icon i');
-                if (icon) {
-                    icon.className = status === 'processing' ? 'fas fa-spinner spinner' :
-                                    status === 'success' ? 'fas fa-check-circle text-success' :
-                                    'fas fa-times-circle text-danger';
-                }
-            }
-        },
-
-        log: function(message, type = 'info') {
-            const logContainer = document.getElementById('installLog');
-            if (!logContainer) return;
-
-            const entry = document.createElement('div');
-            entry.className = `log-entry log-${type}`;
-            
-            const timestamp = new Date().toLocaleTimeString();
-            entry.textContent = `[${timestamp}] ${message}`;
-            
-            logContainer.appendChild(entry);
-            logContainer.scrollTop = logContainer.scrollHeight;
-        },
-
-        complete: function() {
-            this.updateProgress(100);
-            this.log('─'.repeat(50), 'info');
-            this.log('Instalação concluída com sucesso!', 'success');
-
-            const resultDiv = document.getElementById('installResult');
-            if (resultDiv) {
-                resultDiv.className = 'install-result success';
-                resultDiv.innerHTML = `
-                    <h5><i class="fas fa-check-circle"></i> Instalação Concluída!</h5>
-                    <p>Todas as tabelas foram criadas com sucesso.</p>
-                    <ul>
-                        <li>${this.tables.length} tabelas criadas</li>
-                        <li>Estrutura do banco de dados pronta</li>
-                    </ul>
-                `;
-                resultDiv.style.display = 'block';
-            }
-
-            // Show continue button
-            const continueBtn = document.getElementById('continueBtn');
-            const startBtn = document.getElementById('startInstallBtn');
-            if (continueBtn) continueBtn.style.display = 'inline-flex';
-            if (startBtn) startBtn.style.display = 'none';
-
-            this.isRunning = false;
-        }
-    };
-
-    // ========================================
-    // Initialize Everything
-    // ========================================
-    document.addEventListener('DOMContentLoaded', function() {
-        // Initialize form validation on all forms
-        document.querySelectorAll('form').forEach(form => {
-            new FormValidator(form);
-        });
-
-        // Initialize email validation
-        document.querySelectorAll('input[type="email"]').forEach(input => {
-            EmailValidator.init(input);
-        });
-
-        // Initialize password strength
-        const passwordField = document.getElementById('admin_password');
-        const confirmField = document.getElementById('admin_password_confirm');
+    // Estado atual
+    let currentStep = 1;
+    let installationData = {};
+
+    /**
+     * Inicialização
+     */
+    function init() {
+        console.log('🎮 GameDev Academy Installer v2.0');
         
-        if (passwordField) {
-            const container = passwordField.closest('.form-group');
-            PasswordStrength.init(passwordField, {
-                container: container,
-                showRequirements: true
-            });
-            
-            // Add password generator
-            PasswordGenerator.createButton(passwordField, confirmField);
-        }
-
-        // Initialize password toggle
-        PasswordToggle.init();
-
-        // Initialize alerts
-        AlertHandler.init();
-
-        // Initialize database tester
-        DatabaseTester.init();
-
-        // Initialize tables installer
-        TablesInstaller.init();
-
-        // Prevent form resubmission
-        if (window.history.replaceState) {
-            window.history.replaceState(null, null, window.location.href);
-        }
-
-        // Warn before leaving during installation
-        window.addEventListener('beforeunload', function(e) {
-            if (TablesInstaller.isRunning) {
-                e.preventDefault();
-                e.returnValue = 'A instalação está em progresso. Tem certeza que deseja sair?';
-            }
-        });
-
-        console.log('🎮 GameDev Academy Installer initialized');
-    });
-
-    // ========================================
-    // Expose to global scope if needed
-    // ========================================
-    window.GDAInstaller = {
-        Utils,
-        FormValidator,
-        EmailValidator,
-        PasswordStrength,
-        PasswordGenerator,
-        AlertHandler,
-        DatabaseTester,
-        TablesInstaller
-    };
-
-    // ========================================
-    // NAVIGATION STEPS
-    // ========================================
-
-    // Corrigir navegação entre steps
-document.addEventListener('DOMContentLoaded', function() {
-    // Obter step atual
-    var urlParams = new URLSearchParams(window.location.search);
-    var currentStep = parseInt(urlParams.get('step')) || 1;
-    
-    // Sobrescrever funções de navegação
-    window.nextStep = function(step) {
-        var targetStep = (step || currentStep) + 1;
-        window.location.href = 'index.php?step=' + targetStep;
-    };
-    
-    window.previousStep = function(step) {
-        var targetStep = (step || currentStep) - 1;
-        window.location.href = 'index.php?step=' + targetStep;
-    };
-    
-    window.goToStep = function(step) {
-        window.location.href = 'index.php?step=' + step;
-    };
-    
-    // Configurar botões que possam existir
-    var nextBtn = document.getElementById('step' + currentStep + 'Next');
-    if (nextBtn) {
-        nextBtn.onclick = function() { nextStep(currentStep); };
-        // Se no step 1 e requisitos OK, habilitar
-        if (currentStep === 1 && sessionStorage.getItem('requirements_passed') === 'true') {
-            nextBtn.disabled = false;
-        }
+        // Obter step atual da URL
+        currentStep = getCurrentStepFromUrl();
+        console.log('📍 Step atual:', currentStep);
+        
+        // Inicializar step atual
+        initializeCurrentStep();
+        
+        // Configurar navegação
+        setupNavigation();
+        
+        // Configurar validações
+        setupValidations();
     }
-    
-    // Verificar requisitos no step 1
-    if (currentStep === 1) {
+
+    /**
+     * Obter step atual da URL
+     */
+    function getCurrentStepFromUrl() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const step = parseInt(urlParams.get('step')) || 1;
+        return Math.min(Math.max(step, 1), CONFIG.totalSteps);
+    }
+
+    /**
+     * Inicializar step atual
+     */
+    function initializeCurrentStep() {
+        console.log('🔧 Inicializando Step', currentStep);
+        
+        switch(currentStep) {
+            case 1:
+                initStep1();
+                break;
+            case 2:
+                initStep2();
+                break;
+            case 3:
+                initStep3();
+                break;
+            case 4:
+                initStep4();
+                break;
+            case 5:
+                initStep5();
+                break;
+        }
+        
+        updateProgressBar();
+    }
+
+    /**
+     * Step 1: Verificação de Requisitos
+     */
+    function initStep1() {
+        console.log('📋 Verificando requisitos...');
         checkRequirements();
     }
-});
 
-// Atualizar checkRequirements
-function checkRequirements() {
-    fetch('check-requirements.php')
+    /**
+     * Step 2: Configuração do Banco de Dados
+     */
+    function initStep2() {
+        console.log('💾 Configurando banco de dados...');
+        
+        // Configurar botão de teste
+        const testBtn = document.getElementById('testDbBtn');
+        if (testBtn) {
+            testBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                testDatabaseConnection();
+            });
+        }
+        
+        // Carregar dados salvos se existirem
+        loadSavedData(2);
+    }
+
+    /**
+     * Step 3: Conta de Administrador
+     */
+    function initStep3() {
+        console.log('👤 Configurando administrador...');
+        
+        setupPasswordValidation();
+        loadSavedData(3);
+    }
+
+    /**
+     * Step 4: Configurações Gerais
+     */
+    function initStep4() {
+        console.log('⚙️ Configurações gerais...');
+        
+        // Auto-detectar URL do site
+        autoDetectSiteUrl();
+        loadSavedData(4);
+    }
+
+    /**
+     * Step 5: Instalação Final
+     */
+    function initStep5() {
+        console.log('🚀 Pronto para instalar...');
+        
+        displayInstallationSummary();
+        
+        const installBtn = document.getElementById('installBtn');
+        if (installBtn) {
+            installBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                startInstallation();
+            });
+        }
+    }
+
+    /**
+     * Configurar navegação entre steps
+     */
+    function setupNavigation() {
+        // Botões "Próximo"
+        document.querySelectorAll('[data-action="next"]').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const step = parseInt(this.getAttribute('data-step')) || currentStep;
+                handleNextStep(step);
+            });
+        });
+        
+        // Botões "Anterior"
+        document.querySelectorAll('[data-action="prev"]').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const step = parseInt(this.getAttribute('data-step')) || currentStep;
+                goToStep(step - 1);
+            });
+        });
+        
+        // Criar funções globais para compatibilidade
+        window.nextStep = handleNextStep;
+        window.previousStep = function(step) {
+            goToStep((step || currentStep) - 1);
+        };
+        window.goToStep = goToStep;
+        
+        console.log('✅ Navegação configurada');
+    }
+
+    /**
+     * Avançar para próximo step
+     */
+    function handleNextStep(step) {
+        const stepToValidate = step || currentStep;
+        
+        console.log('➡️ Tentando avançar do step', stepToValidate);
+        
+        // Validar step atual
+        if (!validateStep(stepToValidate)) {
+            console.log('❌ Validação falhou');
+            return false;
+        }
+        
+        // Salvar dados
+        saveStepData(stepToValidate);
+        
+        // Avançar
+        goToStep(stepToValidate + 1);
+    }
+
+    /**
+     * Ir para step específico
+     */
+    function goToStep(step) {
+        if (step < 1 || step > CONFIG.totalSteps) {
+            console.warn('⚠️ Step inválido:', step);
+            return;
+        }
+        
+        console.log('🔄 Navegando para step', step);
+        window.location.href = CONFIG.baseUrl + '?step=' + step;
+    }
+
+    /**
+     * Validar step atual
+     */
+    function validateStep(step) {
+        console.log('✓ Validando step', step);
+        
+        switch(step) {
+            case 1:
+                return validateStep1();
+            case 2:
+                return validateStep2();
+            case 3:
+                return validateStep3();
+            case 4:
+                return validateStep4();
+            default:
+                return true;
+        }
+    }
+
+    /**
+     * Validar Step 1 (Requisitos)
+     */
+    function validateStep1() {
+        const passed = sessionStorage.getItem('requirements_passed');
+        
+        if (passed !== 'true') {
+            showAlert('Por favor, aguarde a verificação dos requisitos.', 'warning');
+            return false;
+        }
+        
+        return true;
+    }
+
+    /**
+     * Validar Step 2 (Banco de Dados)
+     */
+    function validateStep2() {
+        const form = document.getElementById('databaseForm');
+        if (!form) return true;
+        
+        const host = document.getElementById('dbHost');
+        const name = document.getElementById('dbName');
+        const user = document.getElementById('dbUser');
+        
+        if (!host || !host.value || !name || !name.value || !user || !user.value) {
+            showAlert('Preencha todos os campos obrigatórios do banco de dados.', 'error');
+            return false;
+        }
+        
+        // Verificar se testou a conexão
+        const tested = sessionStorage.getItem('db_connection_tested');
+        if (tested !== 'true') {
+            showAlert('Por favor, teste a conexão com o banco de dados primeiro.', 'warning');
+            return false;
+        }
+        
+        return true;
+    }
+
+    /**
+     * Validar Step 3 (Admin)
+     */
+    function validateStep3() {
+        const form = document.getElementById('adminForm');
+        if (!form) return true;
+        
+        const username = document.getElementById('adminUsername');
+        const email = document.getElementById('adminEmail');
+        const password = document.getElementById('adminPassword');
+        const confirm = document.getElementById('adminPasswordConfirm');
+        
+        // Validações básicas
+        if (!username || !username.value) {
+            showAlert('Digite o nome de usuário do administrador.', 'error');
+            return false;
+        }
+        
+        if (!email || !email.value || !isValidEmail(email.value)) {
+            showAlert('Digite um email válido.', 'error');
+            return false;
+        }
+        
+        if (!password || !password.value || password.value.length < 8) {
+            showAlert('A senha deve ter no mínimo 8 caracteres.', 'error');
+            return false;
+        }
+        
+        if (!confirm || password.value !== confirm.value) {
+            showAlert('As senhas não coincidem.', 'error');
+            return false;
+        }
+        
+        return true;
+    }
+
+    /**
+     * Validar Step 4 (Configurações)
+     */
+    function validateStep4() {
+        const form = document.getElementById('configForm');
+        if (!form) return true;
+        
+        const siteName = document.getElementById('siteName');
+        const siteUrl = document.getElementById('siteUrl');
+        
+        if (!siteName || !siteName.value) {
+            showAlert('Digite o nome do site.', 'error');
+            return false;
+        }
+        
+        if (!siteUrl || !siteUrl.value) {
+            showAlert('Digite a URL do site.', 'error');
+            return false;
+        }
+        
+        return true;
+    }
+
+    /**
+     * Salvar dados do step
+     */
+    function saveStepData(step) {
+        let formId = '';
+        
+        switch(step) {
+            case 2: formId = 'databaseForm'; break;
+            case 3: formId = 'adminForm'; break;
+            case 4: formId = 'configForm'; break;
+        }
+        
+        if (!formId) return;
+        
+        const form = document.getElementById(formId);
+        if (!form) return;
+        
+        const formData = new FormData(form);
+        const data = {};
+        
+        formData.forEach((value, key) => {
+            // Não salvar senhas no sessionStorage
+            if (!key.includes('password')) {
+                data[key] = value;
+            }
+            // Guardar em memória para instalação
+            installationData[key] = value;
+        });
+        
+        sessionStorage.setItem('step' + step + '_data', JSON.stringify(data));
+        console.log('💾 Dados do step', step, 'salvos');
+    }
+
+    /**
+     * Carregar dados salvos
+     */
+    function loadSavedData(step) {
+        const savedData = sessionStorage.getItem('step' + step + '_data');
+        if (!savedData) return;
+        
+        try {
+            const data = JSON.parse(savedData);
+            
+            for (const [key, value] of Object.entries(data)) {
+                const input = document.querySelector(`[name="${key}"]`);
+                if (input && !key.includes('password')) {
+                    input.value = value;
+                }
+            }
+            
+            console.log('📥 Dados do step', step, 'carregados');
+        } catch (e) {
+            console.error('Erro ao carregar dados:', e);
+        }
+    }
+
+    /**
+     * Verificar requisitos do sistema
+     */
+    function checkRequirements() {
+        const listContainer = document.getElementById('requirementsList');
+        if (!listContainer) return;
+        
+        // Mostrar loading
+        listContainer.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Verificando requisitos...</div>';
+        
+        fetch(CONFIG.requirementsUrl)
+            .then(response => response.json())
+            .then(data => {
+                displayRequirements(data);
+                
+                // Habilitar botão se passou
+                if (data.all_passed) {
+                    sessionStorage.setItem('requirements_passed', 'true');
+                    enableNextButton();
+                } else {
+                    sessionStorage.setItem('requirements_passed', 'false');
+                    disableNextButton();
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao verificar requisitos:', error);
+                listContainer.innerHTML = '<div class="alert alert-danger">Erro ao verificar requisitos.</div>';
+                // Mesmo com erro, permitir continuar
+                enableNextButton();
+            });
+    }
+
+    /**
+     * Exibir requisitos
+     */
+    function displayRequirements(data) {
+        const container = document.getElementById('requirementsList');
+        if (!container) return;
+        
+        let html = '';
+        
+        // PHP Version
+        if (data.php_version) {
+            const icon = data.php_version.passed ? 'check-circle' : 'times-circle';
+            const cssClass = data.php_version.passed ? 'success' : 'danger';
+            
+            html += `
+                <div class="requirement-item ${cssClass}">
+                    <i class="fas fa-${icon}"></i>
+                    <div class="requirement-details">
+                        <strong>PHP ${data.php_version.current}</strong>
+                        <small>${data.php_version.passed ? '✓ Versão adequada' : '✗ Versão ' + data.php_version.required + ' ou superior necessária'}</small>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Extensions
+        if (data.extensions) {
+            for (const [ext, loaded] of Object.entries(data.extensions)) {
+                const icon = loaded ? 'check-circle' : 'times-circle';
+                const cssClass = loaded ? 'success' : 'danger';
+                
+                html += `
+                    <div class="requirement-item ${cssClass}">
+                        <i class="fas fa-${icon}"></i>
+                        <div class="requirement-details">
+                            <strong>${ext.toUpperCase()}</strong>
+                            <small>${loaded ? '✓ Instalada' : '✗ Não encontrada'}</small>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        // Permissions
+        if (data.permissions) {
+            for (const [dir, writable] of Object.entries(data.permissions)) {
+                const icon = writable ? 'check-circle' : 'exclamation-triangle';
+                const cssClass = writable ? 'success' : 'warning';
+                
+                html += `
+                    <div class="requirement-item ${cssClass}">
+                        <i class="fas fa-${icon}"></i>
+                        <div class="requirement-details">
+                            <strong>/${dir}</strong>
+                            <small>${writable ? '✓ Gravável' : '⚠ Sem permissão de escrita'}</small>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        container.innerHTML = html;
+    }
+
+    /**
+     * Testar conexão com banco de dados
+     */
+    function testDatabaseConnection() {
+        const form = document.getElementById('databaseForm');
+        if (!form) return;
+        
+        const resultDiv = document.getElementById('dbTestResult');
+        const testBtn = document.getElementById('testDbBtn');
+        
+        // Desabilitar botão
+        if (testBtn) {
+            testBtn.disabled = true;
+            testBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testando...';
+        }
+        
+        // Mostrar loading
+        if (resultDiv) {
+            resultDiv.innerHTML = '<div class="alert alert-info"><i class="fas fa-spinner fa-spin"></i> Testando conexão...</div>';
+        }
+        
+        const formData = new FormData(form);
+        
+        fetch(CONFIG.testDbUrl, {
+            method: 'POST',
+            body: formData
+        })
         .then(response => response.json())
         .then(data => {
-            displayRequirements(data);
-            
-            if (data.all_passed) {
-                sessionStorage.setItem('requirements_passed', 'true');
-                // Habilitar botão
-                var btn = document.getElementById('step1Next');
-                if (btn) {
-                    btn.disabled = false;
+            if (data.success) {
+                sessionStorage.setItem('db_connection_tested', 'true');
+                if (resultDiv) {
+                    resultDiv.innerHTML = '<div class="alert alert-success"><i class="fas fa-check-circle"></i> ' + (data.message || 'Conexão estabelecida!') + '</div>';
+                }
+            } else {
+                sessionStorage.setItem('db_connection_tested', 'false');
+                if (resultDiv) {
+                    resultDiv.innerHTML = '<div class="alert alert-danger"><i class="fas fa-times-circle"></i> ' + (data.message || 'Erro na conexão') + '</div>';
                 }
             }
         })
         .catch(error => {
-            console.error('Erro:', error);
-            // Em caso de erro, habilitar mesmo assim
-            var btn = document.getElementById('step1Next');
-            if (btn) {
-                btn.disabled = false;
+            sessionStorage.setItem('db_connection_tested', 'false');
+            if (resultDiv) {
+                resultDiv.innerHTML = '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> Erro: ' + error.message + '</div>';
+            }
+        })
+        .finally(() => {
+            if (testBtn) {
+                testBtn.disabled = false;
+                testBtn.innerHTML = '<i class="fas fa-vial"></i> Testar Conexão';
             }
         });
-}
+    }
+
+    /**
+     * Configurar validação de senha
+     */
+    function setupPasswordValidation() {
+        const password = document.getElementById('adminPassword');
+        const confirm = document.getElementById('adminPasswordConfirm');
+        
+        if (password) {
+            password.addEventListener('input', function() {
+                validatePasswordStrength(this.value);
+            });
+        }
+        
+        if (confirm) {
+            confirm.addEventListener('input', function() {
+                if (password && this.value !== password.value) {
+                    this.setCustomValidity('As senhas não coincidem');
+                    this.classList.add('is-invalid');
+                } else {
+                    this.setCustomValidity('');
+                    this.classList.remove('is-invalid');
+                }
+            });
+        }
+    }
+
+    /**
+     * Validar força da senha
+     */
+    function validatePasswordStrength(password) {
+        const strengthDiv = document.getElementById('passwordStrength');
+        if (!strengthDiv) return;
+        
+        let strength = 0;
+        
+        if (password.length >= 8) strength++;
+        if (password.match(/[a-z]/)) strength++;
+        if (password.match(/[A-Z]/)) strength++;
+        if (password.match(/[0-9]/)) strength++;
+        if (password.match(/[^a-zA-Z0-9]/)) strength++;
+        
+        let level = 'weak';
+        let text = 'Fraca';
+        
+        if (strength >= 4) {
+            level = 'strong';
+            text = 'Forte';
+        } else if (strength >= 3) {
+            level = 'medium';
+            text = 'Média';
+        }
+        
+        strengthDiv.innerHTML = `
+            <div class="strength-bar ${level}">
+                <div class="strength-fill" style="width: ${strength * 20}%"></div>
+            </div>
+            <small class="strength-text">Força: ${text}</small>
+        `;
+        
+        // Atualizar requisitos visuais
+        updatePasswordRequirements(password);
+    }
+
+    /**
+     * Atualizar requisitos de senha
+     */
+    function updatePasswordRequirements(password) {
+        const requirements = {
+            'req-length': password.length >= 8,
+            'req-lowercase': /[a-z]/.test(password),
+            'req-uppercase': /[A-Z]/.test(password),
+            'req-number': /[0-9]/.test(password)
+        };
+        
+        for (const [id, valid] of Object.entries(requirements)) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.className = valid ? 'valid' : 'invalid';
+                const icon = element.querySelector('i');
+                if (icon) {
+                    icon.className = valid ? 'fas fa-check' : 'fas fa-times';
+                }
+            }
+        }
+    }
+
+    /**
+     * Auto-detectar URL do site
+     */
+    function autoDetectSiteUrl() {
+        const siteUrl = document.getElementById('siteUrl');
+        if (siteUrl && !siteUrl.value) {
+            const url = window.location.href;
+            const baseUrl = url.substring(0, url.lastIndexOf('/install'));
+            siteUrl.value = baseUrl;
+        }
+    }
+
+    /**
+     * Exibir resumo da instalação
+     */
+    function displayInstallationSummary() {
+        const summaryDiv = document.getElementById('installationSummary');
+        if (!summaryDiv) return;
+        
+        // Coletar todos os dados
+        for (let i = 2; i <= 4; i++) {
+            const saved = sessionStorage.getItem('step' + i + '_data');
+            if (saved) {
+                Object.assign(installationData, JSON.parse(saved));
+            }
+        }
+        
+        const html = `
+            <div class="summary-section">
+                <h5><i class="fas fa-database"></i> Banco de Dados</h5>
+                <p><strong>Host:</strong> ${installationData.db_host || 'localhost'}</p>
+                <p><strong>Banco:</strong> ${installationData.db_name || 'gamedev_academy'}</p>
+                <p><strong>Usuário:</strong> ${installationData.db_user || 'root'}</p>
+            </div>
+            
+            <div class="summary-section">
+                <h5><i class="fas fa-user-shield"></i> Administrador</h5>
+                <p><strong>Usuário:</strong> ${installationData.admin_username || 'N/A'}</p>
+                <p><strong>Email:</strong> ${installationData.admin_email || 'N/A'}</p>
+            </div>
+            
+            <div class="summary-section">
+                <h5><i class="fas fa-cog"></i> Configurações</h5>
+                <p><strong>Nome:</strong> ${installationData.site_name || 'GameDev Academy'}</p>
+                <p><strong>URL:</strong> ${installationData.site_url || 'N/A'}</p>
+            </div>
+        `;
+        
+        summaryDiv.innerHTML = html;
+    }
+
+    /**
+     * Iniciar instalação
+     */
+    function startInstallation() {
+        const installBtn = document.getElementById('installBtn');
+        const progressDiv = document.getElementById('installationProgress');
+        const resultDiv = document.getElementById('installationResult');
+        
+        if (installBtn) installBtn.disabled = true;
+        if (progressDiv) progressDiv.style.display = 'block';
+        
+        // Simular progresso
+        simulateInstallProgress();
+        
+        // Enviar dados
+        fetch(CONFIG.installUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(installationData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showInstallSuccess(resultDiv);
+            } else {
+                showInstallError(resultDiv, data.message);
+            }
+        })
+        .catch(error => {
+            showInstallError(resultDiv, error.message);
+        });
+    }
+
+    /**
+     * Simular progresso da instalação
+     */
+    function simulateInstallProgress() {
+        const bar = document.getElementById('installProgressBar');
+        const status = document.getElementById('installStatus');
+        
+        const steps = [
+            { p: 20, t: 'Criando configuração...' },
+            { p: 40, t: 'Conectando ao banco...' },
+            { p: 60, t: 'Criando tabelas...' },
+            { p: 80, t: 'Inserindo dados...' },
+            { p: 100, t: 'Finalizando...' }
+        ];
+        
+        steps.forEach((step, i) => {
+            setTimeout(() => {
+                if (bar) {
+                    bar.style.width = step.p + '%';
+                    bar.textContent = step.p + '%';
+                }
+                if (status) status.textContent = step.t;
+            }, i * 1500);
+        });
+    }
+
+    /**
+     * Mostrar sucesso
+     */
+    function showInstallSuccess(container) {
+        if (!container) return;
+        
+        container.innerHTML = `
+            <div class="alert alert-success">
+                <h4><i class="fas fa-check-circle"></i> Instalação Concluída!</h4>
+                <p>O GameDev Academy foi instalado com sucesso.</p>
+                <hr>
+                <a href="../login.php" class="btn btn-primary">
+                    <i class="fas fa-sign-in-alt"></i> Fazer Login
+                </a>
+                <a href="../index.php" class="btn btn-outline-primary">
+                    <i class="fas fa-home"></i> Ir para o Site
+                </a>
+            </div>
+            <div class="alert alert-warning mt-3">
+                <strong>Importante:</strong> Delete a pasta /install por segurança.
+            </div>
+        `;
+        
+        document.getElementById('installationProgress').style.display = 'none';
+    }
+
+    /**
+     * Mostrar erro
+     */
+    function showInstallError(container, message) {
+        if (!container) return;
+        
+        container.innerHTML = `
+            <div class="alert alert-danger">
+                <h4><i class="fas fa-times-circle"></i> Erro na Instalação</h4>
+                <p>${message || 'Erro desconhecido'}</p>
+            </div>
+        `;
+        
+        const installBtn = document.getElementById('installBtn');
+        if (installBtn) {
+            installBtn.disabled = false;
+            installBtn.textContent = 'Tentar Novamente';
+        }
+    }
+
+    /**
+     * Atualizar barra de progresso
+     */
+    function updateProgressBar() {
+        const bar = document.querySelector('.progress-bar');
+        if (!bar) return;
+        
+        const progress = ((currentStep - 1) / (CONFIG.totalSteps - 1)) * 100;
+        bar.style.width = progress + '%';
+    }
+
+    /**
+     * Habilitar botão próximo
+     */
+    function enableNextButton() {
+        const btn = document.querySelector('[data-action="next"]') || 
+                    document.getElementById('step' + currentStep + 'Next');
+        if (btn) {
+            btn.disabled = false;
+            btn.classList.remove('disabled');
+        }
+    }
+
+    /**
+     * Desabilitar botão próximo
+     */
+    function disableNextButton() {
+        const btn = document.querySelector('[data-action="next"]') || 
+                    document.getElementById('step' + currentStep + 'Next');
+        if (btn) {
+            btn.disabled = true;
+            btn.classList.add('disabled');
+        }
+    }
+
+    /**
+     * Mostrar alerta
+     */
+    function showAlert(message, type = 'info') {
+        // Criar elemento de alerta
+        const alert = document.createElement('div');
+        alert.className = `alert alert-${type} alert-dismissible fade show`;
+        alert.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        // Inserir no topo da página
+        const container = document.querySelector('.installer-content') || document.body;
+        container.insertBefore(alert, container.firstChild);
+        
+        // Auto-remover após 5 segundos
+        setTimeout(() => {
+            alert.remove();
+        }, 5000);
+    }
+
+    /**
+     * Validar email
+     */
+    function isValidEmail(email) {
+        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return re.test(email);
+    }
+
+    /**
+     * Configurar validações gerais
+     */
+    function setupValidations() {
+        // Adicionar validações conforme necessário
+    }
+
+    // Inicializar quando DOM estiver pronto
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+
+    // Expor funções globais
+    window.GameDevInstaller = {
+        goToStep,
+        nextStep: handleNextStep,
+        previousStep: function(s) { goToStep((s || currentStep) - 1); },
+        getCurrentStep: function() { return currentStep; }
+    };
 
 })();
-
