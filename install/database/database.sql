@@ -1984,6 +1984,35 @@ CREATE TABLE IF NOT EXISTS `news_comments` (
     FOREIGN KEY (parent_id) REFERENCES news_comments(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Criar tabela de notícias
+CREATE TABLE IF NOT EXISTS `news` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `title` VARCHAR(255) NOT NULL,
+    `slug` VARCHAR(255) UNIQUE,
+    `content` LONGTEXT NOT NULL,
+    `excerpt` TEXT,
+    `category` VARCHAR(50) DEFAULT 'geral',
+    `tags` TEXT,
+    `image` VARCHAR(255),
+    `thumbnail` VARCHAR(255),
+    `author_id` INT,
+    `status` ENUM('draft', 'published', 'archived') DEFAULT 'draft',
+    `featured` BOOLEAN DEFAULT FALSE,
+    `views` INT DEFAULT 0,
+    `published_at` DATETIME,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_status (status),
+    INDEX idx_slug (slug),
+    INDEX idx_published (published_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Inserir notícias de exemplo
+INSERT INTO `news` (`title`, `slug`, `content`, `excerpt`, `category`, `status`, `featured`, `published_at`, `author_id`) VALUES
+('Bem-vindo ao GameDev Academy', 'bem-vindo-gamedev-academy', '<p>Estamos muito felizes em anunciar o lançamento da nossa plataforma de ensino de desenvolvimento de jogos!</p><p>O GameDev Academy é um espaço dedicado a todos que desejam aprender a criar jogos, desde iniciantes até desenvolvedores experientes.</p>', 'Conheça a nova plataforma de ensino de desenvolvimento de jogos.', 'anuncios', 'published', 1, NOW(), 1),
+('Novo Curso de Unity Disponível', 'novo-curso-unity-disponivel', '<p>Acabamos de lançar um novo curso completo de Unity para iniciantes!</p><p>Neste curso você aprenderá desde o básico até criar seu primeiro jogo completo.</p>', 'Aprenda Unity do zero com nosso novo curso.', 'cursos', 'published', 0, NOW(), 1),
+('Dicas para Iniciantes em GameDev', 'dicas-iniciantes-gamedev', '<p>Se você está começando no desenvolvimento de jogos, este artigo é para você!</p><p>Reunimos as melhores dicas e recursos para quem está dando os primeiros passos.</p>', 'Confira nossas dicas essenciais para quem está começando.', 'tutoriais', 'published', 1, NOW(), 1);
+
 -- =========================================================================
 -- Agora temos as 51 tabelas completas!
 -- =========================================================================

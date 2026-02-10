@@ -1402,6 +1402,26 @@ CREATE TABLE password_resets (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 ');
 
+-- Tabela de Configurações do Sistema
+CREATE TABLE IF NOT EXISTS `settings` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `key` VARCHAR(100) UNIQUE NOT NULL,
+    `value` TEXT,
+    `type` ENUM('string', 'number', 'boolean', 'json') DEFAULT 'string',
+    `description` TEXT,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_key (key)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Inserir configurações padrão
+INSERT INTO `settings` (`key`, `value`, `type`, `description`) VALUES
+('site_name', 'GameDev Academy', 'string', 'Nome do site'),
+('site_description', 'Plataforma de ensino de desenvolvimento de jogos', 'string', 'Descrição do site'),
+('site_email', 'contato@gamedevacademy.com', 'string', 'Email de contato'),
+('items_per_page', '12', 'number', 'Itens por página'),
+('registration_enabled', '1', 'boolean', 'Permitir novos registros'),
+('maintenance_mode', '0', 'boolean', 'Modo de manutenção');
+
 -- =====================================================
 -- PROCEDURE PARA ADICIONAR COLUNAS FALTANTES
 -- =====================================================
@@ -1528,6 +1548,259 @@ INSERT IGNORE INTO users (username, email, password, full_name, name, role, xp_t
 -- Usuário demo (senha: demo123)
 INSERT IGNORE INTO users (username, email, password, full_name, name, role, xp_total, level, is_active, email_verified) VALUES
 ('demo', 'demo@gamedev.com', '$2y$10$4J4/XoQJBtV4nVqKcRwFbOUwP7rn1UTdDI5rDNr8oOvFnCy8MXKHO', 'Usuário Demo', 'Demo', 'student', 150, 2, 1, 1);
+
+-- =====================================================
+-- NOTICIAS
+-- =====================================================
+-- Tabela de Notícias
+CREATE TABLE IF NOT EXISTS `news` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `title` VARCHAR(255) NOT NULL,
+    `slug` VARCHAR(255) UNIQUE NOT NULL,
+    `content` LONGTEXT NOT NULL,
+    `excerpt` TEXT,
+    `category` VARCHAR(50) DEFAULT 'geral',
+    `tags` TEXT,
+    `image` VARCHAR(255),
+    `thumbnail` VARCHAR(255),
+    `author_id` INT,
+    `status` ENUM('draft', 'published', 'archived') DEFAULT 'draft',
+    `featured` BOOLEAN DEFAULT FALSE,
+    `views` INT DEFAULT 0,
+    `published_at` DATETIME,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_status (status),
+    INDEX idx_slug (slug),
+    INDEX idx_published (published_at),
+    INDEX idx_category (category),
+    INDEX idx_featured (featured),
+    FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Tabela de Visualizações de Notícias
+CREATE TABLE IF NOT EXISTS `news_views` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `news_id` INT NOT NULL,
+    `user_id` INT NULL,
+    `ip_address` VARCHAR(45),
+    `user_agent` TEXT,
+    `viewed_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_news (news_id),
+    INDEX idx_user (user_id),
+    INDEX idx_date (viewed_at),
+    FOREIGN KEY (news_id) REFERENCES news(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Tabela de Comentários em Notícias
+CREATE TABLE IF NOT EXISTS `news_comments` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `news_id` INT NOT NULL,
+    `user_id` INT NOT NULL,
+    `parent_id` INT NULL,
+    `comment` TEXT NOT NULL,
+    `status` ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_news (news_id),
+    INDEX idx_user (user_id),
+    INDEX idx_status (status),
+    FOREIGN KEY (news_id) REFERENCES news(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (parent_id) REFERENCES news_comments(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =====================================================
+-- RECUPERAR SENHAS
+-- =====================================================
+-- Tabela de Reset de Senha
+CREATE TABLE IF NOT EXISTS `password_resets` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `email` VARCHAR(255) NOT NULL,
+    `token` VARCHAR(255) NOT NULL,
+    `expires_at` DATETIME NOT NULL,
+    `used` BOOLEAN DEFAULT FALSE,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_token (token),
+    INDEX idx_email (email),
+    INDEX idx_expires (expires_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =====================================================
+-- SISTEMA DE NOTIFICAÇÕES
+-- =====================================================
+-- Tabela de Notificações
+CREATE TABLE IF NOT EXISTS `notifications` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `user_id` INT NOT NULL,
+    `type` VARCHAR(50) NOT NULL,
+    `title` VARCHAR(255) NOT NULL,
+    `message` TEXT,
+    `link` VARCHAR(255),
+    `read` BOOLEAN DEFAULT FALSE,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_user (user_id),
+    INDEX idx_read (read),
+    INDEX idx_created (created_at),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =====================================================
+-- LOGS E AUDITORIA
+-- =====================================================
+-- Tabela de Logs de Atividades
+CREATE TABLE IF NOT EXISTS `activity_logs` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `user_id` INT NULL,
+    `action` VARCHAR(100) NOT NULL,
+    `entity_type` VARCHAR(50),
+    `entity_id` INT,
+    `details` JSON,
+    `ip_address` VARCHAR(45),
+    `user_agent` TEXT,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_user (user_id),
+    INDEX idx_action (action),
+    INDEX idx_entity (entity_type, entity_id),
+    INDEX idx_created (created_at),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Tabela de Logs de Segurança
+CREATE TABLE IF NOT EXISTS `security_logs` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `user_id` INT NULL,
+    `action` VARCHAR(100) NOT NULL,
+    `status` ENUM('success', 'failed') NOT NULL,
+    `details` TEXT,
+    `ip_address` VARCHAR(45),
+    `user_agent` TEXT,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_user (user_id),
+    INDEX idx_action (action),
+    INDEX idx_status (status),
+    INDEX idx_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =====================================================
+-- SISTEMA DE RATE LIMITING
+-- =====================================================
+
+-- Tabela de Rate Limits
+CREATE TABLE IF NOT EXISTS `rate_limits` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `identifier` VARCHAR(255) NOT NULL,
+    `action` VARCHAR(50) NOT NULL,
+    `ip_address` VARCHAR(45),
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_identifier (identifier, action),
+    INDEX idx_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =====================================================
+-- SISTEMA DE CATEGORIAS DE CURSOS
+-- =====================================================
+-- Tabela de Categorias de Cursos
+CREATE TABLE IF NOT EXISTS `course_categories` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(100) NOT NULL,
+    `slug` VARCHAR(100) UNIQUE NOT NULL,
+    `description` TEXT,
+    `icon` VARCHAR(50),
+    `color` VARCHAR(7),
+    `order` INT DEFAULT 0,
+    `active` BOOLEAN DEFAULT TRUE,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_slug (slug),
+    INDEX idx_active (active),
+    INDEX idx_order (order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Inserir categorias padrão
+INSERT INTO `course_categories` (`name`, `slug`, `description`, `icon`, `color`, `order`) VALUES
+('Unity', 'unity', 'Cursos de Unity Engine', 'fa-unity', '#000000', 1),
+('Unreal Engine', 'unreal', 'Cursos de Unreal Engine', 'fa-gamepad', '#313131', 2),
+('Godot', 'godot', 'Cursos de Godot Engine', 'fa-code', '#478CBF', 3),
+('Programação', 'programacao', 'Linguagens de programação para jogos', 'fa-laptop-code', '#667eea', 4),
+('Arte 2D', 'arte-2d', 'Criação de assets 2D', 'fa-palette', '#f093fb', 5),
+('Arte 3D', 'arte-3d', 'Modelagem e texturização 3D', 'fa-cube', '#4facfe', 6),
+('Game Design', 'game-design', 'Design e mecânicas de jogos', 'fa-lightbulb', '#43e97b', 7),
+('Áudio', 'audio', 'Som e música para jogos', 'fa-music', '#fa709a', 8);
+
+-- Adicionar coluna category_id na tabela courses se não existir
+ALTER TABLE `courses` ADD COLUMN IF NOT EXISTS `category_id` INT NULL AFTER `description`;
+ALTER TABLE `courses` ADD FOREIGN KEY IF NOT EXISTS (category_id) REFERENCES course_categories(id) ON DELETE SET NULL;
+
+-- =====================================================
+-- SISTEMA DE FAVORITOS / WISHLIST
+-- =====================================================
+
+-- Tabela de Favoritos
+CREATE TABLE IF NOT EXISTS `favorites` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `user_id` INT NOT NULL,
+    `course_id` INT NOT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_favorite (user_id, course_id),
+    INDEX idx_user (user_id),
+    INDEX idx_course (course_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =====================================================
+-- SISTEMA DE TAGS
+-- =====================================================
+
+-- Tabela de Tags
+CREATE TABLE IF NOT EXISTS `tags` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(50) UNIQUE NOT NULL,
+    `slug` VARCHAR(50) UNIQUE NOT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_slug (slug)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Tabela de relação entre Cursos e Tags
+CREATE TABLE IF NOT EXISTS `course_tags` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `course_id` INT NOT NULL,
+    `tag_id` INT NOT NULL,
+    UNIQUE KEY unique_course_tag (course_id, tag_id),
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
+    FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Tabela de relação entre Notícias e Tags
+CREATE TABLE IF NOT EXISTS `news_tags` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `news_id` INT NOT NULL,
+    `tag_id` INT NOT NULL,
+    UNIQUE KEY unique_news_tag (news_id, tag_id),
+    FOREIGN KEY (news_id) REFERENCES news(id) ON DELETE CASCADE,
+    FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =====================================================
+-- LIMPEZA
+-- =====================================================
+
+-- Tabela de FAQ
+CREATE TABLE IF NOT EXISTS `faq` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `question` VARCHAR(255) NOT NULL,
+    `answer` TEXT NOT NULL,
+    `category` VARCHAR(50) DEFAULT 'geral',
+    `order` INT DEFAULT 0,
+    `active` BOOLEAN DEFAULT TRUE,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_CURRENT ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_category (category),
+    INDEX idx_active (active),
+    INDEX idx_order (order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =====================================================
 -- LIMPEZA
