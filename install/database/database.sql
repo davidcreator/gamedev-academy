@@ -1925,6 +1925,65 @@ CREATE TABLE IF NOT EXISTS `password_resets` (
 DELETE FROM password_resets 
 WHERE expires_at < NOW() OR used = 1;
 
+-- Tabela de notícias
+CREATE TABLE IF NOT EXISTS `news` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `title` VARCHAR(255) NOT NULL,
+    `slug` VARCHAR(255) UNIQUE,
+    `content` LONGTEXT NOT NULL,
+    `excerpt` TEXT,
+    `category` VARCHAR(50),
+    `tags` TEXT,
+    `image` VARCHAR(255),
+    `thumbnail` VARCHAR(255),
+    `author_id` INT,
+    `status` ENUM('draft', 'published', 'deleted') DEFAULT 'draft',
+    `featured` BOOLEAN DEFAULT FALSE,
+    `views` INT DEFAULT 0,
+    `published_at` DATETIME,
+    `meta_title` VARCHAR(255),
+    `meta_description` TEXT,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` DATETIME NULL,
+    INDEX idx_status (status),
+    INDEX idx_category (category),
+    INDEX idx_published (published_at),
+    INDEX idx_featured (featured),
+    FOREIGN KEY (author_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Tabela de visualizações
+CREATE TABLE IF NOT EXISTS `news_views` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `news_id` INT NOT NULL,
+    `user_id` INT NULL,
+    `ip_address` VARCHAR(45),
+    `viewed_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_news (news_id),
+    INDEX idx_user (user_id),
+    FOREIGN KEY (news_id) REFERENCES news(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Tabela de comentários
+CREATE TABLE IF NOT EXISTS `news_comments` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `news_id` INT NOT NULL,
+    `user_id` INT NOT NULL,
+    `parent_id` INT NULL,
+    `comment` TEXT NOT NULL,
+    `status` ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_news (news_id),
+    INDEX idx_user (user_id),
+    INDEX idx_status (status),
+    FOREIGN KEY (news_id) REFERENCES news(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (parent_id) REFERENCES news_comments(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- =========================================================================
 -- Agora temos as 51 tabelas completas!
 -- =========================================================================
