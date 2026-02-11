@@ -22,22 +22,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         switch ($_POST['action']) {
             case 'delete':
                 $id = $_POST['id'];
-                
-                // Get image path before deletion
                 $stmt = $pdo->prepare("SELECT image FROM news WHERE id = ?");
                 $stmt->execute([$id]);
                 $image = $stmt->fetchColumn();
                 
-                // Delete the record
                 $stmt = $pdo->prepare("DELETE FROM news WHERE id = ?");
                 $stmt->execute([$id]);
                 
-                // Delete image file if exists
                 if ($image && file_exists('../' . $image)) {
                     unlink('../' . $image);
                 }
                 
-                $_SESSION['success'] = "News article deleted successfully!";
+                $_SESSION['success'] = "Article deleted successfully!";
                 header('Location: news.php');
                 exit();
                 break;
@@ -46,8 +42,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $id = $_POST['id'];
                 $stmt = $pdo->prepare("UPDATE news SET status = IF(status = 'published', 'draft', 'published'), updated_at = NOW() WHERE id = ?");
                 $stmt->execute([$id]);
-                
-                $_SESSION['success'] = "Status updated successfully!";
                 header('Location: news.php');
                 exit();
                 break;
@@ -56,8 +50,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $id = $_POST['id'];
                 $stmt = $pdo->prepare("UPDATE news SET featured = IF(featured = 1, 0, 1), updated_at = NOW() WHERE id = ?");
                 $stmt->execute([$id]);
-                
-                $_SESSION['success'] = "Featured status updated successfully!";
                 header('Location: news.php');
                 exit();
                 break;
@@ -97,14 +89,14 @@ if ($filter_category) {
 
 $where_clause = !empty($where_conditions) ? "WHERE " . implode(" AND ", $where_conditions) : "";
 
-// Get total records for pagination
+// Get total records
 $stmt = $pdo->prepare("SELECT COUNT(*) FROM news $where_clause");
 $stmt->execute($params);
 $total_records = $stmt->fetchColumn();
 $total_pages = ceil($total_records / $records_per_page);
 
-// Fetch news articles  
-$sql = "SELECT n.* FROM news n $where_clause ORDER BY n.created_at DESC LIMIT $offset, $records_per_page";
+// Fetch news
+$sql = "SELECT * FROM news $where_clause ORDER BY created_at DESC LIMIT $offset, $records_per_page";
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $news = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -117,8 +109,7 @@ $stats = [
     'featured' => $pdo->query("SELECT COUNT(*) FROM news WHERE featured = 1")->fetchColumn()
 ];
 
-// Page variables
-$pageTitle = "Manage News";
+$pageTitle = "News Management";
 $currentPage = "news";
 ?>
 <!DOCTYPE html>
@@ -126,206 +117,294 @@ $currentPage = "news";
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo $pageTitle; ?> - GameDev Academy Admin</title>
-    <link rel="stylesheet" href="../assets/css/admin.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title><?php echo $pageTitle; ?> - GameDev Academy</title>
+    <link rel="stylesheet" href="assets/css/admin.css">
+    <link rel="stylesheet" href="assets/css/news.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <?php include 'includes/header.php'; ?>
-    
-    <div class="admin-container">
+    <div class="admin-wrapper">
         <?php include 'includes/sidebar.php'; ?>
         
-        <main class="admin-main">
-            <div class="admin-header">
-                <h1><?php echo $pageTitle; ?></h1>
-                <a href="news-create.php" class="btn btn-primary">
-                    <i class="fas fa-plus"></i> Add New Article
-                </a>
-            </div>
+        <div class="admin-content">
+            <?php include 'includes/header.php'; ?>
             
-            <?php if (isset($_SESSION['success'])): ?>
-                <div class="alert alert-success">
-                    <?php echo $_SESSION['success']; unset($_SESSION['success']); ?>
+            <main class="admin-main">
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h1 class="page-title">News Management</h1>
+                    <div class="page-actions">
+                        <a href="news-create.php" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> New Article
+                        </a>
+                    </div>
                 </div>
-            <?php endif; ?>
-            
-            <?php if (isset($_SESSION['error'])): ?>
-                <div class="alert alert-error">
-                    <?php echo $_SESSION['error']; unset($_SESSION['error']); ?>
+
+                <!-- Success Message -->
+                <?php if (isset($_SESSION['success'])): ?>
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i>
+                        <?php echo $_SESSION['success']; unset($_SESSION['success']); ?>
+                    </div>
+                <?php endif; ?>
+
+                <!-- Stats Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-newspaper"></i>
+                        </div>
+                        <div class="stat-details">
+                            <div class="stat-number"><?php echo number_format($stats['total']); ?></div>
+                            <div class="stat-label">Total Articles</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon success">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-details">
+                            <div class="stat-number"><?php echo number_format($stats['published']); ?></div>
+                            <div class="stat-label">Published</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon warning">
+                            <i class="fas fa-edit"></i>
+                        </div>
+                        <div class="stat-details">
+                            <div class="stat-number"><?php echo number_format($stats['draft']); ?></div>
+                            <div class="stat-label">Drafts</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon info">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <div class="stat-details">
+                            <div class="stat-number"><?php echo number_format($stats['featured']); ?></div>
+                            <div class="stat-label">Featured</div>
+                        </div>
+                    </div>
                 </div>
-            <?php endif; ?>
-            
-            <!-- Statistics -->
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-value"><?php echo $stats['total']; ?></div>
-                    <div class="stat-label">Total Articles</div>
+
+                <!-- Filter Section -->
+                <div class="content-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Filter Articles</h2>
+                    </div>
+                    <div class="filter-container">
+                        <form method="GET" class="filter-form">
+                            <div class="form-row">
+                                <div class="form-group flex-2">
+                                    <input type="text" 
+                                           name="search" 
+                                           class="form-control" 
+                                           placeholder="Search by title or content..."
+                                           value="<?php echo htmlspecialchars($search); ?>">
+                                </div>
+                                <div class="form-group">
+                                    <select name="status" class="form-control">
+                                        <option value="">All Status</option>
+                                        <option value="published" <?php echo $filter_status === 'published' ? 'selected' : ''; ?>>Published</option>
+                                        <option value="draft" <?php echo $filter_status === 'draft' ? 'selected' : ''; ?>>Draft</option>
+                                        <option value="scheduled" <?php echo $filter_status === 'scheduled' ? 'selected' : ''; ?>>Scheduled</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <select name="category" class="form-control">
+                                        <option value="">All Categories</option>
+                                        <option value="announcement" <?php echo $filter_category === 'announcement' ? 'selected' : ''; ?>>Announcement</option>
+                                        <option value="update" <?php echo $filter_category === 'update' ? 'selected' : ''; ?>>Update</option>
+                                        <option value="tutorial" <?php echo $filter_category === 'tutorial' ? 'selected' : ''; ?>>Tutorial</option>
+                                        <option value="event" <?php echo $filter_category === 'event' ? 'selected' : ''; ?>>Event</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-search"></i> Search
+                                    </button>
+                                    <?php if ($search || $filter_status || $filter_category): ?>
+                                        <a href="news.php" class="btn btn-secondary">
+                                            <i class="fas fa-times"></i> Clear
+                                        </a>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-value"><?php echo $stats['published']; ?></div>
-                    <div class="stat-label">Published</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value"><?php echo $stats['draft']; ?></div>
-                    <div class="stat-label">Drafts</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value"><?php echo $stats['featured']; ?></div>
-                    <div class="stat-label">Featured</div>
-                </div>
-            </div>
-            
-            <!-- Filters -->
-            <div class="admin-filters">
-                <form method="GET" class="filter-form">
-                    <input type="text" name="search" placeholder="Search articles..." 
-                           value="<?php echo htmlspecialchars($search); ?>" class="form-input">
-                    
-                    <select name="status" class="form-select">
-                        <option value="">All Status</option>
-                        <option value="published" <?php echo $filter_status === 'published' ? 'selected' : ''; ?>>Published</option>
-                        <option value="draft" <?php echo $filter_status === 'draft' ? 'selected' : ''; ?>>Draft</option>
-                        <option value="scheduled" <?php echo $filter_status === 'scheduled' ? 'selected' : ''; ?>>Scheduled</option>
-                    </select>
-                    
-                    <select name="category" class="form-select">
-                        <option value="">All Categories</option>
-                        <option value="announcement" <?php echo $filter_category === 'announcement' ? 'selected' : ''; ?>>Announcement</option>
-                        <option value="update" <?php echo $filter_category === 'update' ? 'selected' : ''; ?>>Update</option>
-                        <option value="tutorial" <?php echo $filter_category === 'tutorial' ? 'selected' : ''; ?>>Tutorial</option>
-                        <option value="event" <?php echo $filter_category === 'event' ? 'selected' : ''; ?>>Event</option>
-                        <option value="promotion" <?php echo $filter_category === 'promotion' ? 'selected' : ''; ?>>Promotion</option>
-                    </select>
-                    
-                    <button type="submit" class="btn btn-secondary">
-                        <i class="fas fa-filter"></i> Filter
-                    </button>
-                    
-                    <?php if ($search || $filter_status || $filter_category): ?>
-                        <a href="news.php" class="btn btn-outline">Clear</a>
-                    <?php endif; ?>
-                </form>
-            </div>
-            
-            <!-- Table -->
-            <div class="admin-table-container">
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Title</th>
-                            <th>Category</th>
-                            <th>Status</th>
-                            <th>Featured</th>
-                            <th>Views</th>
-                            <th>Date</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (empty($news)): ?>
-                            <tr>
-                                <td colspan="8" class="text-center">
-                                    <div class="empty-state">
-                                        <i class="fas fa-newspaper"></i>
-                                        <p>No news articles found</p>
-                                        <a href="news-create.php" class="btn btn-primary">Create First Article</a>
-                                    </div>
-                                </td>
-                            </tr>
-                        <?php else: ?>
-                            <?php foreach ($news as $article): ?>
-                                <tr>
-                                    <td>#<?php echo $article['id']; ?></td>
-                                    <td>
-                                        <strong><?php echo htmlspecialchars($article['title']); ?></strong>
-                                        <?php if ($article['excerpt']): ?>
-                                            <br><small><?php echo htmlspecialchars(substr($article['excerpt'], 0, 60)) . '...'; ?></small>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <span class="badge badge-secondary">
-                                            <?php echo ucfirst($article['category'] ?? 'general'); ?>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <form method="POST" style="display: inline;">
-                                            <input type="hidden" name="action" value="toggle_status">
-                                            <input type="hidden" name="id" value="<?php echo $article['id']; ?>">
-                                            <button type="submit" class="btn-link">
-                                                <?php if ($article['status'] === 'published'): ?>
-                                                    <span class="badge badge-success">Published</span>
-                                                <?php elseif ($article['status'] === 'draft'): ?>
-                                                    <span class="badge badge-warning">Draft</span>
+
+                <!-- News Table -->
+                <div class="content-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Articles List</h2>
+                        <div class="section-subtitle">
+                            Showing <?php echo count($news); ?> of <?php echo $total_records; ?> articles
+                        </div>
+                    </div>
+
+                    <?php if (empty($news)): ?>
+                        <div class="empty-state">
+                            <i class="fas fa-newspaper"></i>
+                            <h3>No articles found</h3>
+                            <p>Start creating your first news article to see it here.</p>
+                            <a href="news-create.php" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Create First Article
+                            </a>
+                        </div>
+                    <?php else: ?>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th class="th-image">Image</th>
+                                        <th>Title</th>
+                                        <th class="th-category">Category</th>
+                                        <th class="th-status">Status</th>
+                                        <th class="th-featured text-center">Featured</th>
+                                        <th class="th-views text-center">Views</th>
+                                        <th class="th-date">Date</th>
+                                        <th class="th-actions text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($news as $article): ?>
+                                        <tr>
+                                            <td>
+                                                <?php if ($article['image']): ?>
+                                                    <img src="../<?php echo htmlspecialchars($article['image']); ?>" 
+                                                         alt="Article" 
+                                                         class="table-image">
                                                 <?php else: ?>
-                                                    <span class="badge badge-info">Scheduled</span>
+                                                    <div class="table-image-placeholder">
+                                                        <i class="fas fa-image"></i>
+                                                    </div>
                                                 <?php endif; ?>
-                                            </button>
-                                        </form>
-                                    </td>
-                                    <td class="text-center">
-                                        <form method="POST" style="display: inline;">
-                                            <input type="hidden" name="action" value="toggle_featured">
-                                            <input type="hidden" name="id" value="<?php echo $article['id']; ?>">
-                                            <button type="submit" class="btn-link">
-                                                <?php if ($article['featured']): ?>
-                                                    <i class="fas fa-star" style="color: #ffd700;"></i>
-                                                <?php else: ?>
-                                                    <i class="far fa-star" style="color: #666;"></i>
+                                            </td>
+                                            <td>
+                                                <div class="table-title">
+                                                    <?php echo htmlspecialchars($article['title']); ?>
+                                                </div>
+                                                <?php if ($article['excerpt']): ?>
+                                                    <div class="table-subtitle">
+                                                        <?php echo htmlspecialchars(substr($article['excerpt'], 0, 60)) . '...'; ?>
+                                                    </div>
                                                 <?php endif; ?>
-                                            </button>
-                                        </form>
-                                    </td>
-                                    <td><?php echo number_format($article['views'] ?? 0); ?></td>
-                                    <td><?php echo date('M d, Y', strtotime($article['created_at'])); ?></td>
-                                    <td>
-                                        <div class="action-buttons">
-                                            <a href="news-edit.php?id=<?php echo $article['id']; ?>" class="btn btn-sm btn-info">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                            <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this article?');">
-                                                <input type="hidden" name="action" value="delete">
-                                                <input type="hidden" name="id" value="<?php echo $article['id']; ?>">
-                                                <button type="submit" class="btn btn-sm btn-danger">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
+                                            </td>
+                                            <td>
+                                                <span class="badge badge-secondary">
+                                                    <?php echo ucfirst($article['category'] ?? 'general'); ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <form method="POST" class="status-form">
+                                                    <input type="hidden" name="action" value="toggle_status">
+                                                    <input type="hidden" name="id" value="<?php echo $article['id']; ?>">
+                                                    <?php if ($article['status'] === 'published'): ?>
+                                                        <button type="submit" class="badge badge-success badge-clickable">
+                                                            Published
+                                                        </button>
+                                                    <?php elseif ($article['status'] === 'draft'): ?>
+                                                        <button type="submit" class="badge badge-warning badge-clickable">
+                                                            Draft
+                                                        </button>
+                                                    <?php else: ?>
+                                                        <button type="submit" class="badge badge-info badge-clickable">
+                                                            Scheduled
+                                                        </button>
+                                                    <?php endif; ?>
+                                                </form>
+                                            </td>
+                                            <td class="text-center">
+                                                <form method="POST" class="featured-form">
+                                                    <input type="hidden" name="action" value="toggle_featured">
+                                                    <input type="hidden" name="id" value="<?php echo $article['id']; ?>">
+                                                    <button type="submit" class="btn-icon">
+                                                        <?php if ($article['featured']): ?>
+                                                            <i class="fas fa-star star-active"></i>
+                                                        <?php else: ?>
+                                                            <i class="far fa-star star-inactive"></i>
+                                                        <?php endif; ?>
+                                                    </button>
+                                                </form>
+                                            </td>
+                                            <td class="text-center">
+                                                <?php echo number_format($article['views'] ?? 0); ?>
+                                            </td>
+                                            <td>
+                                                <div class="table-date">
+                                                    <?php echo date('M d, Y', strtotime($article['created_at'])); ?>
+                                                    <small><?php echo date('h:i A', strtotime($article['created_at'])); ?></small>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="action-buttons">
+                                                    <a href="news-edit.php?id=<?php echo $article['id']; ?>" 
+                                                       class="btn-icon" 
+                                                       title="Edit">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    <form method="POST" class="delete-form" 
+                                                          onsubmit="return confirm('Are you sure you want to delete this article?');">
+                                                        <input type="hidden" name="action" value="delete">
+                                                        <input type="hidden" name="id" value="<?php echo $article['id']; ?>">
+                                                        <button type="submit" class="btn-icon text-danger" title="Delete">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        <?php if ($total_pages > 1): ?>
+                            <div class="table-pagination">
+                                <div class="pagination-info">
+                                    Page <?php echo $page; ?> of <?php echo $total_pages; ?>
+                                </div>
+                                <div class="pagination">
+                                    <?php if ($page > 1): ?>
+                                        <a href="?page=1&search=<?php echo urlencode($search); ?>&status=<?php echo urlencode($filter_status); ?>&category=<?php echo urlencode($filter_category); ?>" 
+                                           class="page-link">
+                                            <i class="fas fa-angle-double-left"></i>
+                                        </a>
+                                        <a href="?page=<?php echo $page - 1; ?>&search=<?php echo urlencode($search); ?>&status=<?php echo urlencode($filter_status); ?>&category=<?php echo urlencode($filter_category); ?>" 
+                                           class="page-link">
+                                            <i class="fas fa-angle-left"></i>
+                                        </a>
+                                    <?php endif; ?>
+
+                                    <?php for ($i = max(1, $page - 2); $i <= min($total_pages, $page + 2); $i++): ?>
+                                        <a href="?page=<?php echo $i; ?>&search=<?php echo urlencode($search); ?>&status=<?php echo urlencode($filter_status); ?>&category=<?php echo urlencode($filter_category); ?>" 
+                                           class="page-link <?php echo $i === $page ? 'active' : ''; ?>">
+                                            <?php echo $i; ?>
+                                        </a>
+                                    <?php endfor; ?>
+
+                                    <?php if ($page < $total_pages): ?>
+                                        <a href="?page=<?php echo $page + 1; ?>&search=<?php echo urlencode($search); ?>&status=<?php echo urlencode($filter_status); ?>&category=<?php echo urlencode($filter_category); ?>" 
+                                           class="page-link">
+                                            <i class="fas fa-angle-right"></i>
+                                        </a>
+                                        <a href="?page=<?php echo $total_pages; ?>&search=<?php echo urlencode($search); ?>&status=<?php echo urlencode($filter_status); ?>&category=<?php echo urlencode($filter_category); ?>" 
+                                           class="page-link">
+                                            <i class="fas fa-angle-double-right"></i>
+                                        </a>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
                         <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
-            
-            <!-- Pagination -->
-            <?php if ($total_pages > 1): ?>
-                <div class="pagination">
-                    <?php if ($page > 1): ?>
-                        <a href="?page=<?php echo $page - 1; ?>&search=<?php echo urlencode($search); ?>&status=<?php echo urlencode($filter_status); ?>&category=<?php echo urlencode($filter_category); ?>" class="pagination-link">
-                            <i class="fas fa-chevron-left"></i>
-                        </a>
-                    <?php endif; ?>
-                    
-                    <?php for ($i = max(1, $page - 2); $i <= min($total_pages, $page + 2); $i++): ?>
-                        <a href="?page=<?php echo $i; ?>&search=<?php echo urlencode($search); ?>&status=<?php echo urlencode($filter_status); ?>&category=<?php echo urlencode($filter_category); ?>" 
-                           class="pagination-link <?php echo $i === $page ? 'active' : ''; ?>">
-                            <?php echo $i; ?>
-                        </a>
-                    <?php endfor; ?>
-                    
-                    <?php if ($page < $total_pages): ?>
-                        <a href="?page=<?php echo $page + 1; ?>&search=<?php echo urlencode($search); ?>&status=<?php echo urlencode($filter_status); ?>&category=<?php echo urlencode($filter_category); ?>" class="pagination-link">
-                            <i class="fas fa-chevron-right"></i>
-                        </a>
                     <?php endif; ?>
                 </div>
-            <?php endif; ?>
-        </main>
+            </main>
+
+            <?php include 'includes/footer.php'; ?>
+        </div>
     </div>
-    
-    <?php include 'includes/footer.php'; ?>
 </body>
 </html>
