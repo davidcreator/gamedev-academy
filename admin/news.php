@@ -1,710 +1,507 @@
 <?php
 session_start();
+include 'includes/header.php';
+require_once '../config/config.php';
 
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
-// Verificar login (temporário para testes)
+// Check if user is logged in and is admin
 if (!isset($_SESSION['user_id'])) {
-    $_SESSION['user_id'] = 1;
-    $_SESSION['username'] = 'Admin';
+    header('Location: ../login.php');
+    exit();
 }
 
-// ============ CONEXÃO ============
-$host = 'localhost';
-$dbname = 'gamedev_academy';
-$user = 'root';
-$pass = '';
+// Check if user is admin (with safe check)
+if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+    // For development, you can temporarily comment this out
+    // header('Location: ../login.php');
+    // exit();
+    
+    // Or set temporary admin access for testing
+    $_SESSION['user_id'] = 1;
+    $_SESSION['role'] = 'admin';
+    $_SESSION['user_name'] = 'Admin';
+}
+
+// Database connection
+try {
+    $pdo = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch(PDOException $e) {
+    die("Connection failed: " . $e->getMessage());
+}
+
+// Create news table if it doesn't exist
+$createTableSQL = "
+CREATE TABLE IF NOT EXISTS `news` (
+    `id` int(11) NOT NULL AUTO_INCREMENT,
+    `title` varchar(255) NOT NULL,
+    `slug` varchar(255) NOT NULL UNIQUE,
+    `content` text NOT NULL,
+    `excerpt` text,
+    `category` varchar(50) DEFAULT 'general',
+    `image` varchar(255),
+    `status` enum('draft','published','scheduled') DEFAULT 'draft',
+    `featured` tinyint(1) DEFAULT 0,
+    `author_id` int(11) DEFAULT 1,
+    `views` int(11) DEFAULT 0,
+    `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_status` (`status`),
+    KEY `idx_featured` (`featured`),
+    KEY `idx_category` (`category`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
 
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $user, $pass);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+    $pdo->exec($createTableSQL);
 } catch(PDOException $e) {
-    die("Erro de conexão: " . $e->getMessage());
+    // Table might already exist, that's ok
 }
 
-// ============ DETECTAR ESTRUTURA DA TABELA ============
-$columns = [];
-$stmt = $pdo->query("SHOW COLUMNS FROM news");
-while ($row = $stmt->fetch()) {
-    $columns[$row['Field']] = $row['Type'];
-}
-
-// Mapear colunas (detectar quais existem)
-$col_map = [
-    'id' => 'id',
-    'title' => 'title',
-    'slug' => 'slug',
-    'created_at' => 'created_at'
-];
-
-// Status
-if (isset($columns['status'])) {
-    $col_map['status'] = 'status';
-} elseif (isset($columns['is_published'])) {
-    $col_map['status'] = "CASE WHEN is_published = 1 THEN 'published' ELSE 'draft' END";
-} else {
-    $col_map['status'] = "'draft'";
-}
-
-// Featured
-if (isset($columns['featured'])) {
-    $col_map['featured'] = 'featured';
-} elseif (isset($columns['is_featured'])) {
-    $col_map['featured'] = 'is_featured';
-} else {
-    $col_map['featured'] = '0';
-}
-
-// Views
-if (isset($columns['views_count'])) {
-    $col_map['views'] = 'views_count';
-} elseif (isset($columns['views'])) {
-    $col_map['views'] = 'views';
-} else {
-    $col_map['views'] = '0';
-}
-
-// Category
-if (isset($columns['category'])) {
-    $col_map['category'] = 'category';
-} else {
-    $col_map['category'] = "NULL";
-}
-
-// Summary/Excerpt
-if (isset($columns['summary'])) {
-    $col_map['summary'] = 'summary';
-} elseif (isset($columns['excerpt'])) {
-    $col_map['summary'] = 'excerpt';
-} else {
-    $col_map['summary'] = "NULL";
-}
-
-// Image
-if (isset($columns['image_url'])) {
-    $col_map['image'] = 'image_url';
-} elseif (isset($columns['thumbnail'])) {
-    $col_map['image'] = 'thumbnail';
-} elseif (isset($columns['image'])) {
-    $col_map['image'] = 'image';
-} else {
-    $col_map['image'] = "NULL";
-}
-
-// Author
-if (isset($columns['author_id'])) {
-    $col_map['author_id'] = 'author_id';
-} else {
-    $col_map['author_id'] = "NULL";
-}
-
-// Published at
-if (isset($columns['published_at'])) {
-    $col_map['published_at'] = 'published_at';
-} else {
-    $col_map['published_at'] = 'created_at';
-}
-
-// ============ PAGINAÇÃO E FILTROS ============
-$items_per_page = 10;
-$page = max(1, (int)($_GET['page'] ?? 1));
-$offset = ($page - 1) * $items_per_page;
-
-$search = trim($_GET['search'] ?? '');
-$filter_status = $_GET['status'] ?? '';
-$filter_category = $_GET['category'] ?? '';
-
-// ============ CONSTRUIR QUERY ============
-$where_clauses = [];
-$params = [];
-
-// Filtro de busca
-if ($search) {
-    $where_clauses[] = "(n.title LIKE :search OR n.slug LIKE :search)";
-    $params[':search'] = "%$search%";
-}
-
-// Filtro de status
-if ($filter_status) {
-    if (isset($columns['status'])) {
-        $where_clauses[] = "n.status = :status";
-        $params[':status'] = $filter_status;
-    } elseif (isset($columns['is_published'])) {
-        if ($filter_status == 'published') {
-            $where_clauses[] = "n.is_published = 1";
-        } elseif ($filter_status == 'draft') {
-            $where_clauses[] = "n.is_published = 0";
+// Rest of your news.php code continues here...
+// Handle form submissions
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['action'])) {
+        switch ($_POST['action']) {
+            case 'add':
+                $title = $_POST['title'];
+                $slug = $_POST['slug'] ?: generateSlug($title);
+                $content = $_POST['content'];
+                $excerpt = $_POST['excerpt'] ?? '';
+                $category = $_POST['category'] ?? 'general';
+                $status = $_POST['status'] ?? 'draft';
+                $featured = isset($_POST['featured']) ? 1 : 0;
+                $author_id = $_SESSION['user_id'];
+                
+                // Handle image upload
+                $image_path = null;
+                if (isset($_FILES['image']) && $_FILES['image']['error'] === 0) {
+                    $upload_dir = '../uploads/news/';
+                    if (!file_exists($upload_dir)) {
+                        mkdir($upload_dir, 0777, true);
+                    }
+                    
+                    $file_extension = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
+                    $file_name = uniqid() . '.' . $file_extension;
+                    $target_path = $upload_dir . $file_name;
+                    
+                    if (move_uploaded_file($_FILES['image']['tmp_name'], $target_path)) {
+                        $image_path = 'uploads/news/' . $file_name;
+                    }
+                }
+                
+                $stmt = $pdo->prepare("INSERT INTO news (title, slug, content, excerpt, category, image, status, featured, author_id) 
+                                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$title, $slug, $content, $excerpt, $category, $image_path, $status, $featured, $author_id]);
+                
+                $_SESSION['success'] = "News article added successfully!";
+                header('Location: news.php');
+                exit();
+                break;
+                
+            case 'update':
+                $id = $_POST['id'];
+                $title = $_POST['title'];
+                $slug = $_POST['slug'];
+                $content = $_POST['content'];
+                $excerpt = $_POST['excerpt'] ?? '';
+                $category = $_POST['category'] ?? 'general';
+                $status = $_POST['status'] ?? 'draft';
+                $featured = isset($_POST['featured']) ? 1 : 0;
+                
+                // Get current image
+                $stmt = $pdo->prepare("SELECT image FROM news WHERE id = ?");
+                $stmt->execute([$id]);
+                $current_image = $stmt->fetchColumn();
+                
+                // Handle image upload
+                $image_path = $current_image;
+                if (isset($_FILES['image']) && $_FILES['image']['error'] === 0) {
+                    $upload_dir = '../uploads/news/';
+                    if (!file_exists($upload_dir)) {
+                        mkdir($upload_dir, 0777, true);
+                    }
+                    
+                    $file_extension = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
+                    $file_name = uniqid() . '.' . $file_extension;
+                    $target_path = $upload_dir . $file_name;
+                    
+                    if (move_uploaded_file($_FILES['image']['tmp_name'], $target_path)) {
+                        // Delete old image if exists
+                        if ($current_image && file_exists('../' . $current_image)) {
+                            unlink('../' . $current_image);
+                        }
+                        $image_path = 'uploads/news/' . $file_name;
+                    }
+                }
+                
+                $stmt = $pdo->prepare("UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, 
+                                      category = ?, image = ?, status = ?, featured = ?, updated_at = NOW() 
+                                      WHERE id = ?");
+                $stmt->execute([$title, $slug, $content, $excerpt, $category, $image_path, $status, $featured, $id]);
+                
+                $_SESSION['success'] = "News article updated successfully!";
+                header('Location: news.php');
+                exit();
+                break;
+                
+            case 'delete':
+                $id = $_POST['id'];
+                
+                // Get image path before deletion
+                $stmt = $pdo->prepare("SELECT image FROM news WHERE id = ?");
+                $stmt->execute([$id]);
+                $image = $stmt->fetchColumn();
+                
+                // Delete the record
+                $stmt = $pdo->prepare("DELETE FROM news WHERE id = ?");
+                $stmt->execute([$id]);
+                
+                // Delete image file if exists
+                if ($image && file_exists('../' . $image)) {
+                    unlink('../' . $image);
+                }
+                
+                $_SESSION['success'] = "News article deleted successfully!";
+                header('Location: news.php');
+                exit();
+                break;
+                
+            case 'toggle_status':
+                $id = $_POST['id'];
+                $stmt = $pdo->prepare("UPDATE news SET status = IF(status = 'published', 'draft', 'published'), updated_at = NOW() WHERE id = ?");
+                $stmt->execute([$id]);
+                
+                $_SESSION['success'] = "Status updated successfully!";
+                header('Location: news.php');
+                exit();
+                break;
+                
+            case 'toggle_featured':
+                $id = $_POST['id'];
+                $stmt = $pdo->prepare("UPDATE news SET featured = IF(featured = 1, 0, 1), updated_at = NOW() WHERE id = ?");
+                $stmt->execute([$id]);
+                
+                $_SESSION['success'] = "Featured status updated successfully!";
+                header('Location: news.php');
+                exit();
+                break;
         }
     }
 }
 
-// Filtro de categoria
-if ($filter_category && isset($columns['category'])) {
-    $where_clauses[] = "n.category = :category";
-    $params[':category'] = $filter_category;
+// Function to generate slug
+function generateSlug($text) {
+    $text = preg_replace('~[^\pL\d]+~u', '-', $text);
+    $text = iconv('utf-8', 'us-ascii//TRANSLIT', $text);
+    $text = preg_replace('~[^-\w]+~', '', $text);
+    $text = trim($text, '-');
+    $text = preg_replace('~-+~', '-', $text);
+    $text = strtolower($text);
+    return $text;
 }
 
-$where_sql = $where_clauses ? 'WHERE ' . implode(' AND ', $where_clauses) : '';
+// Pagination
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$records_per_page = 10;
+$offset = ($page - 1) * $records_per_page;
 
-// Contar total
-$count_sql = "SELECT COUNT(*) FROM news n $where_sql";
-$stmt = $pdo->prepare($count_sql);
+// Search and filters
+$search = isset($_GET['search']) ? $_GET['search'] : '';
+$filter_status = isset($_GET['status']) ? $_GET['status'] : '';
+$filter_category = isset($_GET['category']) ? $_GET['category'] : '';
+
+// Build WHERE clause
+$where_conditions = [];
+$params = [];
+
+if ($search) {
+    $where_conditions[] = "(title LIKE ? OR content LIKE ?)";
+    $params[] = "%$search%";
+    $params[] = "%$search%";
+}
+
+if ($filter_status) {
+    $where_conditions[] = "status = ?";
+    $params[] = $filter_status;
+}
+
+if ($filter_category) {
+    $where_conditions[] = "category = ?";
+    $params[] = $filter_category;
+}
+
+$where_clause = !empty($where_conditions) ? "WHERE " . implode(" AND ", $where_conditions) : "";
+
+// Get total records for pagination
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM news $where_clause");
 $stmt->execute($params);
-$total_items = $stmt->fetchColumn();
-$total_pages = max(1, ceil($total_items / $items_per_page));
+$total_records = $stmt->fetchColumn();
+$total_pages = ceil($total_records / $records_per_page);
 
-// Buscar notícias
-$sql = "SELECT 
-            n.{$col_map['id']} as id,
-            n.{$col_map['title']} as title,
-            n.{$col_map['slug']} as slug,
-            n.{$col_map['category']} as category,
-            {$col_map['status']} as status,
-            n.{$col_map['featured']} as featured,
-            n.{$col_map['views']} as views_count,
-            n.{$col_map['image']} as image,
-            n.{$col_map['created_at']} as created_at,
-            n.{$col_map['published_at']} as published_at";
-
-// Adicionar join com users se author_id existir
-if (isset($columns['author_id'])) {
-    $sql .= ", u.username as author_name FROM news n LEFT JOIN users u ON n.author_id = u.id";
-} else {
-    $sql .= ", 'Sistema' as author_name FROM news n";
-}
-
-$sql .= " $where_sql ORDER BY n.created_at DESC LIMIT :limit OFFSET :offset";
-
+// Fetch news articles  
+$sql = "SELECT n.* FROM news n $where_clause ORDER BY n.created_at DESC LIMIT $offset, $records_per_page";
 $stmt = $pdo->prepare($sql);
-foreach ($params as $key => $value) {
-    $stmt->bindValue($key, $value);
-}
-$stmt->bindValue(':limit', $items_per_page, PDO::PARAM_INT);
-$stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-$stmt->execute();
-$news_items = $stmt->fetchAll();
+$stmt->execute($params);
+$news = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Buscar categorias para filtro
-$categories = [];
-if (isset($columns['category'])) {
-    $stmt = $pdo->query("SELECT DISTINCT category FROM news WHERE category IS NOT NULL AND category != '' ORDER BY category");
-    $categories = $stmt->fetchAll(PDO::FETCH_COLUMN);
-}
-
-// Verificar se precisa migração
-$needs_migration = !isset($columns['status']) || !isset($columns['views_count']) || !isset($columns['image_url']);
+// Get statistics
+$stats = [
+    'total' => $pdo->query("SELECT COUNT(*) FROM news")->fetchColumn(),
+    'published' => $pdo->query("SELECT COUNT(*) FROM news WHERE status = 'published'")->fetchColumn(),
+    'draft' => $pdo->query("SELECT COUNT(*) FROM news WHERE status = 'draft'")->fetchColumn(),
+    'featured' => $pdo->query("SELECT COUNT(*) FROM news WHERE featured = 1")->fetchColumn()
+];
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerenciar Notícias - GameDev Academy</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <style>
-        :root {
-            --primary: #6f42c1;
-            --primary-dark: #5a32a3;
-        }
-        
-        body {
-            background-color: #f4f6f9;
-        }
-        
-        .page-header {
-            background: linear-gradient(135deg, var(--primary) 0%, #8e5bd4 100%);
-            color: white;
-            padding: 1.5rem 0;
-            margin-bottom: 2rem;
-        }
-        
-        .card {
-            border: none;
-            box-shadow: 0 0 15px rgba(0,0,0,0.05);
-            border-radius: 10px;
-        }
-        
-        .table th {
-            background: #f8f9fa;
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 0.75rem;
-            letter-spacing: 0.5px;
-            color: #6c757d;
-            border-bottom: 2px solid #e9ecef;
-        }
-        
-        .table td {
-            vertical-align: middle;
-        }
-        
-        .badge-status {
-            padding: 0.4rem 0.8rem;
-            font-size: 0.75rem;
-            font-weight: 500;
-            border-radius: 50px;
-        }
-        
-        .badge-published { background: #d4edda; color: #155724; }
-        .badge-draft { background: #fff3cd; color: #856404; }
-        .badge-archived { background: #e2e3e5; color: #383d41; }
-        
-        .news-title {
-            font-weight: 500;
-            color: #212529;
-            text-decoration: none;
-            transition: color 0.2s;
-        }
-        
-        .news-title:hover {
-            color: var(--primary);
-        }
-        
-        .news-image {
-            width: 50px;
-            height: 50px;
-            object-fit: cover;
-            border-radius: 8px;
-        }
-        
-        .news-image-placeholder {
-            width: 50px;
-            height: 50px;
-            background: #e9ecef;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #adb5bd;
-        }
-        
-        .featured-star {
-            color: #ffc107;
-            font-size: 1rem;
-        }
-        
-        .btn-action {
-            padding: 0.375rem 0.5rem;
-            font-size: 0.875rem;
-        }
-        
-        .filter-card {
-            background: white;
-            border-radius: 10px;
-            padding: 1rem;
-            margin-bottom: 1.5rem;
-        }
-        
-        .stats-card {
-            background: white;
-            border-radius: 10px;
-            padding: 1rem;
-            text-align: center;
-            margin-bottom: 1rem;
-        }
-        
-        .stats-number {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--primary);
-        }
-        
-        .stats-label {
-            font-size: 0.75rem;
-            color: #6c757d;
-            text-transform: uppercase;
-        }
-        
-        .alert-migration {
-            background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%);
-            border: none;
-            border-radius: 10px;
-        }
-    </style>
+    <title>Manage News - Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
 </head>
 <body>
-    <!-- Header -->
-    <div class="page-header">
-        <div class="container-fluid px-4">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h1 class="h3 mb-0">
-                        <i class="bi bi-newspaper me-2"></i>
-                        Gerenciar Notícias
-                    </h1>
-                    <nav aria-label="breadcrumb">
-                        <ol class="breadcrumb mb-0 mt-2" style="font-size: 0.875rem;">
-                            <li class="breadcrumb-item"><a href="dashboard.php" class="text-white-50">Dashboard</a></li>
-                            <li class="breadcrumb-item active text-white">Notícias</li>
-                        </ol>
-                    </nav>
-                </div>
-                <a href="news-create.php" class="btn btn-light">
-                    <i class="bi bi-plus-lg me-1"></i> Nova Notícia
-                </a>
-            </div>
-        </div>
-    </div>
-    
-    <div class="container-fluid px-4">
-        <?php if ($needs_migration): ?>
-        <div class="alert alert-migration mb-4">
-            <div class="d-flex align-items-center">
-                <i class="bi bi-exclamation-triangle-fill me-3 fs-4 text-warning"></i>
-                <div class="flex-grow-1">
-                    <strong>Atenção:</strong> A estrutura da tabela 'news' está desatualizada.
-                    <br><small class="text-muted">Recomendamos executar a migração para ter acesso a todas as funcionalidades.</small>
-                </div>
-                <a href="migrate-news-table.php" class="btn btn-warning btn-sm">
-                    <i class="bi bi-arrow-repeat me-1"></i> Migrar Agora
-                </a>
-            </div>
-        </div>
-        <?php endif; ?>
-        
-        <!-- Estatísticas Rápidas -->
-        <div class="row mb-4">
-            <div class="col-md-3">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo $total_items; ?></div>
-                    <div class="stats-label">Total de Notícias</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stats-card">
-                    <?php
-                    if (isset($columns['status'])) {
-                        $published = $pdo->query("SELECT COUNT(*) FROM news WHERE status = 'published'")->fetchColumn();
-                    } elseif (isset($columns['is_published'])) {
-                        $published = $pdo->query("SELECT COUNT(*) FROM news WHERE is_published = 1")->fetchColumn();
-                    } else {
-                        $published = 0;
-                    }
-                    ?>
-                    <div class="stats-number text-success"><?php echo $published; ?></div>
-                    <div class="stats-label">Publicadas</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stats-card">
-                    <?php
-                    if (isset($columns['status'])) {
-                        $drafts = $pdo->query("SELECT COUNT(*) FROM news WHERE status = 'draft'")->fetchColumn();
-                    } elseif (isset($columns['is_published'])) {
-                        $drafts = $pdo->query("SELECT COUNT(*) FROM news WHERE is_published = 0")->fetchColumn();
-                    } else {
-                        $drafts = 0;
-                    }
-                    ?>
-                    <div class="stats-number text-warning"><?php echo $drafts; ?></div>
-                    <div class="stats-label">Rascunhos</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stats-card">
-                    <?php
-                    $featured_col = isset($columns['featured']) ? 'featured' : (isset($columns['is_featured']) ? 'is_featured' : null);
-                    $featured_count = $featured_col ? $pdo->query("SELECT COUNT(*) FROM news WHERE $featured_col = 1")->fetchColumn() : 0;
-                    ?>
-                    <div class="stats-number text-primary"><?php echo $featured_count; ?></div>
-                    <div class="stats-label">Em Destaque</div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Filtros -->
-        <div class="filter-card">
-            <form method="GET" class="row g-3 align-items-end">
-                <div class="col-md-4">
-                    <label class="form-label small text-muted">Buscar</label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-                        <input type="text" name="search" class="form-control" 
-                               placeholder="Título ou slug..." 
-                               value="<?php echo htmlspecialchars($search); ?>">
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Main Content (sem sidebar por enquanto) -->
+            <main class="col-12 px-md-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">Manage News</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addNewsModal">
+                            <i class="bi bi-plus-circle"></i> Add News Article
+                        </button>
                     </div>
                 </div>
-                
-                <div class="col-md-3">
-                    <label class="form-label small text-muted">Status</label>
-                    <select name="status" class="form-select">
-                        <option value="">Todos</option>
-                        <option value="published" <?php echo $filter_status == 'published' ? 'selected' : ''; ?>>
-                            Publicado
-                        </option>
-                        <option value="draft" <?php echo $filter_status == 'draft' ? 'selected' : ''; ?>>
-                            Rascunho
-                        </option>
-                        <?php if (isset($columns['status'])): ?>
-                        <option value="archived" <?php echo $filter_status == 'archived' ? 'selected' : ''; ?>>
-                            Arquivado
-                        </option>
-                        <?php endif; ?>
-                    </select>
-                </div>
-                
-                <?php if (count($categories) > 0): ?>
-                <div class="col-md-3">
-                    <label class="form-label small text-muted">Categoria</label>
-                    <select name="category" class="form-select">
-                        <option value="">Todas</option>
-                        <?php foreach ($categories as $cat): ?>
-                        <option value="<?php echo htmlspecialchars($cat); ?>" 
-                                <?php echo $filter_category == $cat ? 'selected' : ''; ?>>
-                            <?php echo htmlspecialchars(ucfirst($cat)); ?>
-                        </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
+
+                <?php if (isset($_SESSION['success'])): ?>
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <?php 
+                        echo $_SESSION['success'];
+                        unset($_SESSION['success']);
+                        ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
                 <?php endif; ?>
-                
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="bi bi-filter"></i> Filtrar
-                    </button>
+
+                <!-- Statistics Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Total Articles</h5>
+                                <h2 class="text-primary"><?php echo $stats['total']; ?></h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Published</h5>
+                                <h2 class="text-success"><?php echo $stats['published']; ?></h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Drafts</h5>
+                                <h2 class="text-warning"><?php echo $stats['draft']; ?></h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Featured</h5>
+                                <h2 class="text-danger"><?php echo $stats['featured']; ?></h2>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </form>
-        </div>
-        
-        <!-- Tabela de Notícias -->
-        <div class="card">
-            <div class="card-body p-0">
-                <?php if (count($news_items) > 0): ?>
+
+                <!-- Search and Filter -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <form method="GET" class="row g-3">
+                            <div class="col-md-4">
+                                <input type="text" name="search" class="form-control" placeholder="Search news..." value="<?php echo htmlspecialchars($search); ?>">
+                            </div>
+                            <div class="col-md-2">
+                                <select name="status" class="form-select">
+                                    <option value="">All Status</option>
+                                    <option value="published" <?php echo $filter_status === 'published' ? 'selected' : ''; ?>>Published</option>
+                                    <option value="draft" <?php echo $filter_status === 'draft' ? 'selected' : ''; ?>>Draft</option>
+                                    <option value="scheduled" <?php echo $filter_status === 'scheduled' ? 'selected' : ''; ?>>Scheduled</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <select name="category" class="form-select">
+                                    <option value="">All Categories</option>
+                                    <option value="announcement" <?php echo $filter_category === 'announcement' ? 'selected' : ''; ?>>Announcement</option>
+                                    <option value="update" <?php echo $filter_category === 'update' ? 'selected' : ''; ?>>Update</option>
+                                    <option value="tutorial" <?php echo $filter_category === 'tutorial' ? 'selected' : ''; ?>>Tutorial</option>
+                                    <option value="event" <?php echo $filter_category === 'event' ? 'selected' : ''; ?>>Event</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-primary w-100">Filter</button>
+                            </div>
+                            <div class="col-md-2">
+                                <a href="news.php" class="btn btn-secondary w-100">Clear</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- News Table -->
                 <div class="table-responsive">
-                    <table class="table table-hover mb-0">
+                    <table class="table table-hover">
                         <thead>
                             <tr>
-                                <th style="width: 60px;">Imagem</th>
-                                <th>Título</th>
-                                <th style="width: 120px;">Categoria</th>
-                                <th style="width: 100px;">Status</th>
-                                <th style="width: 100px;">Autor</th>
-                                <th style="width: 80px;">Views</th>
-                                <th style="width: 120px;">Data</th>
-                                <th style="width: 120px;">Ações</th>
+                                <th>ID</th>
+                                <th>Title</th>
+                                <th>Category</th>
+                                <th>Status</th>
+                                <th>Featured</th>
+                                <th>Views</th>
+                                <th>Date</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($news_items as $item): ?>
-                            <tr>
-                                <td>
-                                    <?php if ($item['image']): ?>
-                                    <img src="../<?php echo htmlspecialchars($item['image']); ?>" 
-                                         alt="" class="news-image">
-                                    <?php else: ?>
-                                    <div class="news-image-placeholder">
-                                        <i class="bi bi-image"></i>
-                                    </div>
-                                    <?php endif; ?>
-                                </td>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <?php if ($item['featured']): ?>
-                                        <i class="bi bi-star-fill featured-star me-2" title="Em destaque"></i>
-                                        <?php endif; ?>
-                                        <div>
-                                            <a href="news-edit.php?id=<?php echo $item['id']; ?>" class="news-title">
-                                                <?php echo htmlspecialchars($item['title']); ?>
+                            <?php if (empty($news)): ?>
+                                <tr>
+                                    <td colspan="8" class="text-center py-4">No news articles found</td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($news as $article): ?>
+                                    <tr>
+                                        <td><?php echo $article['id']; ?></td>
+                                        <td><?php echo htmlspecialchars($article['title']); ?></td>
+                                        <td><span class="badge bg-secondary"><?php echo ucfirst($article['category'] ?? 'general'); ?></span></td>
+                                        <td>
+                                            <form method="POST" class="d-inline">
+                                                <input type="hidden" name="action" value="toggle_status">
+                                                <input type="hidden" name="id" value="<?php echo $article['id']; ?>">
+                                                <button type="submit" class="btn btn-sm btn-link p-0">
+                                                    <span class="badge bg-<?php echo $article['status'] === 'published' ? 'success' : 'warning'; ?>">
+                                                        <?php echo ucfirst($article['status']); ?>
+                                                    </span>
+                                                </button>
+                                            </form>
+                                        </td>
+                                        <td>
+                                            <form method="POST" class="d-inline">
+                                                <input type="hidden" name="action" value="toggle_featured">
+                                                <input type="hidden" name="id" value="<?php echo $article['id']; ?>">
+                                                <button type="submit" class="btn btn-link p-0">
+                                                    <i class="bi bi-star-fill <?php echo $article['featured'] ? 'text-warning' : 'text-muted'; ?>"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                        <td><?php echo number_format($article['views']); ?></td>
+                                        <td><?php echo date('M d, Y', strtotime($article['created_at'])); ?></td>
+                                        <td>
+                                            <a href="news-edit.php?id=<?php echo $article['id']; ?>" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-pencil"></i>
                                             </a>
-                                            <br>
-                                            <small class="text-muted">/<?php echo htmlspecialchars($item['slug']); ?></small>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <?php if ($item['category']): ?>
-                                    <span class="badge bg-light text-dark">
-                                        <?php echo htmlspecialchars(ucfirst($item['category'])); ?>
-                                    </span>
-                                    <?php else: ?>
-                                    <span class="text-muted">-</span>
-                                    <?php endif; ?>
-                                </td>
-                                <td>
-                                    <span class="badge badge-status badge-<?php echo $item['status']; ?>">
-                                        <?php 
-                                        $status_labels = [
-                                            'published' => 'Publicado',
-                                            'draft' => 'Rascunho',
-                                            'archived' => 'Arquivado'
-                                        ];
-                                        echo $status_labels[$item['status']] ?? $item['status'];
-                                        ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <small><?php echo htmlspecialchars($item['author_name'] ?? 'Sistema'); ?></small>
-                                </td>
-                                <td>
-                                    <span class="text-muted">
-                                        <i class="bi bi-eye me-1"></i>
-                                        <?php echo number_format($item['views_count'], 0, ',', '.'); ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <small class="text-muted">
-                                        <?php echo date('d/m/Y', strtotime($item['created_at'])); ?>
-                                        <br>
-                                        <?php echo date('H:i', strtotime($item['created_at'])); ?>
-                                    </small>
-                                </td>
-                                <td>
-                                    <div class="btn-group">
-                                        <a href="news-edit.php?id=<?php echo $item['id']; ?>" 
-                                           class="btn btn-sm btn-outline-primary btn-action"
-                                           title="Editar">
-                                            <i class="bi bi-pencil"></i>
-                                        </a>
-                                        <?php if ($item['status'] == 'published'): ?>
-                                        <a href="../news/<?php echo $item['slug']; ?>" 
-                                           target="_blank"
-                                           class="btn btn-sm btn-outline-info btn-action"
-                                           title="Visualizar">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
-                                        <?php endif; ?>
-                                        <button onclick="deleteNews(<?php echo $item['id']; ?>, '<?php echo addslashes($item['title']); ?>')" 
-                                                class="btn btn-sm btn-outline-danger btn-action"
-                                                title="Excluir">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <?php endforeach; ?>
+                                            <form method="POST" class="d-inline" onsubmit="return confirm('Are you sure?');">
+                                                <input type="hidden" name="action" value="delete">
+                                                <input type="hidden" name="id" value="<?php echo $article['id']; ?>">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
-                
-                <?php else: ?>
-                <div class="text-center py-5">
-                    <i class="bi bi-newspaper text-muted" style="font-size: 3rem;"></i>
-                    <h5 class="mt-3 text-muted">Nenhuma notícia encontrada</h5>
-                    <p class="text-muted">
-                        <?php if ($search || $filter_status || $filter_category): ?>
-                        Tente ajustar os filtros de busca.
-                        <?php else: ?>
-                        Clique em "Nova Notícia" para criar a primeira.
-                        <?php endif; ?>
-                    </p>
-                    <a href="news-create.php" class="btn btn-primary">
-                        <i class="bi bi-plus-lg me-1"></i> Nova Notícia
-                    </a>
-                </div>
+
+                <!-- Pagination -->
+                <?php if ($total_pages > 1): ?>
+                    <nav>
+                        <ul class="pagination justify-content-center">
+                            <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+                                <li class="page-item <?php echo $i === $page ? 'active' : ''; ?>">
+                                    <a class="page-link" href="?page=<?php echo $i; ?>&search=<?php echo urlencode($search); ?>"><?php echo $i; ?></a>
+                                </li>
+                            <?php endfor; ?>
+                        </ul>
+                    </nav>
                 <?php endif; ?>
-            </div>
-            
-            <?php if ($total_pages > 1): ?>
-            <div class="card-footer bg-white">
-                <nav>
-                    <ul class="pagination justify-content-center mb-0">
-                        <li class="page-item <?php echo $page <= 1 ? 'disabled' : ''; ?>">
-                            <a class="page-link" href="?page=<?php echo $page - 1; ?>&search=<?php echo urlencode($search); ?>&status=<?php echo $filter_status; ?>&category=<?php echo urlencode($filter_category); ?>">
-                                <i class="bi bi-chevron-left"></i>
-                            </a>
-                        </li>
-                        
-                        <?php 
-                        $start = max(1, $page - 2);
-                        $end = min($total_pages, $page + 2);
-                        
-                        if ($start > 1): ?>
-                        <li class="page-item">
-                            <a class="page-link" href="?page=1&search=<?php echo urlencode($search); ?>&status=<?php echo $filter_status; ?>&category=<?php echo urlencode($filter_category); ?>">1</a>
-                        </li>
-                        <?php if ($start > 2): ?>
-                        <li class="page-item disabled"><span class="page-link">...</span></li>
-                        <?php endif; ?>
-                        <?php endif; ?>
-                        
-                        <?php for ($i = $start; $i <= $end; $i++): ?>
-                        <li class="page-item <?php echo $i == $page ? 'active' : ''; ?>">
-                            <a class="page-link" href="?page=<?php echo $i; ?>&search=<?php echo urlencode($search); ?>&status=<?php echo $filter_status; ?>&category=<?php echo urlencode($filter_category); ?>">
-                                <?php echo $i; ?>
-                            </a>
-                        </li>
-                        <?php endfor; ?>
-                        
-                        <?php if ($end < $total_pages): ?>
-                        <?php if ($end < $total_pages - 1): ?>
-                        <li class="page-item disabled"><span class="page-link">...</span></li>
-                        <?php endif; ?>
-                        <li class="page-item">
-                            <a class="page-link" href="?page=<?php echo $total_pages; ?>&search=<?php echo urlencode($search); ?>&status=<?php echo $filter_status; ?>&category=<?php echo urlencode($filter_category); ?>">
-                                <?php echo $total_pages; ?>
-                            </a>
-                        </li>
-                        <?php endif; ?>
-                        
-                        <li class="page-item <?php echo $page >= $total_pages ? 'disabled' : ''; ?>">
-                            <a class="page-link" href="?page=<?php echo $page + 1; ?>&search=<?php echo urlencode($search); ?>&status=<?php echo $filter_status; ?>&category=<?php echo urlencode($filter_category); ?>">
-                                <i class="bi bi-chevron-right"></i>
-                            </a>
-                        </li>
-                    </ul>
-                </nav>
-                <div class="text-center mt-2">
-                    <small class="text-muted">
-                        Mostrando <?php echo count($news_items); ?> de <?php echo $total_items; ?> notícias
-                    </small>
-                </div>
-            </div>
-            <?php endif; ?>
+            </main>
         </div>
-        
-        <!-- Debug Info (remover em produção) -->
-        <?php if (isset($_GET['debug'])): ?>
-        <div class="card mt-4">
-            <div class="card-header bg-dark text-white">
-                <i class="bi bi-bug"></i> Debug Info
-            </div>
-            <div class="card-body">
-                <h6>Colunas detectadas:</h6>
-                <pre><?php print_r($columns); ?></pre>
-                
-                <h6>Mapeamento:</h6>
-                <pre><?php print_r($col_map); ?></pre>
-            </div>
-        </div>
-        <?php endif; ?>
     </div>
-    
-    <!-- Modal de Confirmação de Exclusão -->
-    <div class="modal fade" id="deleteModal" tabindex="-1">
-        <div class="modal-dialog">
+
+    <!-- Add News Modal -->
+    <div class="modal fade" id="addNewsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Confirmar Exclusão</h5>
+                    <h5 class="modal-title">Add News Article</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
-                    <p>Tem certeza que deseja excluir a notícia:</p>
-                    <p class="fw-bold" id="deleteNewsTitle"></p>
-                    <p class="text-danger"><small>Esta ação não pode ser desfeita!</small></p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <form id="deleteForm" method="POST" action="news-delete.php" style="display: inline;">
-                        <input type="hidden" name="id" id="deleteNewsId">
-                        <button type="submit" class="btn btn-danger">
-                            <i class="bi bi-trash"></i> Excluir
-                        </button>
-                    </form>
-                </div>
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="modal-body">
+                        <input type="hidden" name="action" value="add">
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Title *</label>
+                            <input type="text" class="form-control" id="title" name="title" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="slug" class="form-label">Slug</label>
+                            <input type="text" class="form-control" id="slug" name="slug">
+                        </div>
+                        <div class="mb-3">
+                            <label for="excerpt" class="form-label">Excerpt</label>
+                            <textarea class="form-control" id="excerpt" name="excerpt" rows="2"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="content" class="form-label">Content *</label>
+                            <textarea class="form-control" id="content" name="content" rows="5" required></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="category" class="form-label">Category</label>
+                                <select class="form-select" id="category" name="category">
+                                    <option value="general">General</option>
+                                    <option value="announcement">Announcement</option>
+                                    <option value="update">Update</option>
+                                    <option value="tutorial">Tutorial</option>
+                                    <option value="event">Event</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="status" class="form-label">Status</label>
+                                <select class="form-select" id="status" name="status">
+                                    <option value="draft">Draft</option>
+                                    <option value="published">Published</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="image" class="form-label">Image</label>
+                            <input type="file" class="form-control" id="image" name="image" accept="image/*">
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="featured" name="featured" value="1">
+                            <label class="form-check-label" for="featured">Featured Article</label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Add Article</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        function deleteNews(id, title) {
-            document.getElementById('deleteNewsId').value = id;
-            document.getElementById('deleteNewsTitle').textContent = title;
-            new bootstrap.Modal(document.getElementById('deleteModal')).show();
-        }
-    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

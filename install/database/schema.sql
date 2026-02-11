@@ -1577,6 +1577,33 @@ CREATE TABLE `news` (
   FOREIGN KEY (`author_id`) REFERENCES `users`(`id`) ON DELETE SET NULL
 )
 
+DROP TABLE IF EXISTS news;
+
+CREATE TABLE `news` (
+    `id` int(11) NOT NULL AUTO_INCREMENT,
+    `title` varchar(255) NOT NULL,
+    `slug` varchar(255) NOT NULL UNIQUE,
+    `content` text NOT NULL,
+    `excerpt` text,
+    `category` varchar(50) DEFAULT 'general',
+    `image` varchar(255),
+    `status` enum('draft','published','scheduled') DEFAULT 'draft',
+    `featured` tinyint(1) DEFAULT 0,
+    `author_id` int(11) DEFAULT 1,
+    `views` int(11) DEFAULT 0,
+    `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_status` (`status`),
+    KEY `idx_featured` (`featured`),
+    KEY `idx_category` (`category`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Inserir dados de exemplo
+INSERT INTO `news` (`title`, `slug`, `content`, `excerpt`, `category`, `status`, `featured`, `views`) VALUES
+('Primeira Notícia', 'primeira-noticia', 'Conteúdo da primeira notícia', 'Resumo da primeira notícia', 'announcement', 'published', 1, 100),
+('Segunda Notícia', 'segunda-noticia', 'Conteúdo da segunda notícia', 'Resumo da segunda notícia', 'update', 'draft', 0, 50);
+
 -- Tabela de Visualizações de Notícias
 CREATE TABLE IF NOT EXISTS `news_views` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,

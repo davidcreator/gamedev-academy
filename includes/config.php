@@ -196,11 +196,13 @@ setlocale(LC_MONETARY, 'pt_BR.utf8', 'pt_BR', 'portuguese');
 /**
  * Função para debug (remover em produção)
  */
-function dd($data, $die = true) {
-    echo '<pre style="background:#222; color:#0f0; padding:10px; margin:10px; border-radius:5px;">';
-    var_dump($data);
-    echo '</pre>';
-    if ($die) die();
+if (!function_exists('dd')) {
+    function dd($data, $die = true) {
+        echo '<pre style="background:#222; color:#0f0; padding:10px; margin:10px; border-radius:5px;">';
+        var_dump($data);
+        echo '</pre>';
+        if ($die) die();
+    }
 }
 
 /**

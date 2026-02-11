@@ -1,0 +1,108 @@
+[10-Feb-2026 20:14:36 America/Sao_Paulo] PHP Warning:  Constant DB_HOST already defined in E:\wamp64\www\gamedev-academy\includes\config.php on line 42
+[10-Feb-2026 20:14:36 America/Sao_Paulo] PHP Stack trace:
+[10-Feb-2026 20:14:36 America/Sao_Paulo] PHP   1. {main}() E:\wamp64\www\gamedev-academy\admin\news.php:0
+[10-Feb-2026 20:14:36 America/Sao_Paulo] PHP   2. include() E:\wamp64\www\gamedev-academy\admin\news.php:4
+[10-Feb-2026 20:14:36 America/Sao_Paulo] PHP Warning:  Constant DB_NAME already defined in E:\wamp64\www\gamedev-academy\includes\config.php on line 43
+[10-Feb-2026 20:14:36 America/Sao_Paulo] PHP Stack trace:
+[10-Feb-2026 20:14:36 America/Sao_Paulo] PHP   1. {main}() E:\wamp64\www\gamedev-academy\admin\news.php:0
+[10-Feb-2026 20:14:36 America/Sao_Paulo] PHP   2. include() E:\wamp64\www\gamedev-academy\admin\news.php:4
+[10-Feb-2026 20:14:36 America/Sao_Paulo] PHP Warning:  Constant DB_USER already defined in E:\wamp64\www\gamedev-academy\includes\config.php on line 44
+[10-Feb-2026 20:14:36 America/Sao_Paulo] PHP Stack trace:
+[10-Feb-2026 20:14:36 America/Sao_Paulo] PHP   1. {main}() E:\wamp64\www\gamedev-academy\admin\news.php:0
+[10-Feb-2026 20:14:36 America/Sao_Paulo] PHP   2. include() E:\wamp64\www\gamedev-academy\admin\news.php:4
+[10-Feb-2026 20:14:36 America/Sao_Paulo] PHP Warning:  Constant DB_PASS already defined in E:\wamp64\www\gamedev-academy\includes\config.php on line 45
+[10-Feb-2026 20:14:36 America/Sao_Paulo] PHP Stack trace:
+[10-Feb-2026 20:14:36 America/Sao_Paulo] PHP   1. {main}() E:\wamp64\www\gamedev-academy\admin\news.php:0
+[10-Feb-2026 20:14:36 America/Sao_Paulo] PHP   2. include() E:\wamp64\www\gamedev-academy\admin\news.php:4
+[10-Feb-2026 20:14:36 America/Sao_Paulo] PHP Warning:  Constant DB_CHARSET already defined in E:\wamp64\www\gamedev-academy\includes\config.php on line 46
+[10-Feb-2026 20:14:36 America/Sao_Paulo] PHP Stack trace:
+[10-Feb-2026 20:14:36 America/Sao_Paulo] PHP   1. {main}() E:\wamp64\www\gamedev-academy\admin\news.php:0
+[10-Feb-2026 20:14:36 America/Sao_Paulo] PHP   2. include() E:\wamp64\www\gamedev-academy\admin\news.php:4
+[10-Feb-2026 20:14:36 America/Sao_Paulo] PHP Warning:  Constant SITE_URL already defined in E:\wamp64\www\gamedev-academy\includes\config.php on line 64
+[10-Feb-2026 20:14:36 America/Sao_Paulo] PHP Stack trace:
+[10-Feb-2026 20:14:36 America/Sao_Paulo] PHP   1. {main}() E:\wamp64\www\gamedev-academy\admin\news.php:0
+[10-Feb-2026 20:14:36 America/Sao_Paulo] PHP   2. include() E:\wamp64\www\gamedev-academy\admin\news.php:4
+[10-Feb-2026 20:14:36 America/Sao_Paulo] PHP   3. define($constant_name = 'SITE_URL', $value = 'http://localhost/gamedev-academy') E:\wamp64\www\gamedev-academy\includes\config.php:64
+[10-Feb-2026 20:14:36 America/Sao_Paulo] PHP Warning:  Constant SESSION_LIFETIME already defined in E:\wamp64\www\gamedev-academy\includes\config.php on line 76
+[10-Feb-2026 20:14:36 America/Sao_Paulo] PHP Stack trace:
+[10-Feb-2026 20:14:36 America/Sao_Paulo] PHP   1. {main}() E:\wamp64\www\gamedev-academy\admin\news.php:0
+[10-Feb-2026 20:14:36 America/Sao_Paulo] PHP   2. include() E:\wamp64\www\gamedev-academy\admin\news.php:4
+[10-Feb-2026 20:14:36 America/Sao_Paulo] PHP Warning:  Undefined array key "role" in E:\wamp64\www\gamedev-academy\admin\news.php on line 6
+[10-Feb-2026 20:14:36 America/Sao_Paulo] PHP Stack trace:
+[10-Feb-2026 20:14:36 America/Sao_Paulo] PHP   1. {main}() E:\wamp64\www\gamedev-academy\admin\news.php:0
+[10-Feb-2026 20:14:36 America/Sao_Paulo] PHP Warning:  Cannot modify header information - headers already sent by (output started at E:\wamp64\www\gamedev-academy\includes\config.php:43) in E:\wamp64\www\gamedev-academy\admin\news.php on line 7
+[10-Feb-2026 20:14:36 America/Sao_Paulo] PHP Stack trace:
+[10-Feb-2026 20:14:36 America/Sao_Paulo] PHP   1. {main}() E:\wamp64\www\gamedev-academy\admin\news.php:0
+[10-Feb-2026 20:14:36 America/Sao_Paulo] PHP   2. header($header = 'Location: /../../login.php') E:\wamp64\www\gamedev-academy\admin\news.php:7
+[10-Feb-2026 20:14:53 America/Sao_Paulo] PHP Warning:  Constant DB_HOST already defined in E:\wamp64\www\gamedev-academy\includes\config.php on line 42
+[10-Feb-2026 20:14:53 America/Sao_Paulo] PHP Stack trace:
+[10-Feb-2026 20:14:53 America/Sao_Paulo] PHP   1. {main}() E:\wamp64\www\gamedev-academy\admin\news.php:0
+[10-Feb-2026 20:14:53 America/Sao_Paulo] PHP   2. include() E:\wamp64\www\gamedev-academy\admin\news.php:4
+[10-Feb-2026 20:14:53 America/Sao_Paulo] PHP Warning:  Constant DB_NAME already defined in E:\wamp64\www\gamedev-academy\includes\config.php on line 43
+[10-Feb-2026 20:14:53 America/Sao_Paulo] PHP Stack trace:
+[10-Feb-2026 20:14:53 America/Sao_Paulo] PHP   1. {main}() E:\wamp64\www\gamedev-academy\admin\news.php:0
+[10-Feb-2026 20:14:53 America/Sao_Paulo] PHP   2. include() E:\wamp64\www\gamedev-academy\admin\news.php:4
+[10-Feb-2026 20:14:53 America/Sao_Paulo] PHP Warning:  Constant DB_USER already defined in E:\wamp64\www\gamedev-academy\includes\config.php on line 44
+[10-Feb-2026 20:14:53 America/Sao_Paulo] PHP Stack trace:
+[10-Feb-2026 20:14:53 America/Sao_Paulo] PHP   1. {main}() E:\wamp64\www\gamedev-academy\admin\news.php:0
+[10-Feb-2026 20:14:53 America/Sao_Paulo] PHP   2. include() E:\wamp64\www\gamedev-academy\admin\news.php:4
+[10-Feb-2026 20:14:53 America/Sao_Paulo] PHP Warning:  Constant DB_PASS already defined in E:\wamp64\www\gamedev-academy\includes\config.php on line 45
+[10-Feb-2026 20:14:53 America/Sao_Paulo] PHP Stack trace:
+[10-Feb-2026 20:14:53 America/Sao_Paulo] PHP   1. {main}() E:\wamp64\www\gamedev-academy\admin\news.php:0
+[10-Feb-2026 20:14:53 America/Sao_Paulo] PHP   2. include() E:\wamp64\www\gamedev-academy\admin\news.php:4
+[10-Feb-2026 20:14:53 America/Sao_Paulo] PHP Warning:  Constant DB_CHARSET already defined in E:\wamp64\www\gamedev-academy\includes\config.php on line 46
+[10-Feb-2026 20:14:53 America/Sao_Paulo] PHP Stack trace:
+[10-Feb-2026 20:14:53 America/Sao_Paulo] PHP   1. {main}() E:\wamp64\www\gamedev-academy\admin\news.php:0
+[10-Feb-2026 20:14:53 America/Sao_Paulo] PHP   2. include() E:\wamp64\www\gamedev-academy\admin\news.php:4
+[10-Feb-2026 20:14:53 America/Sao_Paulo] PHP Warning:  Constant SITE_URL already defined in E:\wamp64\www\gamedev-academy\includes\config.php on line 64
+[10-Feb-2026 20:14:53 America/Sao_Paulo] PHP Stack trace:
+[10-Feb-2026 20:14:53 America/Sao_Paulo] PHP   1. {main}() E:\wamp64\www\gamedev-academy\admin\news.php:0
+[10-Feb-2026 20:14:53 America/Sao_Paulo] PHP   2. include() E:\wamp64\www\gamedev-academy\admin\news.php:4
+[10-Feb-2026 20:14:53 America/Sao_Paulo] PHP   3. define($constant_name = 'SITE_URL', $value = 'http://localhost/gamedev-academy') E:\wamp64\www\gamedev-academy\includes\config.php:64
+[10-Feb-2026 20:14:53 America/Sao_Paulo] PHP Warning:  Constant SESSION_LIFETIME already defined in E:\wamp64\www\gamedev-academy\includes\config.php on line 76
+[10-Feb-2026 20:14:53 America/Sao_Paulo] PHP Stack trace:
+[10-Feb-2026 20:14:53 America/Sao_Paulo] PHP   1. {main}() E:\wamp64\www\gamedev-academy\admin\news.php:0
+[10-Feb-2026 20:14:53 America/Sao_Paulo] PHP   2. include() E:\wamp64\www\gamedev-academy\admin\news.php:4
+[10-Feb-2026 20:14:53 America/Sao_Paulo] PHP Warning:  Undefined array key "role" in E:\wamp64\www\gamedev-academy\admin\news.php on line 6
+[10-Feb-2026 20:14:53 America/Sao_Paulo] PHP Stack trace:
+[10-Feb-2026 20:14:53 America/Sao_Paulo] PHP   1. {main}() E:\wamp64\www\gamedev-academy\admin\news.php:0
+[10-Feb-2026 20:14:53 America/Sao_Paulo] PHP Warning:  Cannot modify header information - headers already sent by (output started at E:\wamp64\www\gamedev-academy\includes\config.php:43) in E:\wamp64\www\gamedev-academy\admin\news.php on line 7
+[10-Feb-2026 20:14:53 America/Sao_Paulo] PHP Stack trace:
+[10-Feb-2026 20:14:53 America/Sao_Paulo] PHP   1. {main}() E:\wamp64\www\gamedev-academy\admin\news.php:0
+[10-Feb-2026 20:14:53 America/Sao_Paulo] PHP   2. header($header = 'Location: /../../login.php') E:\wamp64\www\gamedev-academy\admin\news.php:7
+[10-Feb-2026 20:14:55 America/Sao_Paulo] PHP Warning:  Constant DB_HOST already defined in E:\wamp64\www\gamedev-academy\includes\config.php on line 42
+[10-Feb-2026 20:14:55 America/Sao_Paulo] PHP Stack trace:
+[10-Feb-2026 20:14:55 America/Sao_Paulo] PHP   1. {main}() E:\wamp64\www\gamedev-academy\admin\news.php:0
+[10-Feb-2026 20:14:55 America/Sao_Paulo] PHP   2. include() E:\wamp64\www\gamedev-academy\admin\news.php:4
+[10-Feb-2026 20:14:55 America/Sao_Paulo] PHP Warning:  Constant DB_NAME already defined in E:\wamp64\www\gamedev-academy\includes\config.php on line 43
+[10-Feb-2026 20:14:55 America/Sao_Paulo] PHP Stack trace:
+[10-Feb-2026 20:14:55 America/Sao_Paulo] PHP   1. {main}() E:\wamp64\www\gamedev-academy\admin\news.php:0
+[10-Feb-2026 20:14:55 America/Sao_Paulo] PHP   2. include() E:\wamp64\www\gamedev-academy\admin\news.php:4
+[10-Feb-2026 20:14:55 America/Sao_Paulo] PHP Warning:  Constant DB_USER already defined in E:\wamp64\www\gamedev-academy\includes\config.php on line 44
+[10-Feb-2026 20:14:55 America/Sao_Paulo] PHP Stack trace:
+[10-Feb-2026 20:14:55 America/Sao_Paulo] PHP   1. {main}() E:\wamp64\www\gamedev-academy\admin\news.php:0
+[10-Feb-2026 20:14:55 America/Sao_Paulo] PHP   2. include() E:\wamp64\www\gamedev-academy\admin\news.php:4
+[10-Feb-2026 20:14:55 America/Sao_Paulo] PHP Warning:  Constant DB_PASS already defined in E:\wamp64\www\gamedev-academy\includes\config.php on line 45
+[10-Feb-2026 20:14:55 America/Sao_Paulo] PHP Stack trace:
+[10-Feb-2026 20:14:55 America/Sao_Paulo] PHP   1. {main}() E:\wamp64\www\gamedev-academy\admin\news.php:0
+[10-Feb-2026 20:14:55 America/Sao_Paulo] PHP   2. include() E:\wamp64\www\gamedev-academy\admin\news.php:4
+[10-Feb-2026 20:14:55 America/Sao_Paulo] PHP Warning:  Constant DB_CHARSET already defined in E:\wamp64\www\gamedev-academy\includes\config.php on line 46
+[10-Feb-2026 20:14:55 America/Sao_Paulo] PHP Stack trace:
+[10-Feb-2026 20:14:55 America/Sao_Paulo] PHP   1. {main}() E:\wamp64\www\gamedev-academy\admin\news.php:0
+[10-Feb-2026 20:14:55 America/Sao_Paulo] PHP   2. include() E:\wamp64\www\gamedev-academy\admin\news.php:4
+[10-Feb-2026 20:14:55 America/Sao_Paulo] PHP Warning:  Constant SITE_URL already defined in E:\wamp64\www\gamedev-academy\includes\config.php on line 64
+[10-Feb-2026 20:14:55 America/Sao_Paulo] PHP Stack trace:
+[10-Feb-2026 20:14:55 America/Sao_Paulo] PHP   1. {main}() E:\wamp64\www\gamedev-academy\admin\news.php:0
+[10-Feb-2026 20:14:55 America/Sao_Paulo] PHP   2. include() E:\wamp64\www\gamedev-academy\admin\news.php:4
+[10-Feb-2026 20:14:55 America/Sao_Paulo] PHP   3. define($constant_name = 'SITE_URL', $value = 'http://localhost/gamedev-academy') E:\wamp64\www\gamedev-academy\includes\config.php:64
+[10-Feb-2026 20:14:55 America/Sao_Paulo] PHP Warning:  Constant SESSION_LIFETIME already defined in E:\wamp64\www\gamedev-academy\includes\config.php on line 76
+[10-Feb-2026 20:14:55 America/Sao_Paulo] PHP Stack trace:
+[10-Feb-2026 20:14:55 America/Sao_Paulo] PHP   1. {main}() E:\wamp64\www\gamedev-academy\admin\news.php:0
+[10-Feb-2026 20:14:55 America/Sao_Paulo] PHP   2. include() E:\wamp64\www\gamedev-academy\admin\news.php:4
+[10-Feb-2026 20:14:55 America/Sao_Paulo] PHP Warning:  Undefined array key "role" in E:\wamp64\www\gamedev-academy\admin\news.php on line 6
+[10-Feb-2026 20:14:55 America/Sao_Paulo] PHP Stack trace:
+[10-Feb-2026 20:14:55 America/Sao_Paulo] PHP   1. {main}() E:\wamp64\www\gamedev-academy\admin\news.php:0
+[10-Feb-2026 20:14:55 America/Sao_Paulo] PHP Warning:  Cannot modify header information - headers already sent by (output started at E:\wamp64\www\gamedev-academy\includes\config.php:43) in E:\wamp64\www\gamedev-academy\admin\news.php on line 7
+[10-Feb-2026 20:14:55 America/Sao_Paulo] PHP Stack trace:
+[10-Feb-2026 20:14:55 America/Sao_Paulo] PHP   1. {main}() E:\wamp64\www\gamedev-academy\admin\news.php:0
+[10-Feb-2026 20:14:55 America/Sao_Paulo] PHP   2. header($header = 'Location: /../../login.php') E:\wamp64\www\gamedev-academy\admin\news.php:7
