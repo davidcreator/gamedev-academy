@@ -1,375 +1,223 @@
 <?php
-/**
- * news-create.php - Criar Nova Notícia
- * GameDev Academy - Admin Panel
- */
-
 session_start();
+require_once '../config/config.php';
 
-// Verificar autenticação
-if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
-    header('Location: login.php');
-    exit;
+// Check if user is logged in and is admin
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
+    header('Location: ../login.php');
+    exit();
 }
 
-require_once '../config/database.php';
-require_once '../app/Models/NewsModel.php';
+// Database connection
+try {
+    $pdo = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch(PDOException $e) {
+    die("Connection failed: " . $e->getMessage());
+}
 
-$pageTitle = 'Criar Notícia';
-$currentPage = 'news';
+// Function to generate slug
+function generateSlug($text) {
+    $text = preg_replace('~[^\pL\d]+~u', '-', $text);
+    $text = iconv('utf-8', 'us-ascii//TRANSLIT', $text);
+    $text = preg_replace('~[^-\w]+~', '', $text);
+    $text = trim($text, '-');
+    $text = preg_replace('~-+~', '-', $text);
+    $text = strtolower($text);
+    return $text;
+}
 
-$errors = [];
-$success = '';
-
-// Processar formulário
+// Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Validação
-    $title = trim($_POST['title'] ?? '');
-    $slug = trim($_POST['slug'] ?? '');
-    $content = trim($_POST['content'] ?? '');
-    $excerpt = trim($_POST['excerpt'] ?? '');
-    $category = trim($_POST['category'] ?? '');
+    $title = $_POST['title'];
+    $slug = $_POST['slug'] ?: generateSlug($title);
+    $content = $_POST['content'];
+    $excerpt = $_POST['excerpt'] ?? '';
+    $category = $_POST['category'] ?? 'general';
     $status = $_POST['status'] ?? 'draft';
     $featured = isset($_POST['featured']) ? 1 : 0;
+    $author_id = $_SESSION['user_id'];
     
-    // Validações
-    if (empty($title)) {
-        $errors[] = 'O título é obrigatório.';
-    }
-    
-    if (empty($content)) {
-        $errors[] = 'O conteúdo é obrigatório.';
-    }
-    
-    // Gerar slug automático se vazio
-    if (empty($slug)) {
-        $slug = createSlug($title);
-    }
-    
-    // Upload de imagem
-    $imagePath = null;
-    if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-        $uploadResult = uploadImage($_FILES['image']);
-        if ($uploadResult['success']) {
-            $imagePath = $uploadResult['path'];
-        } else {
-            $errors[] = $uploadResult['error'];
+    // Handle image upload
+    $image_path = null;
+    if (isset($_FILES['image']) && $_FILES['image']['error'] === 0) {
+        $upload_dir = '../uploads/news/';
+        if (!file_exists($upload_dir)) {
+            mkdir($upload_dir, 0777, true);
+        }
+        
+        $file_extension = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
+        $file_name = uniqid() . '.' . $file_extension;
+        $target_path = $upload_dir . $file_name;
+        
+        if (move_uploaded_file($_FILES['image']['tmp_name'], $target_path)) {
+            $image_path = 'uploads/news/' . $file_name;
         }
     }
     
-    // Salvar no banco
-    if (empty($errors)) {
-        try {
-            $pdo = getConnection();
-            $stmt = $pdo->prepare("
-                INSERT INTO news (title, slug, content, excerpt, category, image, status, featured, author_id, created_at, updated_at)
-                VALUES (:title, :slug, :content, :excerpt, :category, :image, :status, :featured, :author_id, NOW(), NOW())
-            ");
-            
-            $stmt->execute([
-                ':title' => $title,
-                ':slug' => $slug,
-                ':content' => $content,
-                ':excerpt' => $excerpt,
-                ':category' => $category,
-                ':image' => $imagePath,
-                ':status' => $status,
-                ':featured' => $featured,
-                ':author_id' => $_SESSION['admin_id'] ?? 1
-            ]);
-            
-            $success = 'Notícia criada com sucesso!';
-            
-            // Redirecionar após 2 segundos
-            header('Refresh: 2; URL=news.php');
-            
-        } catch (PDOException $e) {
-            $errors[] = 'Erro ao salvar: ' . $e->getMessage();
-        }
+    // Insert article
+    try {
+        $stmt = $pdo->prepare("INSERT INTO news (title, slug, content, excerpt, category, image, status, featured, author_id) 
+                              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$title, $slug, $content, $excerpt, $category, $image_path, $status, $featured, $author_id]);
+        
+        $_SESSION['success'] = "News article created successfully!";
+        header('Location: news.php');
+        exit();
+    } catch(PDOException $e) {
+        $error = "Error creating article: " . $e->getMessage();
     }
 }
 
-/**
- * Criar slug a partir do título
- */
-function createSlug($string) {
-    $slug = iconv('UTF-8', 'ASCII//TRANSLIT', $string);
-    $slug = preg_replace('/[^a-zA-Z0-9\s-]/', '', $slug);
-    $slug = strtolower(trim($slug));
-    $slug = preg_replace('/[\s-]+/', '-', $slug);
-    return $slug;
-}
-
-/**
- * Upload de imagem
- */
-function uploadImage($file) {
-    $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    $maxSize = 5 * 1024 * 1024; // 5MB
-    
-    if (!in_array($file['type'], $allowedTypes)) {
-        return ['success' => false, 'error' => 'Tipo de arquivo não permitido.'];
-    }
-    
-    if ($file['size'] > $maxSize) {
-        return ['success' => false, 'error' => 'Arquivo muito grande (máx. 5MB).'];
-    }
-    
-    $uploadDir = '../uploads/news/';
-    if (!is_dir($uploadDir)) {
-        mkdir($uploadDir, 0755, true);
-    }
-    
-    $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-    $filename = uniqid('news_') . '.' . $extension;
-    $filepath = $uploadDir . $filename;
-    
-    if (move_uploaded_file($file['tmp_name'], $filepath)) {
-        return ['success' => true, 'path' => 'uploads/news/' . $filename];
-    }
-    
-    return ['success' => false, 'error' => 'Erro ao fazer upload.'];
-}
-
-// Incluir header
-include 'includes/header.php';
-include 'includes/sidebar.php';
+// Page variables
+$pageTitle = "Create News Article";
+$currentPage = "news";
 ?>
-
-<main class="admin-main">
-    <div class="admin-content">
-        <!-- Breadcrumb -->
-        <nav class="breadcrumb-nav">
-            <ol class="breadcrumb">
-                <li><a href="index.php">Dashboard</a></li>
-                <li><a href="news.php">Notícias</a></li>
-                <li class="active">Criar Notícia</li>
-            </ol>
-        </nav>
-
-        <!-- Page Header -->
-        <div class="page-header">
-            <h1><i class="fas fa-plus-circle"></i> Criar Nova Notícia</h1>
-            <a href="news.php" class="btn btn-secondary">
-                <i class="fas fa-arrow-left"></i> Voltar
-            </a>
-        </div>
-
-        <!-- Alertas -->
-        <?php if (!empty($errors)): ?>
-            <div class="alert alert-danger">
-                <i class="fas fa-exclamation-circle"></i>
-                <ul>
-                    <?php foreach ($errors as $error): ?>
-                        <li><?= htmlspecialchars($error) ?></li>
-                    <?php endforeach; ?>
-                </ul>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo $pageTitle; ?> - GameDev Academy Admin</title>
+    <link rel="stylesheet" href="../assets/css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <?php include 'includes/header.php'; ?>
+    
+    <div class="admin-container">
+        <?php include 'includes/sidebar.php'; ?>
+        
+        <main class="admin-main">
+            <div class="admin-header">
+                <h1><?php echo $pageTitle; ?></h1>
+                <a href="news.php" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to News
+                </a>
             </div>
-        <?php endif; ?>
-
-        <?php if ($success): ?>
-            <div class="alert alert-success">
-                <i class="fas fa-check-circle"></i>
-                <?= htmlspecialchars($success) ?>
-            </div>
-        <?php endif; ?>
-
-        <!-- Formulário -->
-        <form action="" method="POST" enctype="multipart/form-data" class="admin-form">
-            <div class="form-grid">
-                <!-- Coluna Principal -->
-                <div class="form-main">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3>Informações da Notícia</h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="form-group">
-                                <label for="title">Título *</label>
-                                <input 
-                                    type="text" 
-                                    id="title" 
-                                    name="title" 
-                                    class="form-control"
-                                    value="<?= htmlspecialchars($_POST['title'] ?? '') ?>"
-                                    required
-                                    placeholder="Digite o título da notícia"
-                                >
-                            </div>
-
-                            <div class="form-group">
-                                <label for="slug">Slug (URL amigável)</label>
-                                <input 
-                                    type="text" 
-                                    id="slug" 
-                                    name="slug" 
-                                    class="form-control"
-                                    value="<?= htmlspecialchars($_POST['slug'] ?? '') ?>"
-                                    placeholder="deixe-em-branco-para-gerar-automaticamente"
-                                >
-                                <small class="form-text">Deixe em branco para gerar automaticamente</small>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="excerpt">Resumo</label>
-                                <textarea 
-                                    id="excerpt" 
-                                    name="excerpt" 
-                                    class="form-control"
-                                    rows="3"
-                                    placeholder="Breve descrição da notícia"
-                                ><?= htmlspecialchars($_POST['excerpt'] ?? '') ?></textarea>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="content">Conteúdo *</label>
-                                <textarea 
-                                    id="content" 
-                                    name="content" 
-                                    class="form-control editor"
-                                    rows="15"
-                                    required
-                                    placeholder="Digite o conteúdo completo da notícia"
-                                ><?= htmlspecialchars($_POST['content'] ?? '') ?></textarea>
-                            </div>
-                        </div>
-                    </div>
+            
+            <?php if (isset($error)): ?>
+                <div class="alert alert-error">
+                    <?php echo $error; ?>
                 </div>
-
-                <!-- Coluna Lateral -->
-                <div class="form-sidebar">
-                    <!-- Publicação -->
-                    <div class="card">
-                        <div class="card-header">
-                            <h3>Publicação</h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="form-group">
-                                <label for="status">Status</label>
-                                <select id="status" name="status" class="form-control">
-                                    <option value="draft" <?= ($_POST['status'] ?? '') === 'draft' ? 'selected' : '' ?>>
-                                        Rascunho
-                                    </option>
-                                    <option value="published" <?= ($_POST['status'] ?? '') === 'published' ? 'selected' : '' ?>>
-                                        Publicado
-                                    </option>
-                                    <option value="scheduled" <?= ($_POST['status'] ?? '') === 'scheduled' ? 'selected' : '' ?>>
-                                        Agendado
-                                    </option>
-                                </select>
+            <?php endif; ?>
+            
+            <form method="POST" enctype="multipart/form-data" class="admin-form">
+                <div class="form-grid">
+                    <div class="form-main">
+                        <div class="form-card">
+                            <div class="form-card-header">
+                                <h3>Article Content</h3>
                             </div>
-
-                            <div class="form-group">
-                                <label class="checkbox-label">
-                                    <input 
-                                        type="checkbox" 
-                                        name="featured" 
-                                        value="1"
-                                        <?= isset($_POST['featured']) ? 'checked' : '' ?>
-                                    >
-                                    <span>Notícia em destaque</span>
-                                </label>
-                            </div>
-
-                            <div class="form-actions">
-                                <button type="submit" class="btn btn-primary btn-block">
-                                    <i class="fas fa-save"></i> Salvar Notícia
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Categoria -->
-                    <div class="card">
-                        <div class="card-header">
-                            <h3>Categoria</h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="form-group">
-                                <select id="category" name="category" class="form-control">
-                                    <option value="">Selecione...</option>
-                                    <option value="lancamento" <?= ($_POST['category'] ?? '') === 'lancamento' ? 'selected' : '' ?>>
-                                        Lançamento
-                                    </option>
-                                    <option value="atualizacao" <?= ($_POST['category'] ?? '') === 'atualizacao' ? 'selected' : '' ?>>
-                                        Atualização
-                                    </option>
-                                    <option value="tutorial" <?= ($_POST['category'] ?? '') === 'tutorial' ? 'selected' : '' ?>>
-                                        Tutorial
-                                    </option>
-                                    <option value="evento" <?= ($_POST['category'] ?? '') === 'evento' ? 'selected' : '' ?>>
-                                        Evento
-                                    </option>
-                                    <option value="promocao" <?= ($_POST['category'] ?? '') === 'promocao' ? 'selected' : '' ?>>
-                                        Promoção
-                                    </option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Imagem Destacada -->
-                    <div class="card">
-                        <div class="card-header">
-                            <h3>Imagem Destacada</h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="form-group">
-                                <div class="image-upload-area" id="imageUploadArea">
-                                    <input 
-                                        type="file" 
-                                        id="image" 
-                                        name="image" 
-                                        accept="image/*"
-                                        class="image-input"
-                                    >
-                                    <div class="upload-placeholder">
-                                        <i class="fas fa-cloud-upload-alt"></i>
-                                        <p>Clique ou arraste uma imagem</p>
-                                        <small>JPG, PNG, GIF ou WebP (máx. 5MB)</small>
-                                    </div>
-                                    <img id="imagePreview" class="image-preview" style="display: none;">
+                            <div class="form-card-body">
+                                <div class="form-group">
+                                    <label for="title">Title *</label>
+                                    <input type="text" class="form-input" id="title" name="title" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="slug">Slug (URL)</label>
+                                    <input type="text" class="form-input" id="slug" name="slug">
+                                    <small class="form-help">Leave empty to auto-generate from title</small>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="excerpt">Excerpt</label>
+                                    <textarea class="form-textarea" id="excerpt" name="excerpt" rows="3"></textarea>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="content">Content *</label>
+                                    <textarea class="form-textarea" id="content" name="content" rows="15" required></textarea>
                                 </div>
                             </div>
                         </div>
                     </div>
+                    
+                    <div class="form-sidebar">
+                        <div class="form-card">
+                            <div class="form-card-header">
+                                <h3>Publish Settings</h3>
+                            </div>
+                            <div class="form-card-body">
+                                <div class="form-group">
+                                    <label for="status">Status</label>
+                                    <select class="form-select" id="status" name="status">
+                                        <option value="draft">Draft</option>
+                                        <option value="published">Published</option>
+                                        <option value="scheduled">Scheduled</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="category">Category</label>
+                                    <select class="form-select" id="category" name="category">
+                                        <option value="general">General</option>
+                                        <option value="announcement">Announcement</option>
+                                        <option value="update">Update</option>
+                                        <option value="tutorial">Tutorial</option>
+                                        <option value="event">Event</option>
+                                        <option value="promotion">Promotion</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="featured" value="1">
+                                        <span>Featured Article</span>
+                                    </label>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="image">Featured Image</label>
+                                    <input type="file" class="form-file" id="image" name="image" accept="image/*">
+                                    <div id="imagePreview" class="image-preview"></div>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary btn-block">
+                                    <i class="fas fa-save"></i> Create Article
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </form>
+            </form>
+        </main>
     </div>
-</main>
-
-<script>
-// Auto-gerar slug do título
-document.getElementById('title').addEventListener('blur', function() {
-    const slugField = document.getElementById('slug');
-    if (slugField.value === '') {
-        const slug = this.value
-            .toLowerCase()
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '')
-            .replace(/[^a-z0-9\s-]/g, '')
-            .trim()
-            .replace(/\s+/g, '-');
-        slugField.value = slug;
-    }
-});
-
-// Preview da imagem
-document.getElementById('image').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const preview = document.getElementById('imagePreview');
-            const placeholder = document.querySelector('.upload-placeholder');
-            preview.src = e.target.result;
-            preview.style.display = 'block';
-            placeholder.style.display = 'none';
+    
+    <script>
+    // Auto-generate slug
+    document.getElementById('title').addEventListener('blur', function() {
+        const slugField = document.getElementById('slug');
+        if (slugField.value === '') {
+            const title = this.value;
+            const slug = title.toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^\w\s-]/g, '')
+                .trim()
+                .replace(/\s+/g, '-');
+            slugField.value = slug;
         }
-        reader.readAsDataURL(file);
-    }
-});
-</script>
-
-<?php include 'includes/footer.php'; ?>
+    });
+    
+    // Image preview
+    document.getElementById('image').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        const preview = document.getElementById('imagePreview');
+        
+        if (file && file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+            };
+            reader.readAsDataURL(file);
+        } else {
+            preview.innerHTML = '';
+        }
+    });
+    </script>
+    
+    <?php include 'includes/footer.php'; ?>
+</body>
+</html>
