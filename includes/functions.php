@@ -818,6 +818,78 @@ if (!function_exists('isProduction')) {
     }
 }
 
+/**
+ * Sanitiza conteúdo HTML permitindo apenas tags seguras
+ * Importante para prevenir XSS
+ */
+function sanitizeHtmlContent($html) {
+    // Tags permitidas para conteúdo educacional
+    $allowed_tags = [
+        'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'strike',
+        'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+        'ul', 'ol', 'li',
+        'a', 'img',
+        'table', 'thead', 'tbody', 'tr', 'th', 'td',
+        'blockquote', 'pre', 'code',
+        'div', 'span',
+        'iframe' // Para vídeos embedados
+    ];
+    
+    // Atributos permitidos por tag
+    $allowed_attributes = [
+        'a' => ['href', 'title', 'target', 'rel'],
+        'img' => ['src', 'alt', 'title', 'width', 'height', 'class'],
+        'iframe' => ['src', 'width', 'height', 'frameborder', 'allowfullscreen'],
+        'pre' => ['class', 'data-language'],
+        'code' => ['class', 'data-language'],
+        'div' => ['class', 'id'],
+        'span' => ['class', 'style'],
+        'table' => ['class', 'border'],
+        'td' => ['colspan', 'rowspan'],
+        'th' => ['colspan', 'rowspan']
+    ];
+    
+    // Usar HTMLPurifier se disponível (mais seguro)
+    if (class_exists('HTMLPurifier')) {
+        $config = HTMLPurifier_Config::createDefault();
+        $config->set('HTML.Allowed', implode(',', $allowed_tags));
+        $config->set('HTML.SafeIframe', true);
+        $config->set('URI.SafeIframeRegexp', '%^(https?:)?//(www\.youtube(?:-nocookie)?\.com/embed/|player\.vimeo\.com/video/)%');
+        
+        $purifier = new HTMLPurifier($config);
+        return $purifier->purify($html);
+    }
+    
+    // Fallback: sanitização básica
+    // Remove scripts e eventos maliciosos
+    $html = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $html);
+    $html = preg_replace('/on\w+\s*=\s*(["\']).*?\1/i', '', $html);
+    $html = preg_replace('/javascript:/i', '', $html);
+    
+    return $html;
+}
+
+/**
+ * Processa conteúdo para exibição (syntax highlighting, etc)
+ */
+function processLessonContent($content) {
+    // Adiciona classes para syntax highlighting com Prism.js
+    $content = preg_replace(
+        '/<pre><code class="language-(\w+)">/i',
+        '<pre class="language-$1"><code class="language-$1">',
+        $content
+    );
+    
+    // Converte links do YouTube em embeds
+    $content = preg_replace(
+        '/https?:\/\/(www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/i',
+        '<div class="video-embed"><iframe src="https://www.youtube.com/embed/$2" frameborder="0" allowfullscreen></iframe></div>',
+        $content
+    );
+    
+    return $content;
+}
+
 // ====================================================================
 // FIM DO ARQUIVO
 // ====================================================================
