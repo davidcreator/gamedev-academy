@@ -71,9 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <input type="text" name="summary" class="form-control" value="<?= escape($lesson['summary'] ?? '') ?>">
         </div>
 
-        <div class="mb-3">
-            <label class="form-label">Conteúdo</label>
-            <div class="d-flex align-center gap-2 mb-2">               
+        <div class="mb-3">            
             </div>
             <div class="editor-toolbar" data-editor-for="content">
             <!-- Inicialização do TinyMCE -->
