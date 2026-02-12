@@ -60,8 +60,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
         <div class="mb-3">
             <label class="form-label">Conteúdo</label>
-            <div class="">
-
+            <div class="d-flex align-center gap-2 mb-2">
+                <label type="checkbox" id="news-markdown">Salvar como Markdown</label>
+            </div>
+            <div class="editor-toolbar" data-editor-for="content">
+                implementar TinyMCE
             </div>
         </div>
     </form>

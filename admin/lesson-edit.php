@@ -79,21 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </label>
             </div>
             <div class="editor-toolbar" data-editor-for="content">
-                <button type="button" class="btn btn-sm btn-secondary" data-cmd="bold">Negrito</button>
-                <button type="button" class="btn btn-sm btn-secondary" data-cmd="italic">Itálico</button>
-                <button type="button" class="btn btn-sm btn-secondary" data-cmd="underline">Sublinhado</button>
-                <button type="button" class="btn btn-sm btn-secondary" data-cmd="formatBlock" data-value="h2">H2</button>
-                <button type="button" class="btn btn-sm btn-secondary" data-cmd="formatBlock" data-value="h3">H3</button>
-                <button type="button" class="btn btn-sm btn-secondary" data-cmd="insertUnorderedList">Lista</button>
-                <button type="button" class="btn btn-sm btn-secondary" data-cmd="insertOrderedList">Lista Num.</button>
-                <button type="button" class="btn btn-sm btn-secondary" data-cmd="createLink" data-prompt="URL">Link</button>
-                <button type="button" class="btn btn-sm btn-secondary" data-action="insertImage">Imagem</button>
-                <button type="button" class="btn btn-sm btn-secondary" data-action="insertYouTube">YouTube</button>
-                <button type="button" class="btn btn-sm btn-secondary" data-action="insertIframe">Streaming</button>
-                <button type="button" class="btn btn-sm btn-secondary" data-action="insertRepo">Repo</button>
-                <button type="button" class="btn btn-sm btn-secondary" data-cmd="removeFormat">Limpar</button>
-            </div>
-            <div id="editor-content" class="editor-area" contenteditable="true"><?= $lesson['content'] ?? '' ?></div>
+            Implementar TinyMCE
             <textarea name="content" id="textarea-content" class="form-control" hidden><?= $lesson['content'] ?? '' ?></textarea>
         </div>
 
