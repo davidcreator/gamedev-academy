@@ -1,88 +1,76 @@
 <?php
-// lessons/view.php (exemplo de exibição)
+// lesson-view.php ou similar
+session_start();
+require_once '../config/database.php';
 
-require_once '../includes/config.php';
-require_once '../includes/db.php';
-require_once '../includes/functions.php';
+$lesson_id = $_GET['id'] ?? 0;
 
-$lesson_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-
-// Buscar lição
-$stmt = $pdo->prepare("
-    SELECT l.*, m.title as module_title, c.title as course_title
-    FROM lessons l
-    JOIN modules m ON l.module_id = m.id
-    JOIN courses c ON m.course_id = c.id
-    WHERE l.id = ? AND l.status = 'published'
-");
+$stmt = $pdo->prepare("SELECT * FROM lessons WHERE id = ? AND status = 'published'");
 $stmt->execute([$lesson_id]);
 $lesson = $stmt->fetch(PDO::FETCH_ASSOC);
-
-if (!$lesson) {
-    header('HTTP/1.0 404 Not Found');
-    include '../404.php';
-    exit;
-}
-
-// Processar conteúdo
-$content = processLessonContent($lesson['content']);
 ?>
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($lesson['title']); ?> - GameDev Academy</title>
-    <link rel="stylesheet" href="<?php echo BASE_URL; ?>/assets/css/style.css">
-    <link rel="stylesheet" href="<?php echo BASE_URL; ?>/assets/css/editor.css">
-    
-    <!-- Syntax Highlighting -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .lesson-content {
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        .lesson-content img {
+            max-width: 100%;
+            height: auto;
+            margin: 1em 0;
+        }
+        .lesson-content pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .lesson-content code {
+            background: #f4f4f4;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+    </style>
 </head>
 <body>
-    <?php include '../includes/header.php'; ?>
-    
-    <main class="lesson-page">
-        <div class="container">
-            <!-- Breadcrumb -->
-            <nav class="breadcrumb">
-                <a href="<?php echo BASE_URL; ?>">Home</a> /
-                <a href="<?php echo BASE_URL; ?>/courses/<?php echo $lesson['course_id']; ?>">
-                    <?php echo htmlspecialchars($lesson['course_title']); ?>
-                </a> /
-                <span><?php echo htmlspecialchars($lesson['title']); ?></span>
-            </nav>
-            
-            <article class="lesson-article">
-                <header class="lesson-header">
-                    <h1><?php echo htmlspecialchars($lesson['title']); ?></h1>
-                    <div class="lesson-meta">
-                        <span>📚 <?php echo htmlspecialchars($lesson['module_title']); ?></span>
-                        <?php if ($lesson['duration'] > 0): ?>
-                            <span>⏱️ <?php echo $lesson['duration']; ?> min</span>
-                        <?php endif; ?>
-                    </div>
-                </header>
-                
-                <?php if (!empty($lesson['video_url'])): ?>
-                    <div class="lesson-video">
-                        <?php echo embedVideo($lesson['video_url']); ?>
-                    </div>
-                <?php endif; ?>
-                
-                <div class="lesson-content">
-                    <?php echo $content; ?>
-                </div>
-            </article>
+    <div class="container mt-4">
+        <h1><?php echo htmlspecialchars($lesson['title']); ?></h1>
+        <p class="text-muted"><?php echo htmlspecialchars($lesson['description']); ?></p>
+        
+        <hr>
+        
+        <!-- IMPORTANTE: Não usar htmlspecialchars aqui -->
+        <div class="lesson-content">
+            <?php echo $lesson['content']; ?>
         </div>
-    </main>
+        
+        <!-- Se tiver vídeo -->
+        <?php if (!empty($lesson['video_url'])): ?>
+            <div class="mt-4">
+                <h3>Vídeo da Aula</h3>
+                <!-- Processar URL do vídeo se necessário -->
+            </div>
+        <?php endif; ?>
+    </div>
     
-    <?php include '../includes/footer.php'; ?>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- Syntax Highlighting -->
+    <!-- Se usar código com syntax highlighting -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script>
+        // Aplicar syntax highlighting se houver código
+        if (typeof Prism !== 'undefined') {
+            Prism.highlightAll();
+        }
+    </script>
 </body>
 </html>
