@@ -1,15 +1,33 @@
 <?php
-session_start();
-require_once '../../config/database.php';
-/*require_once '../../includes/auth-check.php';*/
+// Debug: verificar caminho
+$db_path = '../../config/database.php';
+echo "Caminho: " . realpath($db_path) . "<br>";
+echo "Arquivo existe: SIM<br><br>";
 
-// Verificar se é admin
-/*checkAdmin();*/
+echo "<strong>Conteúdo do database.php:</strong><br>";
+echo "<pre>";
+echo htmlspecialchars(file_get_contents($db_path));
+echo "</pre>";
 
-// Verificar se a conexão existe
-if (!isset($pdo)) {
-    die("Erro: Conexão com o banco de dados não estabelecida.");
+echo "<hr>";
+echo "<strong>Tentando incluir...</strong><br>";
+
+require_once $db_path;
+
+echo "Variável \$pdo existe? " . (isset($pdo) ? 'SIM' : 'NÃO') . "<br>";
+
+if (isset($pdo)) {
+    echo "Tipo: " . get_class($pdo) . "<br>";
+    echo "<strong style='color:green'>CONEXÃO OK!</strong>";
+} else {
+    echo "<strong style='color:red'>CONEXÃO FALHOU!</strong><br>";
+    echo "Constantes definidas:<br>";
+    echo "DB_HOST: " . (defined('DB_HOST') ? DB_HOST : 'NÃO DEFINIDA') . "<br>";
+    echo "DB_NAME: " . (defined('DB_NAME') ? DB_NAME : 'NÃO DEFINIDA') . "<br>";
+    echo "DB_USER: " . (defined('DB_USER') ? DB_USER : 'NÃO DEFINIDA') . "<br>";
 }
+
+exit;
 
 // Obter ID da aula
 $lesson_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
