@@ -154,20 +154,24 @@ mkdir my-projects
 ## 🏆 Conquistas Desbloqueáveis
 Acompanhe seu progresso:
 
-Conquista	Descrição	Status
+## Conquista	Descrição	Status
 🥚 First Steps	Clone o repositório	⬜
 🐣 Hello World	Complete o primeiro tutorial	⬜
 🐥 Game Dev	Finalize seu primeiro jogo	⬜
 🐓 Contributor	Faça sua primeira contribuição	⬜
 🦅 Master	Complete uma trilha inteira	⬜
-🆘 Onde Buscar Ajuda
+
+## 🆘 Onde Buscar Ajuda
+Se você tiver dúvidas, não hesite em buscar ajuda!
+
+### Recursos Disponíveis
 Documentação - Consulte os guias na pasta docs/
 FAQ - Perguntas frequentes em FAQ.md
 Issues - Busque problemas similares
 Comunidade - Pergunte e ajude outros
-➡️ Próximos Passos
-Escolha seu caminho:
 
+## ➡️ Próximos Passos
+Escolha seu caminho:
 📘 Tutorial Unity
 📗 Tutorial Godot
 📙 Tutorial Pygame
