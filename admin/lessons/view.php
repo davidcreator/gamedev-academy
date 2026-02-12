@@ -4,7 +4,7 @@ require_once '../../config/database.php';
 /*require_once '../../includes/auth-check.php';*/
 
 // Verificar se é admin
-checkAdmin();
+/*checkAdmin();*/
 
 // Verificar se a conexão existe
 if (!isset($pdo)) {
