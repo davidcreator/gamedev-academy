@@ -24,6 +24,7 @@
         "phpmailer/phpmailer": "^7.0",
         "ramsey/uuid": "^4.7",
         "respect/validation": "^2.2",
+        "tinymce/tinymce": "^8.3",
         "vlucas/phpdotenv": "^5.5"
     },
     "require-dev": {

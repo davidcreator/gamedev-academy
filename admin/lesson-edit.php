@@ -73,14 +73,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <div class="mb-3">
             <label class="form-label">Conteúdo</label>
-            <div class="d-flex align-center gap-2 mb-2">
-                <label class="d-flex align-center gap-1">
-                    <input type="checkbox" id="lesson-markdown-toggle"> Salvar como Markdown
-                </label>
+            <div class="d-flex align-center gap-2 mb-2">               
             </div>
             <div class="editor-toolbar" data-editor-for="content">
-            Implementar TinyMCE
-            <textarea name="content" id="textarea-content" class="form-control" hidden><?= $lesson['content'] ?? '' ?></textarea>
+            <!-- Inicialização do TinyMCE -->
+            <script src="../assets/js/tinymce/tinymce.min.js"></script>
+                <script>
+                tinymce.init({
+                    selector: 'textarea',
+                    license_key: 'gpl'
+                });
+                </script>
+             <!-- Fim do TinyMCE -->
+            <form method="post">
+                <textarea id="mytextarea">Hello, World!</textarea>
+            </form>
         </div>
 
         <div class="row">

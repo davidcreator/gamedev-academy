@@ -610,6 +610,15 @@
             'aliases' => array(),
             'dev_requirement' => true,
         ),
+        'tinymce/tinymce' => array(
+            'pretty_version' => '8.3.2',
+            'version' => '8.3.2.0',
+            'reference' => '4b043a865f1978056f6649638b2e983c0624ff66',
+            'type' => 'component',
+            'install_path' => __DIR__ . '/../tinymce/tinymce',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
         'vlucas/phpdotenv' => array(
             'pretty_version' => 'v5.6.3',
             'version' => '5.6.3.0',
