@@ -77,17 +77,89 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <div class="editor-toolbar" data-editor-for="content">
             <!-- Inicialização do TinyMCE -->
+            <!-- TinyMCE - Colocar antes do </body> -->
             <script src="../assets/js/tinymce/tinymce.min.js"></script>
-                <script>
-                tinymce.init({
-                    selector: 'textarea',
-                    license_key: 'gpl'
-                });
-                </script>
+            <script>
+            tinymce.init({
+                selector: '#content',
+                height: 500,
+                language: 'pt_BR',
+                plugins: 'advlist autolink lists link image charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime media table help wordcount codesample',
+                toolbar: 'undo redo | blocks | bold italic forecolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | codesample code image link | help',
+                menubar: 'file edit view insert format tools table help',
+                branding: false,
+                promotion: false,
+                codesample_languages: [
+                    { text: 'HTML/XML', value: 'markup' },
+                    { text: 'JavaScript', value: 'javascript' },
+                    { text: 'CSS', value: 'css' },
+                    { text: 'PHP', value: 'php' },
+                    { text: 'C#', value: 'csharp' },
+                    { text: 'C++', value: 'cpp' },
+                    { text: 'Python', value: 'python' }
+                ],
+                setup: function(editor) {
+                    editor.on('change', function() {
+                        editor.save();
+                    });
+                }
+            });
+
+            document.querySelector('form').addEventListener('submit', function() {
+                if (tinymce.get('content')) {
+                    tinymce.get('content').save();
+                }
+            });
+            </script>
              <!-- Fim do TinyMCE -->
-            <form method="post">
-                <textarea id="mytextarea">Hello, World!</textarea>
-            </form>
+            <form method="POST">
+    <!-- outros campos -->
+    
+    <div class="mb-3">
+        <label for="content" class="form-label">Conteúdo</label>
+        <textarea class="form-control" id="content" name="content" rows="15"><?php echo htmlspecialchars($lesson['content']); ?></textarea>
+    </div>
+    
+    <!-- outros campos -->
+    
+    <button type="submit" class="btn btn-primary">Salvar</button>
+    </form>
+            <!-- Scripts no final, antes de </body> -->
+            <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+            <script src="../assets/js/tinymce/tinymce.min.js"></script>
+            <script>
+            tinymce.init({
+                selector: '#content',
+                license_key: 'gpl',
+                height: 500,
+                language: 'pt_BR',
+                plugins: 'advlist autolink lists link image charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime media table help wordcount codesample',
+                toolbar: 'undo redo | blocks | bold italic forecolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | codesample code image link | help',
+                menubar: 'file edit view insert format tools table help',
+                branding: false,
+                promotion: false,
+                codesample_languages: [
+                    { text: 'HTML/XML', value: 'markup' },
+                    { text: 'JavaScript', value: 'javascript' },
+                    { text: 'CSS', value: 'css' },
+                    { text: 'PHP', value: 'php' },
+                    { text: 'C#', value: 'csharp' },
+                    { text: 'C++', value: 'cpp' },
+                    { text: 'Python', value: 'python' }
+                ],
+                setup: function(editor) {
+                    editor.on('change', function() {
+                        editor.save();
+                    });
+                }
+            });
+
+            document.querySelector('form').addEventListener('submit', function() {
+                if (tinymce.get('content')) {
+                    tinymce.get('content').save();
+                }
+            });
+            </script>
         </div>
 
         <div class="row">
