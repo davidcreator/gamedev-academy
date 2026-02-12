@@ -96,7 +96,7 @@ $recentActivity = $db->fetchAll(
     <div class="admin-table-container">
         <div class="admin-table-header">
             <h3>👥 Últimos Usuários</h3>
-            <a href="<?= url('admin/users.php') ?>" class="btn btn-sm btn-primary">Ver Todos</a>
+            <a href="<?= url('admin/users/users.php') ?>" class="btn btn-sm btn-primary">Ver Todos</a>
         </div>
         <table class="admin-table">
             <thead>
@@ -136,7 +136,7 @@ $recentActivity = $db->fetchAll(
     <div class="admin-table-container">
         <div class="admin-table-header">
             <h3>📚 Cursos Populares</h3>
-            <a href="<?= url('admin/courses.php') ?>" class="btn btn-sm btn-primary">Ver Todos</a>
+            <a href="<?= url('admin/courses/courses.php') ?>" class="btn btn-sm btn-primary">Ver Todos</a>
         </div>
         <table class="admin-table">
             <thead>

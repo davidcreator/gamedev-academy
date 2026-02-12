@@ -2,7 +2,7 @@
 // admin/modules.php - Gerenciar Módulos de um Curso
 
 $pageTitle = 'Módulos do Curso';
-include 'includes/header.php';
+include '../includes/header.php';
 
 $db = Database::getInstance();
 $courseModel = new Course();
@@ -11,7 +11,7 @@ $courseId = intval($_GET['course_id'] ?? 0);
 $course = $courseModel->find($courseId);
 if (!$course) {
     flash('error', 'Curso não encontrado.');
-    redirect(url('admin/courses.php'));
+    redirect(url('admin/courses/courses.php'));
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $db->insert('modules', $data);
             flash('success', 'Módulo criado com sucesso!');
         }
-        redirect(url('admin/modules.php?course_id=' . $courseId));
+        redirect(url('admin/modules/modules.php?course_id=' . $courseId));
     }
 
     if ($action === 'update') {
@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $db->update('modules', $data, 'id = :id', ['id' => $id]);
             flash('success', 'Módulo atualizado!');
         }
-        redirect(url('admin/modules.php?course_id=' . $courseId));
+        redirect(url('admin/modules/modules.php?course_id=' . $courseId));
     }
 
     if ($action === 'delete') {
@@ -63,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $db->delete('modules', 'id = :id', ['id' => $id]);
             flash('success', 'Módulo removido!');
         }
-        redirect(url('admin/modules.php?course_id=' . $courseId));
+        redirect(url('admin/modules/modules.php?course_id=' . $courseId));
     }
 }
 
@@ -74,7 +74,7 @@ $modules = $courseModel->getModules($courseId);
 
 <div class="d-flex justify-between align-center mb-4">
     <div>
-        <a href="<?= url('admin/course-edit.php?id=' . $course['id']) ?>" class="btn btn-secondary">← Voltar</a>
+        <a href="<?= url('admin/courses/course-edit.php?id=' . $course['id']) ?>" class="btn btn-secondary">← Voltar</a>
     </div>
     <div class="d-flex align-center gap-2">
         <h2><?= escape($course['title']) ?></h2>
@@ -157,7 +157,7 @@ $modules = $courseModel->getModules($courseId);
                 <td>
                     <div class="admin-actions">
                         <button class="btn-action edit" title="Editar" onclick="toggleEdit(<?= $m['id'] ?>)">✏️</button>
-                        <a href="<?= url('admin/lessons.php?module_id=' . $m['id'] . '&course_id=' . $courseId) ?>" class="btn-action" title="Lições">📖</a>
+                        <a href="<?= url('admin/lessons/lessons.php?module_id=' . $m['id'] . '&course_id=' . $courseId) ?>" class="btn-action" title="Lições">📖</a>
                         <form method="POST" class="d-inline" onsubmit="return confirm('Remover este módulo?')">
                             <input type="hidden" name="action" value="delete">
                             <input type="hidden" name="id" value="<?= $m['id'] ?>">
@@ -223,4 +223,4 @@ function toggleEdit(id) {
 }
 </script>
 
-<?php include 'includes/footer.php'; ?>
+<?php include '../includes/footer.php'; ?>

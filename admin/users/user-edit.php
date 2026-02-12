@@ -2,7 +2,7 @@
 // admin/user-edit.php - Editar Usuário
 
 $pageTitle = 'Editar Usuário';
-include 'includes/header.php';
+include '../includes/header.php';
 
 $id = intval($_GET['id'] ?? 0);
 $userModel = new User();
@@ -146,4 +146,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </form>
 </div>
 
-<?php include 'includes/footer.php'; ?>
+<?php include '../includes/footer.php'; ?>

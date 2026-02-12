@@ -2,7 +2,7 @@
 // admin/course-edit.php - Criar/Editar Curso
 
 $pageTitle = 'Editar Curso';
-include 'includes/header.php';
+include '../includes/header.php';
 
 $db = Database::getInstance();
 $courseModel = new Course();
@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $newId = $courseModel->create($data);
             flash('success', 'Curso criado com sucesso!');
-            redirect(url('admin/course-edit.php?id=' . $newId));
+            redirect(url('admin/courses/course-edit.php?id=' . $newId));
         }
     }
 }
@@ -54,11 +54,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <?= showFlashMessages() ?>
 
 <div class="d-flex justify-between align-center mb-4">
-    <a href="<?= url('admin/courses.php') ?>" class="btn btn-secondary">← Voltar</a>
+    <a href="<?= url('admin/courses/courses.php') ?>" class="btn btn-secondary">← Voltar</a>
     <?php if ($isEdit): ?>
         <div class="d-flex gap-2">
-            <a href="<?= url('admin/modules.php?course_id=' . $course['id']) ?>" class="btn btn-primary">Gerenciar Módulos</a>
-            <a href="<?= url('course.php?slug=' . $course['slug']) ?>" class="btn btn-outline">Ver Curso</a>
+            <a href="<?= url('admin/modules/modules.php?course_id=' . $course['id']) ?>" class="btn btn-primary">Gerenciar Módulos</a>
+            <a href="<?= url('courses/course.php?slug=' . $course['slug']) ?>" class="btn btn-outline">Ver Curso</a>
         </div>
     <?php endif; ?>
     </div>
@@ -201,7 +201,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
 
         <div class="d-flex justify-end gap-2 mt-3">
-            <a href="<?= url('admin/courses.php') ?>" class="btn btn-secondary">Cancelar</a>
+            <a href="<?= url('admin/courses/courses.php') ?>" class="btn btn-secondary">Cancelar</a>
             <button type="submit" class="btn btn-primary">Salvar</button>
         </div>
     </form>
@@ -278,4 +278,4 @@ document.addEventListener('DOMContentLoaded', function () {
         sync();
     }
 </script>
-<?php include 'includes/footer.php'; ?>
+<?php include '../includes/footer.php'; ?>

@@ -1,6 +1,6 @@
 <?php
 $pageTitle = 'Níveis';
-include 'includes/header.php';
+include '../includes/header.php';
 
 $db = Database::getInstance();
 
@@ -21,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             flash('error', 'Informe o título do nível.');
         }
-        redirect(url('admin/levels.php'));
+        redirect(url('admin/levels/levels.php'));
     }
 
     if ($action === 'update') {
@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $db->update('levels', $data, 'id = :id', ['id' => $id]);
             flash('success', 'Nível atualizado!');
         }
-        redirect(url('admin/levels.php'));
+        redirect(url('admin/levels/levels.php'));
     }
 
     if ($action === 'delete') {
@@ -46,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $db->delete('levels', 'id = :id', ['id' => $id]);
             flash('success', 'Nível removido!');
         }
-        redirect(url('admin/levels.php'));
+        redirect(url('admin/levels/levels.php'));
     }
 }
 
@@ -177,4 +177,4 @@ function toggleEdit(id) {
 }
 </script>
 
-<?php include 'includes/footer.php'; ?>
+<?php include '../includes/footer.php'; ?>

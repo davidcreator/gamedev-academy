@@ -2,7 +2,7 @@
 // admin/users.php - Gerenciar Usuários
 
 $pageTitle = 'Gerenciar Usuários';
-include 'includes/header.php';
+include '../includes/header.php';
 
 $userModel = new User();
 $db = Database::getInstance();
@@ -79,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                value="<?= escape($search) ?>">
         <button type="submit" class="btn btn-primary">Buscar</button>
         <?php if ($search): ?>
-            <a href="<?= url('admin/users.php') ?>" class="btn btn-secondary">Limpar</a>
+            <a href="<?= url('admin/users/users.php') ?>" class="btn btn-secondary">Limpar</a>
         <?php endif; ?>
     </form>
 </div>
@@ -150,7 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <td><?= formatDate($user['created_at']) ?></td>
                 <td>
                     <div class="admin-actions">
-                        <a href="<?= url('admin/user-edit.php?id=' . $user['id']) ?>" 
+                        <a href="<?= url('admin/users/user-edit.php?id=' . $user['id']) ?>" 
                            class="btn-action edit" title="Editar">✏️</a>
                         
                         <form method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.');">
@@ -180,4 +180,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 <?php endif; ?>
 
-<?php include 'includes/footer.php'; ?>
+<?php include '../includes/footer.php'; ?>

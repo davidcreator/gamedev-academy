@@ -1,6 +1,6 @@
 <?php
 $pageTitle = 'Configurações';
-include 'includes/header.php';
+include '../includes/header.php';
 
 $db = Database::getInstance();
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -17,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $updated += $db->update('settings', ['setting_value' => $value, 'updated_by' => $currentUser['id']], 'setting_key = :key', ['key' => $key]);
     }
     flash('success', "Configurações atualizadas ({$updated})!");
-    redirect(url('admin/settings.php'));
+    redirect(url('admin/settings/settings.php'));
 }
 
 $categories = $db->fetchAll("SELECT DISTINCT category FROM settings ORDER BY category ASC");
@@ -90,7 +90,7 @@ foreach ($categories as $cat) {
 <section class="card mt-4">
     <div class="card-body">
         <h3 class="card-title">Preferências do Administrador</h3>
-        <form method="POST" action="<?= url('admin/settings.php') ?>">
+        <form method="POST" action="<?= url('admin/settings/settings.php') ?>">
             <div class="grid-cols-2 gap-2">
                 <label>Tema do Painel
                     <select name="settings[default_theme]" class="form-control">
@@ -120,4 +120,4 @@ foreach ($categories as $cat) {
     </div>
 </section>
 
-<?php include 'includes/footer.php'; ?>
+<?php include '../includes/footer.php'; ?>

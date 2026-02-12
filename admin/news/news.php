@@ -2,7 +2,7 @@
 // admin/news.php - Manejo de Notícias
 
 $pageTitle = 'Gerenciar Noticias';
-include 'includes/header.php';
+include '../includes/header.php';
 
 $newsModel = new News();
 $items = $newsModel->getAll(false); // incluir noticias não publicadas
@@ -17,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($news) {
             $newsModel->update($newsId, ['is_published' => !$news['is_published']]);
             flash('success', 'Status da noticia alterado com sucesso!');
-            redirect('admin/news.php');
+            redirect('admin/news/news.php');
         }
     }
 
@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             flash('error', 'Erro ao excluir noticia!');
         }
-        redirect(url('admin/news.php'));
+        redirect(url('admin/news/news.php'));
     }
 }
 ?>
@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <p class="text-muted">Total de <?= count($items) ?> Notícias</p>
     </div>
 
-    <a href="<?=  url('admin/news-create.php') ?>" class="btn btn-primary"> + Noticias</a>
+    <a href="<?=  url('admin/news/news-create.php') ?>" class="btn btn-primary"> + Noticias</a>
 </div>
 <?= showFlashMessages() ?> 
 
@@ -80,8 +80,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <td><?= formatDate($news['created_at']) ?></td>
             <td>
                 <div class="admin-actions">
-                    <a href="<?= url('admin/news-edit.php:id=' . $news['id']) ?>" class="btn-action edit" title="Editar">✏️</a>
-                    <a href="<?= url('admin/news-delete.php:id=' . $news['id']) ?>" class="btn-action delete" title="Excluir">🗑️</a>
+                    <a href="<?= url('admin/news/news-edit.php:id=' . $news['id']) ?>" class="btn-action edit" title="Editar">✏️</a>
+                    <a href="<?= url('admin/news/news-delete.php:id=' . $news['id']) ?>" class="btn-action delete" title="Excluir">🗑️</a>
                     <form method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja excluir esta noticia?')">
                         <input type="hidden" name="action" value="delete">
                         <input type="hidden" name="news_id" value="<?= $news['id'] ?>">
@@ -93,4 +93,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endforeach; ?>
     </tbody>
 </div>
-<?php include 'includes/footer.php'; ?>
+<?php include '../includes/footer.php'; ?>

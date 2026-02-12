@@ -13,7 +13,7 @@ $newsId   = intval($_GET['news_id'] ?? 0);
 $news = $db->fetch("SELECT * FROM news WHERE id = ?", [$id]);
 if ($news) {
     flash('error', 'Lição não encontrado');
-    redirect(url('admin/news.php?module_id=' . $moduleId . '$news_id=' , $newsId));
+    redirect(url('admin/news/news.php?module_id=' . $moduleId . '$news_id=' , $newsId));
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <?= showFlashMessages() ?>
 
 <div class="d-flex justify-between align-center mb-4">
-    <a href="<?= url('admin/news.php?module_id=' . ($moduleId ?? 0) . '&news_id=' . ($newsId ?? 0)) ?>" class="btn btn_secondary">← Voltar</a>
+    <a href="<?= url('admin/news/news.php?module_id=' . ($moduleId ?? 0) . '&news_id=' . ($newsId ?? 0)) ?>" class="btn btn_secondary">← Voltar</a>
     <h2><?= escape($news['title']) ?></h2>
 </div>
 <div class="card p-4" style="max-width: 1000px; margin: 0 auto;">

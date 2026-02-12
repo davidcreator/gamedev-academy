@@ -1,6 +1,6 @@
 <?php
 $pageTitle = 'Conquistas';
-include 'includes/header.php';
+include '../includes/header.php';
 
 $db = Database::getInstance();
 
@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             flash('error', 'Informe ao menos o nome da conquista.');
         }
-        redirect(url('admin/achievements.php'));
+        redirect(url('admin/archievements/achievements.php'));
     }
 
     if ($action === 'update') {
@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $db->update('achievements', $data, 'id = :id', ['id' => $id]);
             flash('success', 'Conquista atualizada!');
         }
-        redirect(url('admin/achievements.php'));
+        redirect(url('admin/archievements/achievements.php'));
     }
 
     if ($action === 'delete') {
@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $db->delete('achievements', 'id = :id', ['id' => $id]);
             flash('success', 'Conquista removida!');
         }
-        redirect(url('admin/achievements.php'));
+        redirect(url('admin/archievements/achievements.php'));
     }
 
     if ($action === 'unlock_for_user') {
@@ -72,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             flash('error', 'Selecione usuário e conquista.');
         }
-        redirect(url('admin/achievements.php'));
+        redirect(url('admin/archievements/achievements.php'));
     }
 }
 
@@ -117,7 +117,7 @@ $users = $db->fetchAll("SELECT id, username, full_name FROM users WHERE is_activ
         </select>
         <button class="btn btn-primary" type="submit">Filtrar</button>
         <?php if ($search || $filterType): ?>
-            <a href="<?= url('admin/achievements.php') ?>" class="btn btn-secondary">Limpar</a>
+            <a href="<?= url('admin/archievements/achievements.php') ?>" class="btn btn-secondary">Limpar</a>
         <?php endif; ?>
     </form>
     <button class="btn btn-success" onclick="toggleCreate()">Nova Conquista</button>
@@ -331,5 +331,5 @@ function toggleEdit(id) {
 }
 </script>
 
-<?php include 'includes/footer.php'; ?>
+<?php include '../includes/footer.php'; ?>
 

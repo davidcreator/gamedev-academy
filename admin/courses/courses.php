@@ -2,7 +2,7 @@
 // admin/courses.php - Gerenciar Cursos
 
 $pageTitle = 'Gerenciar Cursos';
-include 'includes/header.php';
+include '../includes/header.php';
 
 $courseModel = new Course();
 $courses = $courseModel->getAll(false); // Incluir não publicados
@@ -17,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($course) {
             $courseModel->update($courseId, ['is_published' => !$course['is_published']]);
             flash('success', 'Status do curso atualizado!');
-            redirect(url('admin/courses.php'));
+            redirect(url('admin/courses/courses.php'));
         }
     }
     
@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             flash('error', 'Erro ao excluir curso.');
         }
-        redirect(url('admin/courses.php'));
+        redirect(url('admin/courses/courses.php'));
     }
 }
 ?>
@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <p class="text-muted">Total de <?= count($courses) ?> cursos</p>
     </div>
     
-    <a href="<?= url('admin/course-edit.php') ?>" class="btn btn-primary">
+    <a href="<?= url('admin/courses/course-edit.php') ?>" class="btn btn-primary">
         + Novo Curso
     </a>
 </div>
@@ -95,9 +95,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <td><?= formatDate($course['created_at']) ?></td>
                 <td>
                     <div class="admin-actions">
-                        <a href="<?= url('admin/course-edit.php?id=' . $course['id']) ?>" 
+                        <a href="<?= url('admin/courses/course-edit.php?id=' . $course['id']) ?>" 
                            class="btn-action edit" title="Editar">✏️</a>
-                        <a href="<?= url('admin/modules.php?course_id=' . $course['id']) ?>" 
+                        <a href="<?= url('admin/modules/modules.php?course_id=' . $course['id']) ?>" 
                            class="btn-action" title="Módulos">📚</a>
                         <form method="POST" class="d-inline" 
                               onsubmit="return confirm('Tem certeza que deseja excluir este curso?')">
@@ -113,4 +113,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </table>
 </div>
 
-<?php include 'includes/footer.php'; ?>
+<?php include '../includes/footer.php'; ?>
