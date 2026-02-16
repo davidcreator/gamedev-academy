@@ -1,31 +1,18 @@
 <?php
 /**
  * Editor.js Loader
- * GameDev Academy
- * 
  * Localização: gamedev-academy/includes/editorjs-loader.php
- * 
- * Uso:
- * require_once __DIR__ . '/../includes/editorjs-loader.php';
- * $loader = new EditorJSLoader($content);
- * EditorJSLoader::renderStyles();
- * EditorJSLoader::renderScripts();
- * EditorJSLoader::init($loader->getJsonData());
  */
 
 class EditorJSLoader {
     private $content;
     private $editorData;
-    private static $basePath = '/gamedev-academy'; // ← Altere se o projeto mudar de pasta
 
     public function __construct($content = '') {
         $this->content = trim($content ?? '');
         $this->prepareData();
     }
 
-    /**
-     * Prepara os dados para o Editor.js
-     */
     private function prepareData() {
         $defaultData = [
             'time' => time(),
@@ -45,73 +32,62 @@ class EditorJSLoader {
             is_array($decoded['blocks'])) {
             $this->editorData = $decoded;
         } else {
-            // Converte texto antigo para formato Editor.js
-            $this->editorData = [
-                'time' => time(),
-                'blocks' => [
-                    [
-                        'type' => 'paragraph',
-                        'data' => [
-                            'text' => htmlspecialchars($this->content, ENT_QUOTES, 'UTF-8')
+            // Conteúdo antigo (HTML ou texto puro) - converte para bloco
+            $cleanContent = strip_tags($this->content);
+            $cleanContent = html_entity_decode($cleanContent, ENT_QUOTES, 'UTF-8');
+            $cleanContent = trim($cleanContent);
+            
+            if (empty($cleanContent)) {
+                $this->editorData = $defaultData;
+            } else {
+                $this->editorData = [
+                    'time' => time(),
+                    'blocks' => [
+                        [
+                            'type' => 'paragraph',
+                            'data' => [
+                                'text' => $cleanContent
+                            ]
                         ]
-                    ]
-                ],
-                'version' => '2.28.0'
-            ];
+                    ],
+                    'version' => '2.28.0'
+                ];
+            }
         }
     }
 
-    /**
-     * Retorna os dados preparados
-     */
     public function getData() {
         return $this->editorData;
     }
 
-    /**
-     * Retorna JSON seguro para JavaScript
-     */
     public function getJsonData() {
-        return json_encode(
-            $this->editorData, 
+        $json = json_encode(
+            $this->editorData,
             JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE
         );
+        
+        // Fallback se json_encode falhar
+        if ($json === false) {
+            $json = json_encode([
+                'time' => time(),
+                'blocks' => [],
+                'version' => '2.28.0'
+            ]);
+        }
+        
+        return $json;
     }
 
-    /**
-     * Define o caminho base do projeto
-     * Útil se o projeto mudar de pasta
-     */
-    public static function setBasePath($path) {
-        self::$basePath = rtrim($path, '/');
-    }
-
-    /**
-     * Retorna URL completa para assets
-     */
-    private static function getAssetUrl($path) {
-        return self::$basePath . '/' . ltrim($path, '/');
-    }
-
-    /**
-     * Renderiza os estilos CSS do Editor.js
-     */
     public static function renderStyles() {
-        $cssUrl = self::getAssetUrl('assets/css/editorjs-custom.css');
-        echo '<link rel="stylesheet" href="' . $cssUrl . '">' . PHP_EOL;
+        echo '<link rel="stylesheet" href="/gamedev-academy/assets/css/editorjs-custom.css">' . PHP_EOL;
     }
 
-    /**
-     * Renderiza os scripts do Editor.js
-     */
     public static function renderScripts() {
-        $jsToolsUrl = self::getAssetUrl('assets/js/editorjs-tools.js');
-        $jsInitUrl = self::getAssetUrl('assets/js/editorjs-init.js');
         ?>
 <!-- Editor.js Core -->
 <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@2.28.2"></script>
 
-<!-- Editor.js Tools (CDN) -->
+<!-- Editor.js Tools -->
 <script src="https://cdn.jsdelivr.net/npm/@editorjs/header@2.8.1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@editorjs/paragraph@2.11.3"></script>
 <script src="https://cdn.jsdelivr.net/npm/@editorjs/list@1.9.0"></script>
@@ -126,52 +102,37 @@ class EditorJSLoader {
 <script src="https://cdn.jsdelivr.net/npm/@editorjs/image@2.9.0"></script>
 <script src="https://cdn.jsdelivr.net/npm/@editorjs/embed@2.7.0"></script>
 
-<!-- Editor.js Custom Config -->
-<script src="<?= $jsToolsUrl ?>"></script>
-<script src="<?= $jsInitUrl ?>"></script>
+<!-- Editor.js Custom -->
+<script src="/gamedev-academy/assets/js/editorjs-tools.js"></script>
+<script src="/gamedev-academy/assets/js/editorjs-init.js"></script>
         <?php
     }
 
-    /**
-     * Inicializa o Editor.js
-     * 
-     * @param string $editorData JSON dos dados do editor
-     * @param string $holderId ID do elemento HTML que receberá o editor
-     * @param string $textareaId ID do textarea que armazenará o JSON
-     * @param string $formId ID do formulário
-     */
-    public static function init($editorData, $holderId = 'editorjs', $textareaId = 'content', $formId = 'lessonForm') {
+    public static function init($data, $formId = 'lessonForm') {
+        $safeJson = is_string($data) ? $data : json_encode($data);
         ?>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Inicializando Editor.js...');
-    
-    // Verifica se EditorJSManager foi carregado
-    if (typeof EditorJSManager === 'undefined') {
-        console.error('❌ EditorJSManager não foi carregado!');
-        document.getElementById('<?= $holderId ?>').innerHTML = 
-            '<div class="alert alert-danger">Erro ao carregar o editor. Verifique a conexão.</div>';
-        return;
+    var editorData;
+    try {
+        editorData = JSON.parse('<?= addslashes($safeJson) ?>');
+    } catch(e) {
+        console.warn('Dados do editor inválidos, usando vazio:', e);
+        editorData = { time: Date.now(), blocks: [], version: '2.28.0' };
     }
-    
-    new EditorJSManager({
-        holderId: '<?= $holderId ?>',
-        textareaId: '<?= $textareaId ?>',
-        formId: '<?= $formId ?>',
-        data: <?= $editorData ?>
-    });
+
+    if (typeof EditorJSManager !== 'undefined') {
+        new EditorJSManager({
+            holderId: 'editorjs',
+            textareaId: 'content',
+            formId: '<?= $formId ?>',
+            data: editorData
+        });
+    } else {
+        console.error('EditorJSManager não carregado');
+    }
 });
 </script>
         <?php
-    }
-
-    /**
-     * Renderiza tudo (estilos + scripts + init) de uma vez
-     * Útil para simplificar o uso
-     */
-    public static function renderAll($editorData, $holderId = 'editorjs', $textareaId = 'content', $formId = 'lessonForm') {
-        self::renderStyles();
-        self::renderScripts();
-        self::init($editorData, $holderId, $textareaId, $formId);
     }
 }

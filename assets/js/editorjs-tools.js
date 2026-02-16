@@ -1,60 +1,114 @@
 /**
  * Editor.js Tools Configuration
  * GameDev Academy
+ *
+ * Apenas ferramentas com CDN carregado no editorjs-loader.php
  */
 
-const EditorJSTools = {
-    header: {
+var EditorJSTools = {};
+
+// Adiciona cada ferramenta SOMENTE se estiver disponível
+
+if (typeof Header !== 'undefined') {
+    EditorJSTools.header = {
         class: Header,
         inlineToolbar: true,
         config: {
             levels: [2, 3, 4],
             defaultLevel: 2
         }
-    },
-    paragraph: {
+    };
+}
+
+if (typeof Paragraph !== 'undefined') {
+    EditorJSTools.paragraph = {
         class: Paragraph,
         inlineToolbar: true
-    },
-    list: {
+    };
+}
+
+if (typeof List !== 'undefined') {
+    EditorJSTools.list = {
         class: List,
         inlineToolbar: true
-    },
-    checklist: {
+    };
+}
+
+if (typeof Checklist !== 'undefined') {
+    EditorJSTools.checklist = {
         class: Checklist,
         inlineToolbar: true
-    },
-    quote: {
+    };
+}
+
+if (typeof Quote !== 'undefined') {
+    EditorJSTools.quote = {
         class: Quote,
-        inlineToolbar: true
-    },
-    warning: {
+        inlineToolbar: true,
+        config: {
+            quotePlaceholder: 'Insira a citação',
+            captionPlaceholder: 'Autor'
+        }
+    };
+}
+
+if (typeof Warning !== 'undefined') {
+    EditorJSTools.warning = {
         class: Warning,
-        inlineToolbar: true
-    },
-    code: {
+        inlineToolbar: true,
+        config: {
+            titlePlaceholder: 'Título',
+            messagePlaceholder: 'Mensagem'
+        }
+    };
+}
+
+if (typeof CodeTool !== 'undefined') {
+    EditorJSTools.code = {
         class: CodeTool
-    },
-    delimiter: Delimiter,
-    table: {
+    };
+}
+
+if (typeof Delimiter !== 'undefined') {
+    EditorJSTools.delimiter = Delimiter;
+}
+
+if (typeof Table !== 'undefined') {
+    EditorJSTools.table = {
         class: Table,
-        inlineToolbar: true
-    },
-    marker: {
+        inlineToolbar: true,
+        config: {
+            rows: 2,
+            cols: 3
+        }
+    };
+}
+
+if (typeof Marker !== 'undefined') {
+    EditorJSTools.marker = {
         class: Marker
-    },
-    underline: {
+    };
+}
+
+if (typeof Underline !== 'undefined') {
+    EditorJSTools.underline = {
         class: Underline
-    },
-    image: {
+    };
+}
+
+if (typeof ImageTool !== 'undefined') {
+    EditorJSTools.image = {
         class: ImageTool,
         config: {
             endpoints: {
                 byFile: 'upload-image.php'
             }
         }
-    },
-    embed: {
+    };
+}
+
+if (typeof Embed !== 'undefined') {
+    EditorJSTools.embed = {
         class: Embed,
         config: {
             services: {
@@ -63,5 +117,7 @@ const EditorJSTools = {
                 codepen: true
             }
         }
-    }
-};
+    };
+}
+
+console.log('🛠️ EditorJS Tools carregadas:', Object.keys(EditorJSTools));
