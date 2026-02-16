@@ -77,38 +77,6 @@ try {
     die("Erro ao buscar aula: " . $e->getMessage());
 }
 
-// ========== PREPARAÇÃO DOS DADOS PARA O EDITOR.JS ==========
-$content = trim($lesson['content'] ?? '');
-
-$defaultEditorData = [
-    'time' => time(),
-    'blocks' => [],
-    'version' => '2.28.0'
-];
-
-if (empty($content)) {
-    $editorData = $defaultEditorData;
-} else {
-    $decoded = json_decode($content, true);
-    
-    if (json_last_error() === JSON_ERROR_NONE && isset($decoded['blocks']) && is_array($decoded['blocks'])) {
-        $editorData = $decoded;
-    } else {
-        $editorData = [
-            'time' => time(),
-            'blocks' => [
-                [
-                    'type' => 'paragraph',
-                    'data' => [
-                        'text' => htmlspecialchars($content, ENT_QUOTES, 'UTF-8')
-                    ]
-                ]
-            ],
-            'version' => '2.28.0'
-        ];
-    }
-}
-
 showFlashMessages() ?>
 
 <!-- Funções -->
