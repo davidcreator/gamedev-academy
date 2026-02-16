@@ -24,6 +24,11 @@ $currentPage = basename($_SERVER['PHP_SELF'], '.php');
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= asset('css/main.css') ?>">
     <link rel="stylesheet" href="<?= asset('css/admin.css') ?>">
+<?php
+    if (class_exists('EditorJSLoader')) {
+        EditorJSLoader::renderStyles();
+    }
+?>
 </head>
 <body>
     <div class="admin-layout">

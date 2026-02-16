@@ -80,6 +80,7 @@ try {
 }
 
 showFlashMessages() ?>
+<?php EditorJSLoader::renderStyles(); ?>
 
 <!-- Funções -->
 <div class="d-fuid">
