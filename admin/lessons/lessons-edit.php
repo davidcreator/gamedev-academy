@@ -80,7 +80,7 @@ try {
 showFlashMessages() ?>
 
 <!-- Funções -->
-<div class="d-flex justify-beteween align-center mb-8">
+<div class="d-fuid">
     <div class="d-flex justify-beteween align-right gap-2">
         <a href="<?= url('admin/lessons/lessons.php?module_id=' . $moduleId . '&course_id=' . $courseId) ?>" class="btn btn-secondary">← Voltar</a>
     </div>
@@ -130,6 +130,9 @@ showFlashMessages() ?>
             
             <div class="mb-3">
                 <label for="content" class="form-label">Texto do Conteúdo</label>
+                 <!-- Container do Editor.js (visível) -->
+                <div id="editorjs"></div>
+                <!-- Textarea original (oculto, recebe o JSON) -->
                 <textarea class="form-control" id="content" name="content" rows="15"><?= escape($lesson['content'] ?? '') ?></textarea>
             </div>
         </div>
@@ -187,4 +190,91 @@ showFlashMessages() ?>
         </div>
     </form>
 </div>
+ <!-- Scripts do Editor.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/header@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/list@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/code@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/embed@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/image@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/quote@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/checklist@latest"></script>
+
+    <script>
+        // Dados existentes da lição vindos do PHP
+        const existingData = <?= json_encode($editorData) ?>;
+
+        // Inicializa o Editor.js com os dados existentes
+        const editor = new EditorJS({
+            holder: 'editorjs',
+            placeholder: 'Comece a escrever o conteúdo da lição...',
+            data: existingData, // ← CARREGA OS DADOS EXISTENTES
+            tools: {
+                header: {
+                    class: Header,
+                    inlineToolbar: true,
+                    config: {
+                        levels: [2, 3, 4],
+                        defaultLevel: 2
+                    }
+                },
+                list: {
+                    class: List,
+                    inlineToolbar: true
+                },
+                code: {
+                    class: CodeTool,
+                    config: {
+                        placeholder: 'Cole seu código aqui (GDScript, C#, etc.)'
+                    }
+                },
+                embed: {
+                    class: Embed,
+                    config: {
+                        services: {
+                            youtube: true,
+                            coub: true,
+                            codepen: true
+                        }
+                    }
+                },
+                image: {
+                    class: ImageTool,
+                    config: {
+                        endpoints: {
+                            byFile: 'upload-image.php',
+                        }
+                    }
+                },
+                quote: Quote,
+                checklist: Checklist
+            },
+            onReady: () => {
+                console.log('Editor.js carregado com dados existentes!');
+            }
+        });
+
+        // Intercepta o submit
+        document.getElementById('lessonForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            try {
+                const outputData = await editor.save();
+                
+                if (!outputData.blocks || outputData.blocks.length === 0) {
+                    alert('Por favor, adicione conteúdo à lição!');
+                    return;
+                }
+                
+                document.getElementById('content_json').value = JSON.stringify(outputData);
+                this.submit();
+                
+            } catch (error) {
+                console.error('Erro ao salvar:', error);
+                alert('Erro ao processar o conteúdo. Verifique o console.');
+            }
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script> 
 <?php include '../includes/footer.php'; ?>

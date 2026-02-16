@@ -2,249 +2,197 @@
 session_start();
 require_once '../../config/database.php';
 
-// Processar formulário
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $title = $_POST['title'] ?? '';
-    $description = $_POST['description'] ?? '';
-    $content = $_POST['content'] ?? '';
-    $duration = $_POST['duration'] ?? null;
-    $video_url = $_POST['video_url'] ?? null;
-    
-    try {
-        $stmt = $pdo->prepare("
-            INSERT INTO lessons (title, description, content, duration, video_url, created_at)
-            VALUES (?, ?, ?, ?, ?, NOW())
-        ");
-        $stmt->execute([$title, $description, $content, $duration, $video_url]);
-        
-        $lesson_id = $pdo->lastInsertId();
-        $_SESSION['success_message'] = "Aula criada com sucesso!";
-        header("Location: view.php?id=$lesson_id");
-        exit;
-    } catch(PDOException $e) {
-        $error = "Erro ao criar aula: " . $e->getMessage();
-    }
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
+    header('Location: ../../login.php');
+    exit();
 }
+
+// Buscar módulos para o select
+$modules = $conn->query("SELECT * FROM modules ORDER BY order_index");
 ?>
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Criar Nova Aula - GameDev Academy</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <title>Nova Lição - GameDev Academy</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    
+    <!-- CSS do Editor.js -->
+    <style>
+        .codex-editor__redactor {
+            padding-bottom: 100px !important;
+            border: 1px solid #dee2e6;
+            border-radius: 0.25rem;
+            min-height: 400px;
+        }
+        .ce-block__content, .ce-toolbar__content {
+            max-width: 100%;
+        }
+    </style>
 </head>
 <body>
-    <div class="container mt-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1>
-                <i class="bi bi-plus-circle"></i> 
-                Criar Nova Aula
-            </h1>
-            <a href="index.php" class="btn btn-secondary">
-                <i class="bi bi-arrow-left"></i> Voltar
-            </a>
-        </div>
-        
-        <?php if (isset($error)): ?>
-        <div class="alert alert-danger alert-dismissible fade show">
-            <?php echo $error; ?>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-        <?php endif; ?>
-        
-        <form method="POST">
-            <div class="row">
-                <div class="col-lg-8">
-                    <div class="card mb-4">
-                        <div class="card-header bg-primary text-white">
-                            <h5 class="mb-0">
-                                <i class="bi bi-file-text"></i> 
-                                Conteúdo da Aula
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="mb-3">
-                                <label for="title" class="form-label">
-                                    Título da Aula <span class="text-danger">*</span>
-                                </label>
-                                <input type="text" 
-                                       class="form-control form-control-lg" 
-                                       id="title" 
-                                       name="title" 
-                                       placeholder="Ex: Introdução ao Unity 3D"
-                                       required>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="description" class="form-label">
-                                    Descrição Breve
-                                </label>
-                                <textarea class="form-control" 
-                                          id="description" 
-                                          name="description" 
-                                          rows="3"
-                                          placeholder="Uma breve descrição do que será ensinado nesta aula..."></textarea>
-                                <small class="text-muted">
-                                    Esta descrição aparecerá na listagem de aulas
-                                </small>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="content" class="form-label">
-                                    Conteúdo Completo <span class="text-danger">*</span>
-                                </label>
-                                <textarea class="form-control" 
-                                          id="content" 
-                                          name="content"
-                                          placeholder="Digite o conteúdo completo da aula aqui..."
-                                          required></textarea>
-                            </div>
-                        </div>
-                    </div>
+    <?php include '../includes/navbar.php'; ?>
+
+    <div class="container-fluid">
+        <div class="row">
+            <?php include '../includes/sidebar.php'; ?>
+
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">Nova Lição</h1>
+                    <a href="lessons.php" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Voltar
+                    </a>
                 </div>
-                
-                <div class="col-lg-4">
-                    <div class="card mb-3">
-                        <div class="card-header bg-secondary text-white">
-                            <h5 class="mb-0">
-                                <i class="bi bi-gear"></i> 
-                                Configurações
-                            </h5>
-                        </div>
-                        <div class="card-body">
+
+                <form id="lessonForm" method="POST" action="lessons-process.php?action=create">
+                    <div class="row">
+                        <div class="col-md-8">
                             <div class="mb-3">
-                                <label for="duration" class="form-label">
-                                    <i class="bi bi-clock"></i> 
-                                    Duração (minutos)
-                                </label>
-                                <input type="number" 
-                                       class="form-control" 
-                                       id="duration" 
-                                       name="duration" 
-                                       min="1"
-                                       placeholder="Ex: 45">
-                                <small class="text-muted">
-                                    Tempo estimado para completar a aula
-                                </small>
+                                <label for="title" class="form-label">Título da Lição *</label>
+                                <input type="text" class="form-control" id="title" name="title" required>
                             </div>
-                            
+
                             <div class="mb-3">
-                                <label for="video_url" class="form-label">
-                                    <i class="bi bi-play-circle"></i> 
-                                    URL do Vídeo
-                                </label>
-                                <input type="url" 
-                                       class="form-control" 
-                                       id="video_url" 
-                                       name="video_url" 
-                                       placeholder="https://youtube.com/watch?v=...">
-                                <small class="text-muted">
-                                    YouTube, Vimeo ou outro serviço
-                                </small>
+                                <label for="description" class="form-label">Descrição Curta *</label>
+                                <textarea class="form-control" id="description" name="description" rows="2" required></textarea>
+                                <small class="text-muted">Aparecerá na listagem de lições</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Conteúdo da Lição *</label>
+                                <div id="editorjs" class="border rounded"></div>
+                                <!-- Input hidden que vai receber o JSON -->
+                                <input type="hidden" name="content" id="content_json">
                             </div>
                         </div>
-                    </div>
-                    
-                    <div class="card">
-                        <div class="card-body">
+
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="module_id" class="form-label">Módulo *</label>
+                                <select class="form-select" id="module_id" name="module_id" required>
+                                    <option value="">Selecione...</option>
+                                    <?php while($module = $modules->fetch_assoc()): ?>
+                                        <option value="<?= $module['id'] ?>">
+                                            <?= htmlspecialchars($module['title']) ?>
+                                        </option>
+                                    <?php endwhile; ?>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="order_index" class="form-label">Ordem *</label>
+                                <input type="number" class="form-control" id="order_index" name="order_index" min="1" value="1" required>
+                                <small class="text-muted">Ordem de exibição no módulo</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="video_url" class="form-label">URL do Vídeo</label>
+                                <input type="url" class="form-control" id="video_url" name="video_url" placeholder="https://youtube.com/...">
+                            </div>
+
                             <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-success btn-lg">
-                                    <i class="bi bi-check-circle"></i> 
-                                    Criar Aula
-                                </button>
-                                <button type="reset" class="btn btn-outline-secondary">
-                                    <i class="bi bi-arrow-clockwise"></i> 
-                                    Limpar Formulário
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-save"></i> Criar Lição
                                 </button>
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="alert alert-info mt-3">
-                        <h6 class="alert-heading">
-                            <i class="bi bi-info-circle"></i> Dicas
-                        </h6>
-                        <small>
-                            <ul class="mb-0 ps-3">
-                                <li>Use títulos descritivos e claros</li>
-                                <li>O conteúdo aceita formatação HTML</li>
-                                <li>Você pode editar a aula depois</li>
-                            </ul>
-                        </small>
-                    </div>
-                </div>
-            </div>
-        </form>
+                </form>
+            </main>
+        </div>
     </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="../../assets/js/tinymce/tinymce.min.js"></script>
+
+    <!-- Scripts do Editor.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/header@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/list@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/code@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/embed@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/image@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/quote@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/checklist@latest"></script>
+
     <script>
-        // Inicializar TinyMCE
-        tinymce.init({
-            selector: '#content',
-            license_key: 'gpl',
-            height: 500,
-            language: 'pt_BR',
-            placeholder: 'Digite o conteúdo da aula aqui...',
-            plugins: 'advlist autolink lists link image charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime media table help wordcount codesample',
-            toolbar: 'undo redo | blocks | bold italic forecolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | codesample code image link | help',
-            menubar: 'file edit view insert format tools table help',
-            branding: false,
-            promotion: false,
-            codesample_languages: [
-                { text: 'HTML/XML', value: 'markup' },
-                { text: 'JavaScript', value: 'javascript' },
-                { text: 'CSS', value: 'css' },
-                { text: 'PHP', value: 'php' },
-                { text: 'C#', value: 'csharp' },
-                { text: 'C++', value: 'cpp' },
-                { text: 'Python', value: 'python' },
-                { text: 'GDScript', value: 'gdscript' },
-                { text: 'Lua', value: 'lua' }
-            ],
-            setup: function(editor) {
-                editor.on('change', function() {
-                    editor.save();
-                });
+        // Inicializa o Editor.js
+        const editor = new EditorJS({
+            holder: 'editorjs',
+            placeholder: 'Comece a escrever o conteúdo da lição...',
+            tools: {
+                header: {
+                    class: Header,
+                    inlineToolbar: true,
+                    config: {
+                        levels: [2, 3, 4],
+                        defaultLevel: 2
+                    }
+                },
+                list: {
+                    class: List,
+                    inlineToolbar: true
+                },
+                code: {
+                    class: CodeTool,
+                    config: {
+                        placeholder: 'Cole seu código aqui (GDScript, C#, etc.)'
+                    }
+                },
+                embed: {
+                    class: Embed,
+                    config: {
+                        services: {
+                            youtube: true,
+                            coub: true,
+                            codepen: true
+                        }
+                    }
+                },
+                image: {
+                    class: ImageTool,
+                    config: {
+                        endpoints: {
+                            byFile: 'upload-image.php', // Você vai precisar criar esse arquivo
+                        }
+                    }
+                },
+                quote: Quote,
+                checklist: Checklist
+            },
+            onReady: () => {
+                console.log('Editor.js está pronto!');
             }
         });
 
-        // Sincronizar TinyMCE antes do envio
-        document.querySelector('form').addEventListener('submit', function(e) {
+        // Intercepta o submit do formulário
+        document.getElementById('lessonForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            // Sincronizar TinyMCE
-            if (tinymce.get('content')) {
-                tinymce.get('content').save();
+            try {
+                // Salva os dados do editor
+                const outputData = await editor.save();
+                
+                // Verifica se tem conteúdo
+                if (!outputData.blocks || outputData.blocks.length === 0) {
+                    alert('Por favor, adicione conteúdo à lição!');
+                    return;
+                }
+                
+                // Coloca o JSON no input hidden
+                document.getElementById('content_json').value = JSON.stringify(outputData);
+                
+                // Envia o formulário
+                this.submit();
+                
+            } catch (error) {
+                console.error('Erro ao salvar:', error);
+                alert('Erro ao processar o conteúdo. Verifique o console.');
             }
-            
-            // Validar campos obrigatórios
-            const title = document.getElementById('title').value.trim();
-            const content = document.getElementById('content').value.trim();
-            
-            if (!title) {
-                alert('Por favor, insira o título da aula');
-                document.getElementById('title').focus();
-                return false;
-            }
-            
-            if (!content || content === '<p></p>') {
-                alert('Por favor, insira o conteúdo da aula');
-                return false;
-            }
-            
-            // Enviar formulário
-            this.submit();
-        });
-        
-        // Preview do título em tempo real
-        document.getElementById('title').addEventListener('input', function() {
-            const value = this.value || 'Nova Aula';
-            document.title = value + ' - GameDev Academy';
         });
     </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
