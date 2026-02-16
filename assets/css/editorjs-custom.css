@@ -1,73 +1,512 @@
 /**
- * Editor.js Custom Styles
- * GameDev Academy
+ * EditorJS Custom Styles
+ * Estilos personalizados para o EditorJS com Toolbar Fixa
  */
 
-#editorjs {
-    border: 1px solid #dee2e6;
-    border-radius: 0.375rem;
-    min-height: 400px;
-    padding: 15px;
-    background-color: #fff;
-    transition: border-color 0.15s ease-in-out;
+/* Wrapper para o editor completo */
+.editorjs-wrapper {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background: #ffffff;
+    margin-bottom: 20px;
+    overflow: hidden;
 }
 
-#editorjs:focus-within {
-    border-color: #86b7fe;
-    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+.editorjs-wrapper:focus-within {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Toolbar Fixa no Topo */
+.editorjs-toolbar {
+    background: #f8f9fa;
+    border-bottom: 1px solid #e0e0e0;
+    padding: 8px 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+/* Grupos de botões */
+.editorjs-toolbar-group {
+    display: flex;
+    gap: 2px;
+    padding: 0 8px;
+    border-right: 1px solid #dee2e6;
+}
+
+.editorjs-toolbar-group:last-child {
+    border-right: none;
+}
+
+/* Botões da toolbar */
+.editorjs-toolbar-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    padding: 6px 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    color: #495057;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+
+.editorjs-toolbar-btn:hover {
+    background: #e9ecef;
+    border-color: #dee2e6;
+}
+
+.editorjs-toolbar-btn:active {
+    background: #dee2e6;
+    transform: scale(0.95);
+}
+
+.editorjs-toolbar-btn.active {
+    background: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+}
+
+.editorjs-toolbar-btn i {
+    font-size: 16px;
+    width: 16px;
+    text-align: center;
+}
+
+.editorjs-toolbar-btn span {
+    font-size: 13px;
+}
+
+/* Select de cabeçalhos */
+.editorjs-heading-select {
+    padding: 6px 10px;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    background: white;
+    cursor: pointer;
+    font-size: 13px;
+    color: #495057;
+    outline: none;
+}
+
+.editorjs-heading-select:hover {
+    border-color: #3b82f6;
+}
+
+.editorjs-heading-select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+/* Container do Editor */
+#editorjs {
+    padding: 20px;
+    min-height: 400px;
+    background: #ffffff;
+    transition: border-color 0.3s ease;
+}
+
+/* Editor Content */
+.codex-editor {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 .codex-editor__redactor {
-    padding-bottom: 80px !important;
+    padding-bottom: 100px !important;
 }
 
-.ce-block__content,
-.ce-toolbar__content {
-    max-width: 100% !important;
+/* Toolbar */
+.ce-toolbar__plus,
+.ce-toolbar__settings-btn {
+    color: #3b82f6;
 }
 
-.ce-toolbar__actions {
-    right: 15px;
+.ce-toolbar__plus:hover,
+.ce-toolbar__settings-btn:hover {
+    background-color: rgba(59, 130, 246, 0.1);
 }
 
+/* Blocos */
+.ce-block {
+    transition: background-color 0.2s ease;
+}
+
+.ce-block--selected {
+    background-color: rgba(59, 130, 246, 0.05);
+}
+
+.ce-block__content {
+    max-width: 100%;
+    margin: 0;
+}
+
+/* Parágrafos */
+.ce-paragraph {
+    line-height: 1.8;
+    font-size: 16px;
+    color: #374151;
+}
+
+.ce-paragraph[data-placeholder]:empty::before {
+    color: #9ca3af;
+}
+
+/* Cabeçalhos */
 .ce-header {
-    font-weight: 600;
-    line-height: 1.3;
-    margin: 0.8em 0;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0.5em 0;
 }
 
+/* Listas */
 .cdx-list {
     padding-left: 20px;
 }
 
-.ce-code__textarea {
-    background-color: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 6px;
-    padding: 12px;
-    font-family: 'Consolas', 'Monaco', monospace;
-    font-size: 14px;
+.cdx-list__item {
+    padding: 5px 0 5px 10px;
+    line-height: 1.6;
 }
 
+/* Checklist */
+.cdx-checklist {
+    padding-left: 0;
+}
+
+.cdx-checklist__item {
+    display: flex;
+    align-items: flex-start;
+    padding: 8px 0;
+}
+
+.cdx-checklist__item-checkbox {
+    margin-right: 10px;
+    margin-top: 4px;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+/* Citações */
 .cdx-quote {
-    border-left: 3px solid #0d6efd;
-    padding-left: 20px;
+    margin: 20px 0;
+    padding: 15px 20px;
+    border-left: 4px solid #3b82f6;
+    background: rgba(59, 130, 246, 0.05);
     font-style: italic;
 }
 
-.cdx-warning {
-    background-color: #fff3cd;
-    border-left: 3px solid #ffc107;
-    padding: 15px;
-    border-radius: 6px;
+.cdx-quote__text {
+    font-size: 18px;
+    line-height: 1.6;
+    color: #1f2937;
 }
 
+.cdx-quote__caption {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #6b7280;
+    font-style: normal;
+}
+
+/* Código */
+.ce-code__textarea {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    background: #1f2937;
+    color: #f3f4f6;
+    border: none;
+    border-radius: 6px;
+    padding: 15px;
+    min-height: 150px;
+}
+
+/* Delimiter */
+.ce-delimiter {
+    line-height: 1.6em;
+    width: 100%;
+    text-align: center;
+}
+
+.ce-delimiter::before {
+    display: inline-block;
+    content: "***";
+    font-size: 30px;
+    line-height: 65px;
+    height: 30px;
+    letter-spacing: 0.2em;
+    color: #9ca3af;
+}
+
+/* Tabelas */
 .tc-table {
     width: 100%;
     border-collapse: collapse;
+    margin: 15px 0;
 }
 
 .tc-table__cell {
-    border: 1px solid #dee2e6;
+    border: 1px solid #e5e7eb;
     padding: 10px;
+    vertical-align: top;
+}
+
+.tc-table__cell--heading {
+    background: #f9fafb;
+    font-weight: 600;
+}
+
+/* Warning/Alert */
+.cdx-warning {
+    background: #fef3c7;
+    border-left: 4px solid #f59e0b;
+    padding: 15px 20px;
+    margin: 20px 0;
+    border-radius: 4px;
+}
+
+.cdx-warning__title {
+    font-weight: 600;
+    color: #92400e;
+    margin-bottom: 5px;
+}
+
+.cdx-warning__message {
+    color: #78350f;
+    line-height: 1.6;
+}
+
+/* Imagens */
+.cdx-block.image-tool {
+    margin: 20px 0;
+}
+
+.image-tool__image {
+    max-width: 100%;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.image-tool__caption {
+    text-align: center;
+    margin-top: 10px;
+    color: #6b7280;
+    font-size: 14px;
+    font-style: italic;
+}
+
+/* Inline Tools */
+.ce-inline-tool {
+    color: #3b82f6;
+}
+
+.ce-inline-toolbar__dropdown {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* Inline Code */
+.inline-code {
+    background: #f3f4f6;
+    color: #dc2626;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9em;
+}
+
+/* Marker/Highlight */
+mark.cdx-marker {
+    background: #fef08a;
+    padding: 2px 4px;
+}
+
+/* Embed */
+.embed-tool {
+    margin: 20px 0;
+}
+
+.embed-tool__content {
+    position: relative;
+    padding-bottom: 56.25%;
+    height: 0;
+    overflow: hidden;
+    border-radius: 8px;
+}
+
+.embed-tool__content iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+/* Popover */
+.ce-popover {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.ce-popover__item {
+    padding: 10px;
+    transition: background-color 0.2s;
+}
+
+.ce-popover__item:hover {
+    background-color: rgba(59, 130, 246, 0.05);
+}
+
+.ce-popover__item-icon {
+    color: #3b82f6;
+}
+
+/* Loading State */
+.ce-block--loader::before {
+    background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .editorjs-wrapper {
+        border-radius: 4px;
+    }
+
+    .editorjs-toolbar {
+        padding: 6px 8px;
+        gap: 2px;
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .editorjs-toolbar::-webkit-scrollbar {
+        height: 4px;
+    }
+
+    .editorjs-toolbar::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+
+    .editorjs-toolbar::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 2px;
+    }
+
+    .editorjs-toolbar-group {
+        padding: 0 4px;
+    }
+
+    .editorjs-toolbar-btn {
+        padding: 6px 8px;
+        font-size: 13px;
+    }
+
+    .editorjs-toolbar-btn span {
+        display: none; /* Ocultar texto em mobile, mostrar só ícones */
+    }
+
+    .editorjs-heading-select {
+        font-size: 12px;
+        padding: 6px 8px;
+    }
+
+    #editorjs {
+        padding: 15px;
+        min-height: 300px;
+    }
+
+    .ce-paragraph {
+        font-size: 15px;
+    }
+
+    .ce-toolbar__actions {
+        right: -5px;
+    }
+}
+
+/* Dark Mode Support (opcional) */
+@media (prefers-color-scheme: dark) {
+    #editorjs {
+        background: #1f2937;
+        border-color: #374151;
+        color: #f9fafb;
+    }
+
+    .ce-paragraph {
+        color: #f9fafb;
+    }
+
+    .ce-header {
+        color: #f9fafb;
+    }
+
+    .tc-table__cell {
+        border-color: #374151;
+    }
+
+    .tc-table__cell--heading {
+        background: #374151;
+    }
+
+    .ce-popover {
+        background: #1f2937;
+        border-color: #374151;
+    }
+}
+
+/* Melhorias de UX */
+.ce-toolbar__plus {
+    transition: transform 0.2s ease;
+}
+
+.ce-toolbar__plus:hover {
+    transform: scale(1.1);
+}
+
+/* Foco acessível */
+.ce-block:focus-within {
+    outline: 2px solid rgba(59, 130, 246, 0.3);
+    outline-offset: 2px;
+}
+
+/* Animações suaves */
+.ce-block {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }

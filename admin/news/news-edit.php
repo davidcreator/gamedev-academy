@@ -1,328 +1,324 @@
 <?php
-session_start();
-require_once '../config/database.php';
+$pageTitle = 'Editar Notícia';
+include '../includes/header.php';
+require_once '../../includes/editorjs-loader.php';
 
-// Verificar se o ID foi passado
-$news_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+$db = Database::getInstance();
+$id = intval($_GET['id'] ?? 0);
 
-if ($news_id <= 0) {
-    $_SESSION['error_message'] = "ID da notícia inválido.";
-    header('Location: news-list.php');
-    exit;
+// Validar ID
+if ($id <= 0) {
+    flash('error', 'ID da notícia inválido.');
+    redirect(url('admin/news.php'));
 }
 
-// Buscar dados da notícia
-try {
-    $stmt = $pdo->prepare("SELECT * FROM news WHERE id = ?");
-    $stmt->execute([$news_id]);
-    $news = $stmt->fetch(PDO::FETCH_ASSOC);
-    
-    if (!$news) {
-        $_SESSION['error_message'] = "Notícia não encontrada.";
-        header('Location: news-list.php');
-        exit;
-    }
-} catch(PDOException $e) {
-    die("Erro ao buscar notícia: " . $e->getMessage());
+// Buscar notícia
+$news = $db->fetch("SELECT * FROM news WHERE id = ?", [$id]);
+if (!$news) {
+    flash('error', 'Notícia não encontrada.');
+    redirect(url('admin/news.php'));
 }
 
 // Processar formulário
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $title = $_POST['title'] ?? '';
-    $slug = $_POST['slug'] ?? '';
-    $content = $_POST['content'] ?? '';
-    $excerpt = $_POST['excerpt'] ?? '';
-    $category = $_POST['category'] ?? '';
-    $status = $_POST['status'] ?? 'draft';
-    $featured_image = $_POST['featured_image'] ?? '';
+    $data = [
+        'title' => trim($_POST['title'] ?? ''),
+        'slug' => trim($_POST['slug'] ?? ''),
+        'excerpt' => trim($_POST['excerpt'] ?? ''),
+        'content' => $_POST['content'] ?? '',
+        'featured_image' => trim($_POST['featured_image'] ?? ''),
+        'category' => trim($_POST['category'] ?? ''),
+        'status' => $_POST['status'] ?? 'draft',
+        'is_featured' => isset($_POST['is_featured']) ? 1 : 0,
+    ];
     
-    // Gerar slug se não informado
-    if (empty($slug)) {
-        $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $title)));
+    // Atualizar published_at se mudou para publicado
+    if ($data['status'] === 'published' && $news['status'] !== 'published') {
+        $data['published_at'] = date('Y-m-d H:i:s');
     }
     
-    try {
-        $stmt = $pdo->prepare("
-            UPDATE news SET 
-                title = ?,
-                slug = ?,
-                content = ?,
-                excerpt = ?,
-                category = ?,
-                status = ?,
-                featured_image = ?,
-                updated_at = NOW()
-            WHERE id = ?
-        ");
-        
-        $stmt->execute([
-            $title, $slug, $content, $excerpt, 
-            $category, $status, $featured_image, $news_id
-        ]);
-        
-        $_SESSION['success_message'] = "Notícia atualizada com sucesso!";
-        header("Location: news-edit.php?id=$news_id");
-        exit;
-    } catch(PDOException $e) {
-        $error = "Erro ao atualizar notícia: " . $e->getMessage();
+    // Gerar slug se necessário
+    if (empty($data['slug']) && !empty($data['title'])) {
+        $data['slug'] = generateSlug($data['title']);
+    }
+    
+    if (!$data['title']) {
+        flash('error', 'Informe o título da notícia.');
+    } else {
+        $db->update('news', $data, 'id = :id', ['id' => $id]);
+        flash('success', 'Notícia atualizada com sucesso!');
+        // Recarregar dados
+        $news = $db->fetch("SELECT * FROM news WHERE id = ?", [$id]);
     }
 }
+
+showFlashMessages();
+EditorJSLoader::renderStyles();
 ?>
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editar Notícia - GameDev Academy</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="../assets/css/admin.css">
-</head>
-<body>
-    <?php include '../includes/admin-header.php'; ?>
-    
-    <div class="container-fluid">
-        <div class="row">
-            <?php include '../includes/admin-sidebar.php'; ?>
-            
-            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                    <h1 class="h2">
-                        <i class="bi bi-pencil-square"></i> Editar Notícia
-                    </h1>
-                    <div class="btn-toolbar mb-2 mb-md-0">
-                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="previewContent()">
-                            <i class="bi bi-eye"></i> Preview
-                        </button>
-                        <a href="news-list.php" class="btn btn-sm btn-outline-secondary ms-2">
-                            <i class="bi bi-arrow-left"></i> Voltar
-                        </a>
-                    </div>
-                </div>
-                
-                <?php if (isset($error)): ?>
-                <div class="alert alert-danger alert-dismissible fade show">
-                    <?php echo $error; ?>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-                <?php endif; ?>
-                
-                <?php if (isset($_SESSION['success_message'])): ?>
-                <div class="alert alert-success alert-dismissible fade show">
-                    <?php echo $_SESSION['success_message']; ?>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-                <?php unset($_SESSION['success_message']); ?>
-                <?php endif; ?>
-                
-                <form method="POST" class="needs-validation" novalidate>
-                    <div class="row">
-                        <div class="col-lg-8">
-                            <div class="card mb-4">
-                                <div class="card-header">
-                                    <h5 class="mb-0"><i class="bi bi-file-text"></i> Conteúdo</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="mb-3">
-                                        <label for="title" class="form-label">Título da Notícia <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="title" name="title" 
-                                               value="<?php echo htmlspecialchars($news['title'] ?? ''); ?>" required>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label for="slug" class="form-label">Slug (URL)</label>
-                                        <input type="text" class="form-control" id="slug" name="slug" 
-                                               value="<?php echo htmlspecialchars($news['slug'] ?? ''); ?>"
-                                               placeholder="deixe-em-branco-para-gerar-automaticamente">
-                                        <small class="text-muted">Deixe em branco para gerar automaticamente</small>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label for="excerpt" class="form-label">Resumo</label>
-                                        <textarea class="form-control" id="excerpt" name="excerpt" rows="3"
-                                                  placeholder="Breve descrição da notícia..."><?php echo htmlspecialchars($news['excerpt'] ?? ''); ?></textarea>
-                                        <small class="text-muted">Aparece na listagem de notícias</small>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label for="content" class="form-label">Conteúdo Completo <span class="text-danger">*</span></label>
-                                        <textarea class="form-control" id="content" name="content" rows="15"><?php echo htmlspecialchars($news['content'] ?? ''); ?></textarea>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="col-lg-4">
-                            <div class="card mb-4">
-                                <div class="card-header">
-                                    <h5 class="mb-0"><i class="bi bi-gear"></i> Configurações</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="mb-3">
-                                        <label for="category" class="form-label">Categoria</label>
-                                        <select class="form-select" id="category" name="category">
-                                            <option value="">Selecione...</option>
-                                            <option value="noticias" <?php echo (($news['category'] ?? '') == 'noticias') ? 'selected' : ''; ?>>Notícias</option>
-                                            <option value="tutoriais" <?php echo (($news['category'] ?? '') == 'tutoriais') ? 'selected' : ''; ?>>Tutoriais</option>
-                                            <option value="reviews" <?php echo (($news['category'] ?? '') == 'reviews') ? 'selected' : ''; ?>>Reviews</option>
-                                            <option value="dicas" <?php echo (($news['category'] ?? '') == 'dicas') ? 'selected' : ''; ?>>Dicas</option>
-                                            <option value="eventos" <?php echo (($news['category'] ?? '') == 'eventos') ? 'selected' : ''; ?>>Eventos</option>
-                                        </select>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label for="status" class="form-label">Status</label>
-                                        <select class="form-select" id="status" name="status">
-                                            <option value="draft" <?php echo (($news['status'] ?? 'draft') == 'draft') ? 'selected' : ''; ?>>Rascunho</option>
-                                            <option value="published" <?php echo (($news['status'] ?? '') == 'published') ? 'selected' : ''; ?>>Publicado</option>
-                                        </select>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label for="featured_image" class="form-label">Imagem Destacada</label>
-                                        <input type="url" class="form-control" id="featured_image" name="featured_image" 
-                                               value="<?php echo htmlspecialchars($news['featured_image'] ?? ''); ?>"
-                                               placeholder="https://exemplo.com/imagem.jpg">
-                                    </div>
-                                    
-                                    <?php if (!empty($news['featured_image'])): ?>
-                                    <div class="mb-3">
-                                        <img src="<?php echo htmlspecialchars($news['featured_image']); ?>" 
-                                             class="img-fluid rounded" alt="Preview">
-                                    </div>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                            
-                            <div class="card mb-4">
-                                <div class="card-body">
-                                    <div class="d-grid gap-2">
-                                        <button type="submit" class="btn btn-primary">
-                                            <i class="bi bi-save"></i> Salvar Alterações
-                                        </button>
-                                        <a href="news.php?id=<?php echo $news_id; ?>" class="btn btn-outline-info">
-                                            <i class="bi bi-eye"></i> Visualizar
-                                        </a>
-                                        <a href="news-list.php" class="btn btn-outline-secondary">
-                                            <i class="bi bi-list"></i> Voltar à Lista
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="card">
-                                <div class="card-header">
-                                    <h6 class="mb-0"><i class="bi bi-info-circle"></i> Informações</h6>
-                                </div>
-                                <div class="card-body">
-                                    <small class="text-muted">
-                                        <strong>ID:</strong> #<?php echo $news['id']; ?><br>
-                                        <?php if (!empty($news['created_at'])): ?>
-                                        <strong>Criado:</strong> <?php echo date('d/m/Y H:i', strtotime($news['created_at'])); ?><br>
-                                        <?php endif; ?>
-                                        <?php if (!empty($news['updated_at'])): ?>
-                                        <strong>Atualizado:</strong> <?php echo date('d/m/Y H:i', strtotime($news['updated_at'])); ?>
-                                        <?php endif; ?>
-                                    </small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </form>
-            </main>
-        </div>
+
+<!-- Navegação -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <a href="<?= url('admin/news.php') ?>" class="btn btn-secondary">
+        ← Voltar para Notícias
+    </a>
+    <div>
+        <span class="badge bg-info">ID: <?= $news['id'] ?></span>
+        <?php if ($news['status'] === 'published'): ?>
+            <a href="<?= url('noticias/' . $news['slug']) ?>" target="_blank" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-external-link-alt"></i> Ver Publicada
+            </a>
+        <?php endif; ?>
     </div>
-    
-    <!-- Modal de Preview -->
-    <div class="modal fade" id="previewModal" tabindex="-1">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Preview da Notícia</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+
+<!-- Formulário de Edição -->
+<div class="row">
+    <!-- Coluna Principal -->
+    <div class="col-lg-8">
+        <div class="card p-4 mb-4">
+            <div class="mb-3">
+                <small class="text-muted">
+                    Criada em: <?= date('d/m/Y H:i', strtotime($news['created_at'])) ?>
+                    <?php if ($news['updated_at']): ?>
+                        | Última atualização: <?= date('d/m/Y H:i', strtotime($news['updated_at'])) ?>
+                    <?php endif; ?>
+                </small>
+            </div>
+
+            <form method="POST" id="newsForm">
+                <!-- Título -->
+                <div class="mb-4">
+                    <label class="form-label">Título da Notícia *</label>
+                    <input type="text" name="title" id="newsTitle" class="form-control form-control-lg" value="<?= escape($news['title']) ?>" required>
                 </div>
-                <div class="modal-body">
-                    <div id="previewContent"></div>
+
+                <!-- Slug -->
+                <div class="mb-4">
+                    <label class="form-label">Slug (URL amigável)</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><?= url('noticias/') ?></span>
+                        <input type="text" name="slug" id="newsSlug" class="form-control" value="<?= escape($news['slug']) ?>">
+                    </div>
+                    <small class="form-text text-muted">
+                        <?php if ($news['status'] === 'published'): ?>
+                            <i class="fas fa-exclamation-triangle text-warning"></i> 
+                            Cuidado ao alterar o slug de uma notícia publicada - links antigos não funcionarão
+                        <?php else: ?>
+                            Deixe em branco para gerar automaticamente a partir do título
+                        <?php endif; ?>
+                    </small>
                 </div>
+
+                <!-- Resumo/Excerpt -->
+                <div class="mb-4">
+                    <label class="form-label">Resumo</label>
+                    <textarea name="excerpt" class="form-control" rows="3"><?= escape($news['excerpt'] ?? '') ?></textarea>
+                    <small class="form-text text-muted">Este texto aparecerá nas listagens e compartilhamentos</small>
+                </div>
+
+                <hr class="my-4">
+
+                <!-- Conteúdo -->
+                <div class="mb-4">
+                    <label for="content" class="form-label">Conteúdo da Notícia</label>
+                    <!-- Container do Editor.js com toolbar fixa -->
+                    <div id="editorjs"></div>
+                    <!-- Textarea original (oculto, recebe o JSON) -->
+                    <textarea class="form-control d-none" id="content" name="content" rows="20"><?= escape($news['content'] ?? '') ?></textarea>
+                </div>
+            </form>
+        </div>
+
+        <!-- Estatísticas (se implementado) -->
+        <?php if (isset($news['views']) || isset($news['likes'])): ?>
+        <div class="card p-3 mb-4">
+            <h6 class="mb-3">Estatísticas</h6>
+            <div class="row text-center">
+                <?php if (isset($news['views'])): ?>
+                <div class="col">
+                    <div class="fs-4 text-primary"><?= number_format($news['views']) ?></div>
+                    <small class="text-muted">Visualizações</small>
+                </div>
+                <?php endif; ?>
+                <?php if (isset($news['likes'])): ?>
+                <div class="col">
+                    <div class="fs-4 text-danger"><?= number_format($news['likes']) ?></div>
+                    <small class="text-muted">Curtidas</small>
+                </div>
+                <?php endif; ?>
+                <?php if (isset($news['comments_count'])): ?>
+                <div class="col">
+                    <div class="fs-4 text-success"><?= number_format($news['comments_count']) ?></div>
+                    <small class="text-muted">Comentários</small>
+                </div>
+                <?php endif; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+    </div>
+
+    <!-- Sidebar de Configurações -->
+    <div class="col-lg-4">
+        <!-- Status e Publicação -->
+        <div class="card p-3 mb-3">
+            <h6 class="mb-3">Publicação</h6>
+            
+            <div class="mb-3">
+                <label class="form-label">Status</label>
+                <select name="status" form="newsForm" class="form-control">
+                    <option value="draft" <?= $news['status'] === 'draft' ? 'selected' : '' ?>>Rascunho</option>
+                    <option value="published" <?= $news['status'] === 'published' ? 'selected' : '' ?>>Publicado</option>
+                    <option value="scheduled" <?= $news['status'] === 'scheduled' ? 'selected' : '' ?>>Agendado</option>
+                    <option value="archived" <?= $news['status'] === 'archived' ? 'selected' : '' ?>>Arquivado</option>
+                </select>
+            </div>
+
+            <?php if ($news['published_at']): ?>
+            <div class="mb-3">
+                <small class="text-muted">
+                    <i class="fas fa-calendar"></i> 
+                    Publicado em: <?= date('d/m/Y H:i', strtotime($news['published_at'])) ?>
+                </small>
+            </div>
+            <?php endif; ?>
+
+            <div class="mb-3">
+                <label class="d-flex align-items-center gap-2">
+                    <input type="checkbox" name="is_featured" form="newsForm" <?= ($news['is_featured'] ?? 0) ? 'checked' : '' ?>>
+                    <span>Destacar na página inicial</span>
+                </label>
+            </div>
+
+            <div class="d-grid gap-2">
+                <button type="submit" form="newsForm" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Salvar Alterações
+                </button>
+                <button type="button" class="btn btn-outline-danger" onclick="confirmDelete()">
+                    <i class="fas fa-trash"></i> Excluir
+                </button>
+            </div>
+        </div>
+
+        <!-- Categoria -->
+        <div class="card p-3 mb-3">
+            <h6 class="mb-3">Categoria</h6>
+            
+            <select name="category" form="newsForm" class="form-control">
+                <option value="">Selecione...</option>
+                <?php
+                $categories = [
+                    'lancamentos' => 'Lançamentos',
+                    'tutoriais' => 'Tutoriais',
+                    'industria' => 'Indústria',
+                    'eventos' => 'Eventos',
+                    'entrevistas' => 'Entrevistas',
+                    'comunidade' => 'Comunidade'
+                ];
+                foreach ($categories as $key => $label):
+                ?>
+                    <option value="<?= $key ?>" <?= ($news['category'] ?? '') === $key ? 'selected' : '' ?>>
+                        <?= $label ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+
+        <!-- Imagem Destacada -->
+        <div class="card p-3 mb-3">
+            <h6 class="mb-3">Imagem Destacada</h6>
+            
+            <div class="mb-3">
+                <input type="text" name="featured_image" id="featuredImageUrl" form="newsForm" class="form-control" value="<?= escape($news['featured_image'] ?? '') ?>" placeholder="URL da imagem">
+            </div>
+
+            <?php if (!empty($news['featured_image'])): ?>
+            <div class="mb-2">
+                <img src="<?= escape($news['featured_image']) ?>" alt="Preview" class="img-fluid rounded" style="max-height: 200px;">
+            </div>
+            <?php endif; ?>
+
+            <button type="button" class="btn btn-sm btn-outline-primary w-100" onclick="openImageUploader()">
+                <i class="fas fa-upload"></i> Alterar Imagem
+            </button>
+        </div>
+
+        <!-- Autor -->
+        <div class="card p-3">
+            <h6 class="mb-3">Autor</h6>
+            <div class="d-flex align-items-center gap-2">
+                <?php
+                $author = $db->fetch("SELECT * FROM users WHERE id = ?", [$news['author_id']]);
+                if ($author):
+                ?>
+                    <div class="flex-grow-1">
+                        <div><?= escape($author['name']) ?></div>
+                        <small class="text-muted"><?= escape($author['email']) ?></small>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="../assets/js/tinymce/tinymce.min.js"></script>
-    
-    <script>
-        // Inicialização do TinyMCE
-        tinymce.init({
-            selector: '#content',
-            height: 500,
-            language: 'pt_BR',
-            plugins: 'advlist autolink lists link image charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime media table help wordcount codesample',
-            toolbar: 'undo redo | blocks | bold italic forecolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | image link media | codesample code | fullscreen preview | help',
-            menubar: 'file edit view insert format tools table help',
-            branding: false,
-            promotion: false,
-            codesample_languages: [
-                { text: 'HTML/XML', value: 'markup' },
-                { text: 'JavaScript', value: 'javascript' },
-                { text: 'CSS', value: 'css' },
-                { text: 'PHP', value: 'php' },
-                { text: 'C#', value: 'csharp' },
-                { text: 'C++', value: 'cpp' },
-                { text: 'Python', value: 'python' },
-                { text: 'GDScript', value: 'gdscript' }
-            ],
-            setup: function(editor) {
-                editor.on('change', function() {
-                    editor.save();
-                });
-            }
-        });
-        
-        // Auto-gerar slug
-        document.getElementById('title').addEventListener('blur', function() {
-            const slugField = document.getElementById('slug');
-            if (slugField.value === '') {
-                const slug = this.value
-                    .toLowerCase()
-                    .normalize('NFD')
-                    .replace(/[\u0300-\u036f]/g, '')
-                    .replace(/[^a-z0-9]+/g, '-')
-                    .replace(/(^-|-$)/g, '');
-                slugField.value = slug;
-            }
-        });
-        
-        // Função de Preview
-        function previewContent() {
-            const title = document.getElementById('title').value;
-            const content = tinymce.get('content').getContent();
-            const excerpt = document.getElementById('excerpt').value;
-            const image = document.getElementById('featured_image').value;
-            
-            let imageHtml = '';
-            if (image) {
-                imageHtml = `<img src="${image}" class="img-fluid rounded mb-4" alt="Imagem destacada">`;
-            }
-            
-            document.getElementById('previewContent').innerHTML = `
-                <article>
-                    ${imageHtml}
-                    <h1 class="mb-3">${title || 'Título da Notícia'}</h1>
-                    ${excerpt ? `<p class="lead text-muted">${excerpt}</p><hr>` : ''}
-                    <div class="content">${content || '<p>Conteúdo da notícia...</p>'}</div>
-                </article>
-            `;
-            
-            new bootstrap.Modal(document.getElementById('previewModal')).show();
-        }
-        
-        // Sincronizar TinyMCE antes de enviar
-        document.querySelector('form').addEventListener('submit', function() {
-            if (tinymce.get('content')) {
-                tinymce.get('content').save();
-            }
-        });
-    </script>
-</body>
-</html>
+</div>
+
+<script>
+// Auto-gerar slug a partir do título (apenas se slug estiver vazio)
+document.getElementById('newsTitle').addEventListener('input', function() {
+    const slugField = document.getElementById('newsSlug');
+    if (!slugField.value) {
+        slugField.placeholder = generateSlugFromTitle(this.value);
+    }
+});
+
+function generateSlugFromTitle(title) {
+    return title
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^\w\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/--+/g, '-')
+        .trim();
+}
+
+function openImageUploader() {
+    // Implementar modal de upload
+    alert('Funcionalidade de upload em desenvolvimento');
+}
+
+function confirmDelete() {
+    if (confirm('Tem certeza que deseja excluir esta notícia? Esta ação não pode ser desfeita.')) {
+        window.location.href = '<?= url('admin/news/delete.php?id=' . $id) ?>';
+    }
+}
+
+// Prevenção de perda de dados
+let formChanged = false;
+document.getElementById('newsForm').addEventListener('change', function() {
+    formChanged = true;
+});
+
+document.getElementById('newsForm').addEventListener('input', function() {
+    formChanged = true;
+});
+
+window.addEventListener('beforeunload', function(e) {
+    if (formChanged) {
+        e.preventDefault();
+        e.returnValue = '';
+    }
+});
+
+document.getElementById('newsForm').addEventListener('submit', function() {
+    formChanged = false;
+});
+</script>
+
+<?php
+// Render Editor.js scripts
+EditorJSLoader::renderScripts();
+
+// Initialize Editor.js with existing content
+EditorJSLoader::init($news['content'] ?? '', 'editorjs', 'content');
+?>
+
+<?php include '../includes/footer.php'; ?>

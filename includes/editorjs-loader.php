@@ -1,139 +1,305 @@
 <?php
 /**
- * Editor.js Loader
- * Localização: gamedev-academy/includes/editorjs-loader.php
+ * EditorJS Loader
+ * Classe para gerenciar o carregamento e inicialização do EditorJS
+ * 
+ * Uso:
+ * 1. No início da página: EditorJSLoader::renderStyles();
+ * 2. Antes do </body>: EditorJSLoader::renderScripts();
+ * 3. Para inicializar: EditorJSLoader::init($existingContent);
  */
 
 class EditorJSLoader {
-    private $content;
-    private $editorData;
+    
+    /**
+     * Versões dos plugins (facilita atualização centralizada)
+     */
+    private static $versions = [
+        'editorjs' => '2.28.2',
+        'header' => '2.7.0',
+        'list' => '1.8.0',
+        'checklist' => '1.5.0',
+        'quote' => '2.5.0',
+        'code' => '2.8.0',
+        'delimiter' => '1.3.0',
+        'table' => '2.2.2',
+        'warning' => '1.3.0',
+        'image' => '2.8.1',
+        'embed' => '2.5.3',
+        'inline-code' => '1.4.0',
+        'marker' => '1.3.0',
+        'underline' => '1.1.0',
+        'raw' => '2.4.0',
+    ];
 
-    public function __construct($content = '') {
-        $this->content = trim($content ?? '');
-        $this->prepareData();
+    /**
+     * Plugins habilitados (configurável)
+     */
+    private static $enabledPlugins = [
+        'header',
+        'list',
+        'checklist',
+        'quote',
+        'code',
+        'delimiter',
+        'table',
+        'warning',
+        'image',
+        'embed',
+        'inline-code',
+        'marker',
+        'underline',
+        'raw',
+    ];
+
+    /**
+     * Renderiza os estilos CSS necessários
+     */
+    public static function renderStyles() {
+        $baseUrl = self::getBaseUrl();
+        echo <<<HTML
+        <!-- EditorJS Styles -->
+        <link rel="stylesheet" href="{$baseUrl}/assets/css/editorjs-custom.css">
+        
+HTML;
     }
 
-    private function prepareData() {
-        $defaultData = [
-            'time' => time(),
-            'blocks' => [],
-            'version' => '2.28.0'
-        ];
+    /**
+     * Renderiza os scripts necessários
+     */
+    public static function renderScripts() {
+        $baseUrl = self::getBaseUrl();
+        $versions = self::$versions;
+        
+        echo <<<HTML
+        <!-- EditorJS Core -->
+        <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@{$versions['editorjs']}"></script>
+        
+HTML;
 
-        if (empty($this->content)) {
-            $this->editorData = $defaultData;
-            return;
-        }
-
-        $decoded = json_decode($this->content, true);
-
-        if (
-            json_last_error() === JSON_ERROR_NONE &&
-            isset($decoded['blocks']) &&
-            is_array($decoded['blocks'])
-        ) {
-            $this->editorData = $decoded;
-        } else {
-            $cleanContent = strip_tags($this->content);
-            $cleanContent = html_entity_decode($cleanContent, ENT_QUOTES, 'UTF-8');
-            $cleanContent = trim($cleanContent);
-
-            if (empty($cleanContent)) {
-                $this->editorData = $defaultData;
-            } else {
-                $this->editorData = [
-                    'time' => time(),
-                    'blocks' => [
-                        [
-                            'type' => 'paragraph',
-                            'data' => [
-                                'text' => $cleanContent
-                            ]
-                        ]
-                    ],
-                    'version' => '2.28.0'
-                ];
+        // Carregar plugins habilitados
+        foreach (self::$enabledPlugins as $plugin) {
+            if (isset($versions[$plugin])) {
+                $pluginUrl = self::getPluginUrl($plugin, $versions[$plugin]);
+                echo "        <script src=\"{$pluginUrl}\"></script>\n";
             }
         }
-    }
 
-    public function getData() {
-        return $this->editorData;
-    }
-
-    public function getJsonData() {
-        $json = json_encode(
-            $this->editorData,
-            JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE
-        );
+        echo <<<HTML
         
-        // Fallback se json_encode falhar
-        if ($json === false) {
-            $json = json_encode([
-                'time' => time(),
-                'blocks' => [],
-                'version' => '2.28.0'
-            ]);
+        <!-- EditorJS Initialization Script -->
+        <script src="{$baseUrl}/assets/js/editorjs-init.js"></script>
+        
+HTML;
+    }
+
+    /**
+     * Inicializa o EditorJS com conteúdo existente (se houver)
+     * 
+     * @param string $content Conteúdo JSON do EditorJS
+     * @param string $holderId ID do elemento que receberá o editor (padrão: editorjs)
+     * @param string $outputId ID do textarea que receberá o JSON (padrão: content)
+     */
+    public static function init($content = '', $holderId = 'editorjs', $outputId = 'content') {
+        // Escapa o conteúdo para JavaScript
+        $contentJson = !empty($content) ? $content : '{}';
+        $contentEscaped = htmlspecialchars($contentJson, ENT_QUOTES, 'UTF-8');
+        
+        echo <<<HTML
+        <script>
+            // Inicializar EditorJS quando o DOM estiver pronto
+            document.addEventListener('DOMContentLoaded', function() {
+                let existingContent = '{$contentEscaped}';
+                
+                // Parse do conteúdo existente
+                let parsedContent = null;
+                if (existingContent && existingContent !== '{}') {
+                    try {
+                        parsedContent = JSON.parse(existingContent);
+                    } catch(e) {
+                        console.error('Erro ao fazer parse do conteúdo:', e);
+                        parsedContent = null;
+                    }
+                }
+                
+                // Inicializar editor
+                initializeEditorJS('{$holderId}', '{$outputId}', parsedContent);
+            });
+        </script>
+        
+HTML;
+    }
+
+    /**
+     * Retorna a URL base do projeto
+     */
+    private static function getBaseUrl() {
+        // Se a função url() existir (helper do projeto)
+        if (function_exists('url')) {
+            return rtrim(url(''), '/');
         }
         
-        return $json;
+        // Fallback: detectar automaticamente
+        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        $scriptName = dirname($_SERVER['SCRIPT_NAME']);
+        
+        // Remove /admin ou outros subdiretórios para chegar na raiz
+        $basePath = preg_replace('#/(admin|public|includes).*$#', '', $scriptName);
+        
+        return $protocol . '://' . $host . $basePath;
     }
 
-    public static function renderStyles() {
-        echo '<link rel="stylesheet" href="/gamedev-academy/assets/css/editorjs-custom.css">' . PHP_EOL;
+    /**
+     * Retorna a URL do CDN para um plugin específico
+     */
+    private static function getPluginUrl($plugin, $version) {
+        $pluginMap = [
+            'header' => '@editorjs/header',
+            'list' => '@editorjs/list',
+            'checklist' => '@editorjs/checklist',
+            'quote' => '@editorjs/quote',
+            'code' => '@editorjs/code',
+            'delimiter' => '@editorjs/delimiter',
+            'table' => '@editorjs/table',
+            'warning' => '@editorjs/warning',
+            'image' => '@editorjs/image',
+            'embed' => '@editorjs/embed',
+            'inline-code' => '@editorjs/inline-code',
+            'marker' => '@editorjs/marker',
+            'underline' => '@editorjs/underline',
+            'raw' => '@editorjs/raw',
+        ];
+
+        $packageName = $pluginMap[$plugin] ?? "@editorjs/{$plugin}";
+        return "https://cdn.jsdelivr.net/npm/{$packageName}@{$version}";
     }
 
-    public static function renderScripts() {
-        ?>
-<!-- Editor.js Core -->
-<script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@2.28.2"></script>
-
-<!-- Editor.js Tools -->
-<script src="https://cdn.jsdelivr.net/npm/@editorjs/header@2.8.1"></script>
-<script src="https://cdn.jsdelivr.net/npm/@editorjs/paragraph@2.11.3"></script>
-<script src="https://cdn.jsdelivr.net/npm/@editorjs/list@1.9.0"></script>
-<script src="https://cdn.jsdelivr.net/npm/@editorjs/checklist@1.6.0"></script>
-<script src="https://cdn.jsdelivr.net/npm/@editorjs/quote@2.6.0"></script>
-<script src="https://cdn.jsdelivr.net/npm/@editorjs/code@2.9.0"></script>
-<script src="https://cdn.jsdelivr.net/npm/@editorjs/delimiter@1.4.0"></script>
-<script src="https://cdn.jsdelivr.net/npm/@editorjs/table@2.3.0"></script>
-<script src="https://cdn.jsdelivr.net/npm/@editorjs/warning@1.4.0"></script>
-<script src="https://cdn.jsdelivr.net/npm/@editorjs/marker@1.4.0"></script>
-<script src="https://cdn.jsdelivr.net/npm/@editorjs/underline@1.1.0"></script>
-<script src="https://cdn.jsdelivr.net/npm/@editorjs/image@2.9.0"></script>
-<script src="https://cdn.jsdelivr.net/npm/@editorjs/embed@2.7.0"></script>
-
-<!-- Editor.js Custom -->
-<script src="/gamedev-academy/assets/js/editorjs-tools.js"></script>
-<script src="/gamedev-academy/assets/js/editorjs-init.js"></script>
-        <?php
+    /**
+     * Habilita ou desabilita um plugin
+     */
+    public static function enablePlugin($plugin) {
+        if (!in_array($plugin, self::$enabledPlugins)) {
+            self::$enabledPlugins[] = $plugin;
+        }
     }
 
-    public static function init($data, $formId = 'lessonForm') {
-        $safeJson = is_string($data) ? $data : json_encode($data);
-        ?>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    var editorData;
-    try {
-        editorData = JSON.parse('<?= addslashes($safeJson) ?>');
-    } catch(e) {
-        console.warn('Dados do editor inválidos, usando vazio:', e);
-        editorData = { time: Date.now(), blocks: [], version: '2.28.0' };
-    }
-
-    if (typeof EditorJSManager !== 'undefined') {
-        new EditorJSManager({
-            holderId: 'editorjs',
-            textareaId: 'content',
-            formId: '<?= $formId ?>',
-            data: editorData
+    public static function disablePlugin($plugin) {
+        self::$enabledPlugins = array_filter(self::$enabledPlugins, function($p) use ($plugin) {
+            return $p !== $plugin;
         });
-    } else {
-        console.error('EditorJSManager não carregado');
     }
-});
-</script>
-        <?php
+
+    /**
+     * Retorna lista de plugins habilitados
+     */
+    public static function getEnabledPlugins() {
+        return self::$enabledPlugins;
+    }
+
+    /**
+     * Converte conteúdo HTML para formato EditorJS (básico)
+     * Útil para migração de conteúdo antigo
+     */
+    public static function htmlToEditorJS($html) {
+        $blocks = [];
+        
+        // Implementação básica - pode ser expandida
+        if (!empty($html)) {
+            $blocks[] = [
+                'type' => 'paragraph',
+                'data' => [
+                    'text' => $html
+                ]
+            ];
+        }
+        
+        return json_encode([
+            'time' => time() * 1000,
+            'blocks' => $blocks,
+            'version' => self::$versions['editorjs']
+        ]);
+    }
+
+    /**
+     * Converte conteúdo EditorJS para HTML (renderização)
+     */
+    public static function editorJSToHtml($jsonContent) {
+        if (empty($jsonContent)) {
+            return '';
+        }
+
+        $data = json_decode($jsonContent, true);
+        if (!isset($data['blocks'])) {
+            return '';
+        }
+
+        $html = '';
+        foreach ($data['blocks'] as $block) {
+            $html .= self::renderBlock($block);
+        }
+
+        return $html;
+    }
+
+    /**
+     * Renderiza um bloco individual do EditorJS
+     */
+    private static function renderBlock($block) {
+        $type = $block['type'] ?? 'paragraph';
+        $data = $block['data'] ?? [];
+
+        switch ($type) {
+            case 'header':
+                $level = $data['level'] ?? 2;
+                $text = $data['text'] ?? '';
+                return "<h{$level}>{$text}</h{$level}>\n";
+
+            case 'paragraph':
+                $text = $data['text'] ?? '';
+                return "<p>{$text}</p>\n";
+
+            case 'list':
+                $style = $data['style'] ?? 'unordered';
+                $items = $data['items'] ?? [];
+                $tag = $style === 'ordered' ? 'ol' : 'ul';
+                $html = "<{$tag}>\n";
+                foreach ($items as $item) {
+                    $html .= "  <li>{$item}</li>\n";
+                }
+                $html .= "</{$tag}>\n";
+                return $html;
+
+            case 'quote':
+                $text = $data['text'] ?? '';
+                $caption = $data['caption'] ?? '';
+                $html = "<blockquote>{$text}";
+                if ($caption) {
+                    $html .= "<cite>{$caption}</cite>";
+                }
+                $html .= "</blockquote>\n";
+                return $html;
+
+            case 'code':
+                $code = $data['code'] ?? '';
+                return "<pre><code>{$code}</code></pre>\n";
+
+            case 'delimiter':
+                return "<hr>\n";
+
+            case 'image':
+                $url = $data['file']['url'] ?? '';
+                $caption = $data['caption'] ?? '';
+                $html = "<figure>";
+                $html .= "<img src=\"{$url}\" alt=\"{$caption}\">";
+                if ($caption) {
+                    $html .= "<figcaption>{$caption}</figcaption>";
+                }
+                $html .= "</figure>\n";
+                return $html;
+
+            default:
+                return "<!-- Tipo de bloco não suportado: {$type} -->\n";
+        }
     }
 }
