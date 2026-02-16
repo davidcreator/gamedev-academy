@@ -1,6 +1,8 @@
 <?php
 $pageTitle = 'Editar Lição';
 include '../includes/header.php';
+require_once '../../includes/editorjs-loader.php';
+
 
 $db = Database::getInstance();
 $id = intval($_GET['id'] ?? 0);
