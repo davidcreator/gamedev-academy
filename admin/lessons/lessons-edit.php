@@ -77,6 +77,38 @@ try {
     die("Erro ao buscar aula: " . $e->getMessage());
 }
 
+// ========== PREPARAÇÃO DOS DADOS PARA O EDITOR.JS ==========
+$content = trim($lesson['content'] ?? '');
+
+$defaultEditorData = [
+    'time' => time(),
+    'blocks' => [],
+    'version' => '2.28.0'
+];
+
+if (empty($content)) {
+    $editorData = $defaultEditorData;
+} else {
+    $decoded = json_decode($content, true);
+    
+    if (json_last_error() === JSON_ERROR_NONE && isset($decoded['blocks']) && is_array($decoded['blocks'])) {
+        $editorData = $decoded;
+    } else {
+        $editorData = [
+            'time' => time(),
+            'blocks' => [
+                [
+                    'type' => 'paragraph',
+                    'data' => [
+                        'text' => htmlspecialchars($content, ENT_QUOTES, 'UTF-8')
+                    ]
+                ]
+            ],
+            'version' => '2.28.0'
+        ];
+    }
+}
+
 showFlashMessages() ?>
 
 <!-- Funções -->
@@ -133,7 +165,7 @@ showFlashMessages() ?>
                  <!-- Container do Editor.js (visível) -->
                 <div id="editorjs"></div>
                 <!-- Textarea original (oculto, recebe o JSON) -->
-                <textarea class="form-control" id="content" name="content" rows="15"><?= escape($lesson['content'] ?? '') ?></textarea>
+                <textarea class="form-control d-none" id="content" name="content" rows="15"><?= escape($lesson['content'] ?? '') ?></textarea>
             </div>
         </div>
 
@@ -190,91 +222,21 @@ showFlashMessages() ?>
         </div>
     </form>
 </div>
- <!-- Scripts do Editor.js -->
-    <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@editorjs/header@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@editorjs/list@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@editorjs/code@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@editorjs/embed@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@editorjs/image@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@editorjs/quote@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@editorjs/checklist@latest"></script>
 
+ <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <?php EditorJSLoader::renderScripts(); ?>
+    
     <script>
-        // Dados existentes da lição vindos do PHP
-        const existingData = <?= json_encode($editorData) ?>;
-
-        // Inicializa o Editor.js com os dados existentes
-        const editor = new EditorJS({
-            holder: 'editorjs',
+        // ✨ Inicialização super limpa
+        const editorManager = new EditorJSManager({
+            holderId: 'editorjs',
+            textareaId: 'content',
+            formId: 'lessonForm',
             placeholder: 'Comece a escrever o conteúdo da lição...',
-            data: existingData, // ← CARREGA OS DADOS EXISTENTES
-            tools: {
-                header: {
-                    class: Header,
-                    inlineToolbar: true,
-                    config: {
-                        levels: [2, 3, 4],
-                        defaultLevel: 2
-                    }
-                },
-                list: {
-                    class: List,
-                    inlineToolbar: true
-                },
-                code: {
-                    class: CodeTool,
-                    config: {
-                        placeholder: 'Cole seu código aqui (GDScript, C#, etc.)'
-                    }
-                },
-                embed: {
-                    class: Embed,
-                    config: {
-                        services: {
-                            youtube: true,
-                            coub: true,
-                            codepen: true
-                        }
-                    }
-                },
-                image: {
-                    class: ImageTool,
-                    config: {
-                        endpoints: {
-                            byFile: 'upload-image.php',
-                        }
-                    }
-                },
-                quote: Quote,
-                checklist: Checklist
-            },
-            onReady: () => {
-                console.log('Editor.js carregado com dados existentes!');
-            }
-        });
-
-        // Intercepta o submit
-        document.getElementById('lessonForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            try {
-                const outputData = await editor.save();
-                
-                if (!outputData.blocks || outputData.blocks.length === 0) {
-                    alert('Por favor, adicione conteúdo à lição!');
-                    return;
-                }
-                
-                document.getElementById('content_json').value = JSON.stringify(outputData);
-                this.submit();
-                
-            } catch (error) {
-                console.error('Erro ao salvar:', error);
-                alert('Erro ao processar o conteúdo. Verifique o console.');
-            }
+            data: <?= $editorLoader->getJsonData() ?>,
+            uploadEndpoint: 'upload-image.php'
         });
     </script>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script> 
 <?php include '../includes/footer.php'; ?>
