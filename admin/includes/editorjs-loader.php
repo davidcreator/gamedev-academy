@@ -100,7 +100,7 @@ class EditorJSLoader {
      * Renderiza o CSS
      */
     public static function renderStyles() {
-        echo '<link rel="stylesheet" href="../assets/css/editorjs-custom.css">' . PHP_EOL;
+        echo '<link rel="stylesheet" href="../../assets/css/editorjs-custom.css">' . PHP_EOL;
     }
 
     /**

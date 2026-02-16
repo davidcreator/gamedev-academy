@@ -192,21 +192,8 @@ showFlashMessages() ?>
         </div>
     </form>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 
- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <?php EditorJSLoader::renderScripts(); ?>
-    
-    <script>
-        // ✨ Inicialização super limpa
-        const editorManager = new EditorJSManager({
-            holderId: 'editorjs',
-            textareaId: 'content',
-            formId: 'lessonForm',
-            placeholder: 'Comece a escrever o conteúdo da lição...',
-            data: <?= $editorLoader->getJsonData() ?>,
-            uploadEndpoint: 'upload-image.php'
-        });
-    </script>
-
+<?php EditorJSLoader::renderScripts(); ?>
+<?php EditorJSLoader::init($editorLoader->getJsonData()); ?>
 <?php include '../includes/footer.php'; ?>
