@@ -11,20 +11,47 @@ $courseId = intval($_GET['course_id'] ?? 0);
 // Validar ID
 if ($id <= 0) {
     flash('error', 'ID da lição inválido.');
-    redirect(url('admin/lessons.php?module_id=' . $moduleId . '&course_id=' . $courseId));
+    redirect(url('admin/lessons/list.php?module_id=' . $moduleId . '&course_id=' . $courseId));
 }
 
-// Buscar lição
-$lesson = $db->fetch("SELECT * FROM lessons WHERE id = ?", [$id]);
+// Buscar lição com informações do módulo e curso
+$lesson = $db->fetch("
+    SELECT l.*, 
+           m.title as module_title,
+           m.id as module_id,
+           c.title as course_title,
+           c.id as course_id
+    FROM lessons l
+    LEFT JOIN modules m ON l.module_id = m.id
+    LEFT JOIN courses c ON m.course_id = c.id
+    WHERE l.id = ?
+", [$id]);
+
 if (!$lesson) {
     flash('error', 'Lição não encontrada.');
-    redirect(url('admin/lessons.php?module_id=' . $moduleId . '&course_id=' . $courseId));
+    redirect(url('admin/lessons/list.php?module_id=' . $moduleId . '&course_id=' . $courseId));
+}
+
+// Atualizar IDs se não foram passados na URL
+if ($moduleId == 0) {
+    $moduleId = $lesson['module_id'];
+}
+if ($courseId == 0) {
+    $courseId = $lesson['course_id'];
 }
 
 // Processar formulário
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $errors = [];
+    
+    // Validar campos obrigatórios
+    $title = trim($_POST['title'] ?? '');
+    if (empty($title)) {
+        $errors[] = 'O título é obrigatório.';
+    }
+    
     $data = [
-        'title' => trim($_POST['title'] ?? ''),
+        'title' => $title,
         'summary' => trim($_POST['summary'] ?? ''),
         'content_type' => $_POST['content_type'] ?? 'text',
         'content' => $_POST['content'] ?? '',
@@ -36,13 +63,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'attachment_url' => trim($_POST['attachment_url'] ?? ''),
     ];
     
-    if (!$data['title']) {
-        flash('error', 'Informe o título.');
-    } else {
+    // Validar URL de vídeo se fornecida
+    if (!empty($data['video_url']) && !filter_var($data['video_url'], FILTER_VALIDATE_URL)) {
+        $errors[] = 'URL do vídeo inválida.';
+    }
+    
+    if (empty($errors)) {
         $db->update('lessons', $data, 'id = :id', ['id' => $id]);
         flash('success', 'Lição atualizada com sucesso!');
         // Recarregar dados atualizados
-        $lesson = $db->fetch("SELECT * FROM lessons WHERE id = ?", [$id]);
+        $lesson = $db->fetch("
+            SELECT l.*, 
+                   m.title as module_title,
+                   m.id as module_id,
+                   c.title as course_title,
+                   c.id as course_id
+            FROM lessons l
+            LEFT JOIN modules m ON l.module_id = m.id
+            LEFT JOIN courses c ON m.course_id = c.id
+            WHERE l.id = ?
+        ", [$id]);
+    } else {
+        foreach ($errors as $error) {
+            flash('error', $error);
+        }
     }
 }
 
@@ -50,13 +94,30 @@ showFlashMessages();
 EditorJSLoader::renderStyles();
 ?>
 
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="<?= url('admin/dashboard.php') ?>">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="<?= url('admin/courses.php') ?>">Cursos</a></li>
+        <li class="breadcrumb-item"><a href="<?= url('admin/modules/list.php?course_id=' . $courseId) ?>"><?= escape($lesson['course_title']) ?></a></li>
+        <li class="breadcrumb-item"><a href="<?= url('admin/lessons/list.php?module_id=' . $moduleId . '&course_id=' . $courseId) ?>"><?= escape($lesson['module_title']) ?></a></li>
+        <li class="breadcrumb-item active">Editar Lição</li>
+    </ol>
+</nav>
+
 <!-- Navegação -->
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <a href="<?= url('admin/lessons.php?module_id=' . $moduleId . '&course_id=' . $courseId) ?>" class="btn btn-secondary">
+    <a href="<?= url('admin/lessons/list.php?module_id=' . $moduleId . '&course_id=' . $courseId) ?>" class="btn btn-secondary">
         ← Voltar para Lições
     </a>
     <div>
         <span class="badge bg-info">ID: <?= $lesson['id'] ?></span>
+        <span class="badge bg-secondary">Ordem: #<?= $lesson['order_position'] ?></span>
+        <?php if ($lesson['is_published']): ?>
+            <a href="<?= url('curso/' . $courseId . '/licao/' . $id) ?>" target="_blank" class="btn btn-sm btn-outline-primary ms-2">
+                <i class="fas fa-external-link-alt"></i> Ver Lição
+            </a>
+        <?php endif; ?>
     </div>
 </div>
 
@@ -215,6 +276,72 @@ EditorJSLoader::renderStyles();
         </div>
     </form>
 </div>
+
+<!-- Estatísticas da Lição (se implementado) -->
+<?php
+$stats = $db->fetch("
+    SELECT 
+        COUNT(DISTINCT lp.user_id) as students_count,
+        COUNT(CASE WHEN lp.is_completed = 1 THEN 1 END) as completed_count,
+        AVG(lp.progress_percentage) as avg_progress,
+        MAX(lp.last_accessed_at) as last_access
+    FROM lesson_progress lp
+    WHERE lp.lesson_id = ?
+", [$id]);
+
+if ($stats && $stats['students_count'] > 0):
+?>
+<div class="card mt-4">
+    <div class="card-body">
+        <h5 class="mb-3">
+            <i class="fas fa-chart-bar"></i> Estatísticas da Lição
+        </h5>
+        
+        <div class="row">
+            <div class="col-md-3">
+                <div class="text-center p-3 border rounded">
+                    <div class="display-6 text-primary"><?= number_format($stats['students_count']) ?></div>
+                    <small class="text-muted">Alunos Matriculados</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center p-3 border rounded">
+                    <div class="display-6 text-success"><?= number_format($stats['completed_count']) ?></div>
+                    <small class="text-muted">Completaram</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center p-3 border rounded">
+                    <div class="display-6 text-info"><?= number_format($stats['avg_progress'], 1) ?>%</div>
+                    <small class="text-muted">Progresso Médio</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center p-3 border rounded">
+                    <div class="display-6 text-warning">
+                        <?php 
+                        $completion_rate = $stats['students_count'] > 0 
+                            ? ($stats['completed_count'] / $stats['students_count']) * 100 
+                            : 0;
+                        echo number_format($completion_rate, 1);
+                        ?>%
+                    </div>
+                    <small class="text-muted">Taxa de Conclusão</small>
+                </div>
+            </div>
+        </div>
+
+        <?php if ($stats['last_access']): ?>
+        <div class="mt-3">
+            <small class="text-muted">
+                <i class="fas fa-clock"></i> 
+                Último acesso: <?= date('d/m/Y H:i', strtotime($stats['last_access'])) ?>
+            </small>
+        </div>
+        <?php endif; ?>
+    </div>
+</div>
+<?php endif; ?>
 
 <script>
 function confirmDelete() {

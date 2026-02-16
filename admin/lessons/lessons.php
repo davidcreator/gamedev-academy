@@ -101,7 +101,7 @@ showFlashMessages()
         <h2><?= escape($course['title']) ?> &nbsp;.&nbsp; <?= escape($module['title']) ?>&nbsp;&nbsp;</h2>
     </div>
     <div class="d-flex justify-beteween align-right gap-2">
-        <button class="btn btn-success" onclick="document.getElementById('create-lesson').removeAttribute('hidden')">Nova Lição</button>
+        <button class="btn btn-success" onclick="document.getElementById('lesson-create').removeAttribute('hidden')">Nova Lição</button>
     </div>
  </div>
  <br>

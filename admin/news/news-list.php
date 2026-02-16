@@ -1,169 +1,332 @@
 <?php
-session_start();
-require_once '../config/database.php';
+$pageTitle = 'Gerenciar Notícias';
+include '../includes/header.php';
 
-// Buscar todas as notícias
-try {
-    $stmt = $pdo->query("SELECT * FROM news ORDER BY created_at DESC");
-    $newsList = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    $total = count($newsList);
-} catch(PDOException $e) {
-    die("Erro ao buscar notícias: " . $e->getMessage());
+$db = Database::getInstance();
+
+// Filtros
+$status = $_GET['status'] ?? 'all';
+$category = $_GET['category'] ?? 'all';
+$search = trim($_GET['search'] ?? '');
+
+// Construir query
+$where = [];
+$params = [];
+
+if ($status !== 'all') {
+    $where[] = "status = ?";
+    $params[] = $status;
 }
 
-// Mensagens de sessão
-$success = $_SESSION['success_message'] ?? null;
-$error = $_SESSION['error_message'] ?? null;
-unset($_SESSION['success_message'], $_SESSION['error_message']);
+if ($category !== 'all') {
+    $where[] = "category = ?";
+    $params[] = $category;
+}
+
+if ($search) {
+    $where[] = "(title LIKE ? OR excerpt LIKE ?)";
+    $params[] = "%{$search}%";
+    $params[] = "%{$search}%";
+}
+
+$whereClause = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
+
+// Paginação
+$page = max(1, intval($_GET['page'] ?? 1));
+$perPage = 15;
+$offset = ($page - 1) * $perPage;
+
+// Buscar notícias
+$query = "SELECT n.*, u.name as author_name 
+          FROM news n 
+          LEFT JOIN users u ON n.author_id = u.id 
+          {$whereClause}
+          ORDER BY n.created_at DESC 
+          LIMIT {$perPage} OFFSET {$offset}";
+
+$news = $db->fetchAll($query, $params);
+
+// Contar total
+$countQuery = "SELECT COUNT(*) as total FROM news {$whereClause}";
+$total = $db->fetch($countQuery, $params)['total'] ?? 0;
+$totalPages = ceil($total / $perPage);
+
+// Estatísticas
+$stats = [
+    'total' => $db->fetch("SELECT COUNT(*) as count FROM news")['count'],
+    'published' => $db->fetch("SELECT COUNT(*) as count FROM news WHERE status = 'published'")['count'],
+    'draft' => $db->fetch("SELECT COUNT(*) as count FROM news WHERE status = 'draft'")['count'],
+    'scheduled' => $db->fetch("SELECT COUNT(*) as count FROM news WHERE status = 'scheduled'")['count'],
+];
+
+showFlashMessages();
 ?>
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerenciar Notícias - GameDev Academy</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="../assets/css/admin.css">
-</head>
-<body>
-    <?php include '../includes/admin-header.php'; ?>
-    
-    <div class="container-fluid">
-        <div class="row">
-            <?php include '../includes/admin-sidebar.php'; ?>
-            
-            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                    <h1 class="h2">
-                        <i class="bi bi-newspaper"></i> 
-                        Notícias <span class="badge bg-secondary"><?php echo $total; ?></span>
-                    </h1>
-                    <div class="btn-toolbar mb-2 mb-md-0">
-                        <a href="news-create.php" class="btn btn-success">
-                            <i class="bi bi-plus-circle"></i> Nova Notícia
-                        </a>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2>Notícias</h2>
+        <p class="text-muted mb-0">Gerencie todas as notícias do site</p>
+    </div>
+    <div>
+        <a href="<?= url('admin/news/news-create.php') ?>" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Nova Notícia
+        </a>
+    </div>
+</div>
+
+<!-- Estatísticas -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1">Total</p>
+                        <h3 class="mb-0"><?= number_format($stats['total']) ?></h3>
+                    </div>
+                    <div class="text-primary">
+                        <i class="fas fa-newspaper fa-2x"></i>
                     </div>
                 </div>
-                
-                <?php if ($success): ?>
-                <div class="alert alert-success alert-dismissible fade show">
-                    <?php echo $success; ?>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-                <?php endif; ?>
-                
-                <?php if ($error): ?>
-                <div class="alert alert-danger alert-dismissible fade show">
-                    <?php echo $error; ?>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-                <?php endif; ?>
-                
-                <div class="card shadow">
-                    <div class="card-body">
-                        <?php if (empty($newsList)): ?>
-                            <div class="text-center py-5">
-                                <i class="bi bi-inbox" style="font-size: 3rem; color: #dee2e6;"></i>
-                                <p class="mt-3 text-muted">Nenhuma notícia cadastrada ainda.</p>
-                                <a href="news-create.php" class="btn btn-primary">
-                                    <i class="bi bi-plus-circle"></i> Criar Primeira Notícia
-                                </a>
-                            </div>
-                        <?php else: ?>
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle">
-                                    <thead>
-                                        <tr>
-                                            <th width="60">#</th>
-                                            <th>Título</th>
-                                            <th width="120">Categoria</th>
-                                            <th width="100">Status</th>
-                                            <th width="130">Data</th>
-                                            <th width="150" class="text-center">Ações</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php foreach ($newsList as $item): ?>
-                                        <tr>
-                                            <td>
-                                                <span class="badge bg-secondary">#<?php echo $item['id']; ?></span>
-                                            </td>
-                                            <td>
-                                                <strong><?php echo htmlspecialchars($item['title'] ?? 'Sem título'); ?></strong>
-                                                <?php if (!empty($item['excerpt'])): ?>
-                                                <br><small class="text-muted">
-                                                    <?php 
-                                                    $excerpt = $item['excerpt'];
-                                                    echo htmlspecialchars(substr($excerpt, 0, 80));
-                                                    if (strlen($excerpt) > 80) echo '...';
-                                                    ?>
-                                                </small>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td>
-                                                <?php if (!empty($item['category'])): ?>
-                                                <span class="badge bg-info">
-                                                    <?php echo htmlspecialchars($item['category']); ?>
-                                                </span>
-                                                <?php else: ?>
-                                                <span class="text-muted">-</span>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td>
-                                                <?php if (($item['status'] ?? 'draft') == 'published'): ?>
-                                                <span class="badge bg-success">
-                                                    <i class="bi bi-check-circle"></i> Publicado
-                                                </span>
-                                                <?php else: ?>
-                                                <span class="badge bg-warning">
-                                                    <i class="bi bi-clock"></i> Rascunho
-                                                </span>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td>
-                                                <?php 
-                                                if (!empty($item['created_at'])) {
-                                                    echo date('d/m/Y', strtotime($item['created_at']));
-                                                } else {
-                                                    echo '-';
-                                                }
-                                                ?>
-                                            </td>
-                                            <td class="text-center">
-                                                <div class="btn-group btn-group-sm">
-                                                    <a href="news.php?id=<?php echo $item['id']; ?>" 
-                                                       class="btn btn-outline-info" title="Visualizar">
-                                                        <i class="bi bi-eye"></i>
-                                                    </a>
-                                                    <a href="news-edit.php?id=<?php echo $item['id']; ?>" 
-                                                       class="btn btn-outline-primary" title="Editar">
-                                                        <i class="bi bi-pencil"></i>
-                                                    </a>
-                                                    <a href="news-delete.php?id=<?php echo $item['id']; ?>" 
-                                                       class="btn btn-outline-danger" title="Excluir"
-                                                       onclick="return confirm('Tem certeza que deseja excluir esta notícia?')">
-                                                        <i class="bi bi-trash"></i>
-                                                    </a>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                        <?php endif; ?>
-                    </div>
-                    <?php if (!empty($newsList)): ?>
-                    <div class="card-footer text-muted">
-                        Total de <?php echo $total; ?> notícia(s) cadastrada(s)
-                    </div>
-                    <?php endif; ?>
-                </div>
-            </main>
+            </div>
         </div>
     </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1">Publicadas</p>
+                        <h3 class="mb-0 text-success"><?= number_format($stats['published']) ?></h3>
+                    </div>
+                    <div class="text-success">
+                        <i class="fas fa-check-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1">Rascunhos</p>
+                        <h3 class="mb-0 text-warning"><?= number_format($stats['draft']) ?></h3>
+                    </div>
+                    <div class="text-warning">
+                        <i class="fas fa-edit fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1">Agendadas</p>
+                        <h3 class="mb-0 text-info"><?= number_format($stats['scheduled']) ?></h3>
+                    </div>
+                    <div class="text-info">
+                        <i class="fas fa-clock fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Buscar</label>
+                <input type="text" name="search" class="form-control" placeholder="Título ou conteúdo..." value="<?= escape($search) ?>">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-control">
+                    <option value="all" <?= $status === 'all' ? 'selected' : '' ?>>Todos</option>
+                    <option value="published" <?= $status === 'published' ? 'selected' : '' ?>>Publicadas</option>
+                    <option value="draft" <?= $status === 'draft' ? 'selected' : '' ?>>Rascunhos</option>
+                    <option value="scheduled" <?= $status === 'scheduled' ? 'selected' : '' ?>>Agendadas</option>
+                    <option value="archived" <?= $status === 'archived' ? 'selected' : '' ?>>Arquivadas</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Categoria</label>
+                <select name="category" class="form-control">
+                    <option value="all" <?= $category === 'all' ? 'selected' : '' ?>>Todas</option>
+                    <option value="lancamentos" <?= $category === 'lancamentos' ? 'selected' : '' ?>>Lançamentos</option>
+                    <option value="tutoriais" <?= $category === 'tutoriais' ? 'selected' : '' ?>>Tutoriais</option>
+                    <option value="industria" <?= $category === 'industria' ? 'selected' : '' ?>>Indústria</option>
+                    <option value="eventos" <?= $category === 'eventos' ? 'selected' : '' ?>>Eventos</option>
+                    <option value="entrevistas" <?= $category === 'entrevistas' ? 'selected' : '' ?>>Entrevistas</option>
+                    <option value="comunidade" <?= $category === 'comunidade' ? 'selected' : '' ?>>Comunidade</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-filter"></i> Filtrar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Lista de Notícias -->
+<div class="card">
+    <div class="card-body">
+        <?php if (empty($news)): ?>
+            <div class="text-center py-5">
+                <i class="fas fa-newspaper fa-4x text-muted mb-3"></i>
+                <h4>Nenhuma notícia encontrada</h4>
+                <p class="text-muted">Comece criando sua primeira notícia</p>
+                <a href="<?= url('admin/news/news-create.php') ?>" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Criar Notícia
+                </a>
+            </div>
+        <?php else: ?>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th style="width: 60px;">Imagem</th>
+                            <th>Título</th>
+                            <th style="width: 120px;">Categoria</th>
+                            <th style="width: 100px;">Status</th>
+                            <th style="width: 150px;">Autor</th>
+                            <th style="width: 150px;">Data</th>
+                            <th style="width: 150px;" class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($news as $item): ?>
+                        <tr>
+                            <td>
+                                <?php if (!empty($item['featured_image'])): ?>
+                                    <img src="<?= escape($item['featured_image']) ?>" alt="Thumbnail" class="rounded" style="width: 50px; height: 50px; object-fit: cover;">
+                                <?php else: ?>
+                                    <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                        <i class="fas fa-image text-muted"></i>
+                                    </div>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <div>
+                                    <strong><?= escape($item['title']) ?></strong>
+                                    <?php if ($item['is_featured']): ?>
+                                        <span class="badge bg-warning text-dark ms-1">Destaque</span>
+                                    <?php endif; ?>
+                                </div>
+                                <?php if (!empty($item['excerpt'])): ?>
+                                    <small class="text-muted d-block" style="max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                        <?= escape($item['excerpt']) ?>
+                                    </small>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php if ($item['category']): ?>
+                                    <span class="badge bg-secondary"><?= ucfirst(escape($item['category'])) ?></span>
+                                <?php else: ?>
+                                    <span class="text-muted">-</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php
+                                $statusColors = [
+                                    'published' => 'success',
+                                    'draft' => 'warning',
+                                    'scheduled' => 'info',
+                                    'archived' => 'secondary'
+                                ];
+                                $statusLabels = [
+                                    'published' => 'Publicada',
+                                    'draft' => 'Rascunho',
+                                    'scheduled' => 'Agendada',
+                                    'archived' => 'Arquivada'
+                                ];
+                                $color = $statusColors[$item['status']] ?? 'secondary';
+                                $label = $statusLabels[$item['status']] ?? $item['status'];
+                                ?>
+                                <span class="badge bg-<?= $color ?>"><?= $label ?></span>
+                            </td>
+                            <td>
+                                <small class="text-muted">
+                                    <?= escape($item['author_name'] ?? 'Desconhecido') ?>
+                                </small>
+                            </td>
+                            <td>
+                                <small class="text-muted">
+                                    <?= date('d/m/Y', strtotime($item['created_at'])) ?>
+                                    <br>
+                                    <?= date('H:i', strtotime($item['created_at'])) ?>
+                                </small>
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <?php if ($item['status'] === 'published'): ?>
+                                        <a href="<?= url('noticias/' . $item['slug']) ?>" class="btn btn-outline-primary" title="Ver" target="_blank">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    <?php endif; ?>
+                                    <a href="<?= url('admin/news/news-edit.php?id=' . $item['id']) ?>" class="btn btn-outline-secondary" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-danger" onclick="confirmDelete(<?= $item['id'] ?>, '<?= escape($item['title']) ?>')" title="Excluir">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginação -->
+            <?php if ($totalPages > 1): ?>
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                    <?php if ($page > 1): ?>
+                        <li class="page-item">
+                            <a class="page-link" href="?page=<?= $page - 1 ?>&status=<?= $status ?>&category=<?= $category ?>&search=<?= urlencode($search) ?>">
+                                Anterior
+                            </a>
+                        </li>
+                    <?php endif; ?>
+
+                    <?php for ($i = max(1, $page - 2); $i <= min($totalPages, $page + 2); $i++): ?>
+                        <li class="page-item <?= $i === $page ? 'active' : '' ?>">
+                            <a class="page-link" href="?page=<?= $i ?>&status=<?= $status ?>&category=<?= $category ?>&search=<?= urlencode($search) ?>">
+                                <?= $i ?>
+                            </a>
+                        </li>
+                    <?php endfor; ?>
+
+                    <?php if ($page < $totalPages): ?>
+                        <li class="page-item">
+                            <a class="page-link" href="?page=<?= $page + 1 ?>&status=<?= $status ?>&category=<?= $category ?>&search=<?= urlencode($search) ?>">
+                                Próximo
+                            </a>
+                        </li>
+                    <?php endif; ?>
+                </ul>
+            </nav>
+            <?php endif; ?>
+        <?php endif; ?>
+    </div>
+</div>
+
+<script>
+function confirmDelete(id, title) {
+    if (confirm(`Tem certeza que deseja excluir a notícia "${title}"?\n\nEsta ação não pode ser desfeita.`)) {
+        window.location.href = '<?= url('admin/news/news-delete.php') ?>?id=' + id;
+    }
+}
+</script>
+
+<?php include '../includes/footer.php'; ?>

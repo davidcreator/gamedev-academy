@@ -9,20 +9,28 @@ $id = intval($_GET['id'] ?? 0);
 // Validar ID
 if ($id <= 0) {
     flash('error', 'ID da notícia inválido.');
-    redirect(url('admin/news.php'));
+    redirect(url('admin/news/news.php'));
 }
 
 // Buscar notícia
 $news = $db->fetch("SELECT * FROM news WHERE id = ?", [$id]);
 if (!$news) {
     flash('error', 'Notícia não encontrada.');
-    redirect(url('admin/news.php'));
+    redirect(url('admin/news/news.php'));
 }
 
 // Processar formulário
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $errors = [];
+    
+    // Validar campos obrigatórios
+    $title = trim($_POST['title'] ?? '');
+    if (empty($title)) {
+        $errors[] = 'O título é obrigatório.';
+    }
+    
     $data = [
-        'title' => trim($_POST['title'] ?? ''),
+        'title' => $title,
         'slug' => trim($_POST['slug'] ?? ''),
         'excerpt' => trim($_POST['excerpt'] ?? ''),
         'content' => $_POST['content'] ?? '',
@@ -30,11 +38,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'category' => trim($_POST['category'] ?? ''),
         'status' => $_POST['status'] ?? 'draft',
         'is_featured' => isset($_POST['is_featured']) ? 1 : 0,
+        'meta_title' => trim($_POST['meta_title'] ?? ''),
+        'meta_description' => trim($_POST['meta_description'] ?? ''),
     ];
     
     // Atualizar published_at se mudou para publicado
     if ($data['status'] === 'published' && $news['status'] !== 'published') {
         $data['published_at'] = date('Y-m-d H:i:s');
+    } elseif ($data['status'] === 'scheduled' && !empty($_POST['scheduled_date'])) {
+        $data['published_at'] = $_POST['scheduled_date'];
     }
     
     // Gerar slug se necessário
@@ -42,14 +54,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $data['slug'] = generateSlug($data['title']);
     }
     
-    if (!$data['title']) {
-        flash('error', 'Informe o título da notícia.');
-    } else {
+    // Verificar se slug já existe (em outra notícia)
+    $existingSlug = $db->fetch("SELECT id FROM news WHERE slug = ? AND id != ?", [$data['slug'], $id]);
+    if ($existingSlug) {
+        $errors[] = 'Este slug já está em uso por outra notícia.';
+    }
+    
+    if (empty($errors)) {
         $db->update('news', $data, 'id = :id', ['id' => $id]);
         flash('success', 'Notícia atualizada com sucesso!');
         // Recarregar dados
         $news = $db->fetch("SELECT * FROM news WHERE id = ?", [$id]);
+    } else {
+        foreach ($errors as $error) {
+            flash('error', $error);
+        }
     }
+}
+
+// Função auxiliar para gerar slug
+function generateSlug($text) {
+    $text = strtolower($text);
+    $text = preg_replace('/[^a-z0-9]+/', '-', $text);
+    $text = trim($text, '-');
+    return $text;
 }
 
 showFlashMessages();
@@ -58,7 +86,7 @@ EditorJSLoader::renderStyles();
 
 <!-- Navegação -->
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <a href="<?= url('admin/news.php') ?>" class="btn btn-secondary">
+    <a href="<?= url('admin/news/news.php') ?>" class="btn btn-secondary">
         ← Voltar para Notícias
     </a>
     <div>
@@ -165,7 +193,7 @@ EditorJSLoader::renderStyles();
             
             <div class="mb-3">
                 <label class="form-label">Status</label>
-                <select name="status" form="newsForm" class="form-control">
+                <select name="status" id="newsStatus" form="newsForm" class="form-control">
                     <option value="draft" <?= $news['status'] === 'draft' ? 'selected' : '' ?>>Rascunho</option>
                     <option value="published" <?= $news['status'] === 'published' ? 'selected' : '' ?>>Publicado</option>
                     <option value="scheduled" <?= $news['status'] === 'scheduled' ? 'selected' : '' ?>>Agendado</option>
@@ -181,6 +209,11 @@ EditorJSLoader::renderStyles();
                 </small>
             </div>
             <?php endif; ?>
+
+            <div class="mb-3" id="scheduledDateGroup" style="display: <?= $news['status'] === 'scheduled' ? 'block' : 'none' ?>;">
+                <label class="form-label">Data e Hora Agendada</label>
+                <input type="datetime-local" name="scheduled_date" form="newsForm" class="form-control" value="<?= $news['published_at'] ? date('Y-m-d\TH:i', strtotime($news['published_at'])) : '' ?>">
+            </div>
 
             <div class="mb-3">
                 <label class="d-flex align-items-center gap-2">
@@ -204,7 +237,7 @@ EditorJSLoader::renderStyles();
             <h6 class="mb-3">Categoria</h6>
             
             <select name="category" form="newsForm" class="form-control">
-                <option value="">Selecione...</option>
+                <option value="">Sem categoria</option>
                 <?php
                 $categories = [
                     'lancamentos' => 'Lançamentos',
@@ -232,14 +265,37 @@ EditorJSLoader::renderStyles();
             </div>
 
             <?php if (!empty($news['featured_image'])): ?>
-            <div class="mb-2">
-                <img src="<?= escape($news['featured_image']) ?>" alt="Preview" class="img-fluid rounded" style="max-height: 200px;">
+            <div class="mb-2" id="imagePreview">
+                <img id="previewImg" src="<?= escape($news['featured_image']) ?>" alt="Preview" class="img-fluid rounded" style="max-height: 200px;">
+            </div>
+            <?php else: ?>
+            <div id="imagePreview" class="mb-2" style="display: none;">
+                <img id="previewImg" src="" alt="Preview" class="img-fluid rounded" style="max-height: 200px;">
             </div>
             <?php endif; ?>
 
             <button type="button" class="btn btn-sm btn-outline-primary w-100" onclick="openImageUploader()">
                 <i class="fas fa-upload"></i> Alterar Imagem
             </button>
+        </div>
+
+        <!-- SEO -->
+        <div class="card p-3 mb-3">
+            <h6 class="mb-3">
+                <i class="fas fa-search"></i> SEO
+            </h6>
+            
+            <div class="mb-3">
+                <label class="form-label">Meta Título</label>
+                <input type="text" name="meta_title" form="newsForm" class="form-control" value="<?= escape($news['meta_title'] ?? '') ?>" placeholder="Deixe vazio para usar o título" maxlength="60">
+                <small class="form-text text-muted">Máximo 60 caracteres</small>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Meta Descrição</label>
+                <textarea name="meta_description" form="newsForm" class="form-control" rows="3" placeholder="Deixe vazio para usar o resumo" maxlength="160"><?= escape($news['meta_description'] ?? '') ?></textarea>
+                <small class="form-text text-muted">Máximo 160 caracteres</small>
+            </div>
         </div>
 
         <!-- Autor -->
@@ -280,14 +336,87 @@ function generateSlugFromTitle(title) {
         .trim();
 }
 
+// Controlar exibição de campos baseado no status
+document.getElementById('newsStatus').addEventListener('change', function() {
+    const scheduledDateGroup = document.getElementById('scheduledDateGroup');
+    
+    if (this.value === 'scheduled') {
+        scheduledDateGroup.style.display = 'block';
+    } else {
+        scheduledDateGroup.style.display = 'none';
+    }
+});
+
+// Preview de imagem
+document.getElementById('featuredImageUrl').addEventListener('input', function() {
+    const url = this.value;
+    const preview = document.getElementById('imagePreview');
+    const img = document.getElementById('previewImg');
+    
+    if (url) {
+        img.src = url;
+        img.onerror = function() {
+            preview.style.display = 'none';
+        };
+        img.onload = function() {
+            preview.style.display = 'block';
+        };
+    } else {
+        preview.style.display = 'none';
+    }
+});
+
+// Contador de caracteres para SEO
+const metaTitle = document.querySelector('input[name="meta_title"]');
+const metaDescription = document.querySelector('textarea[name="meta_description"]');
+
+if (metaTitle) {
+    const updateMetaTitleCount = function() {
+        const length = this.value.length;
+        const small = this.nextElementSibling;
+        small.textContent = `${length}/60 caracteres`;
+        if (length > 60) {
+            small.classList.add('text-danger');
+        } else {
+            small.classList.remove('text-danger');
+        }
+    };
+    metaTitle.addEventListener('input', updateMetaTitleCount);
+    updateMetaTitleCount.call(metaTitle); // Executar uma vez ao carregar
+}
+
+if (metaDescription) {
+    const updateMetaDescCount = function() {
+        const length = this.value.length;
+        const small = this.nextElementSibling;
+        small.textContent = `${length}/160 caracteres`;
+        if (length > 160) {
+            small.classList.add('text-danger');
+        } else {
+            small.classList.remove('text-danger');
+        }
+    };
+    metaDescription.addEventListener('input', updateMetaDescCount);
+    updateMetaDescCount.call(metaDescription); // Executar uma vez ao carregar
+}
+
 function openImageUploader() {
-    // Implementar modal de upload
-    alert('Funcionalidade de upload em desenvolvimento');
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            // Implementar upload aqui
+            alert('Upload de imagem: implementar integração com endpoint');
+        }
+    };
+    input.click();
 }
 
 function confirmDelete() {
     if (confirm('Tem certeza que deseja excluir esta notícia? Esta ação não pode ser desfeita.')) {
-        window.location.href = '<?= url('admin/news/delete.php?id=' . $id) ?>';
+        window.location.href = '<?= url('admin/news/news-delete.php?id=' . $id) ?>';
     }
 }
 

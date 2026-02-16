@@ -10,14 +10,32 @@ $courseId = intval($_GET['course_id'] ?? 0);
 // Validar módulo
 if ($moduleId <= 0) {
     flash('error', 'Módulo inválido.');
-    redirect(url('admin/modules.php?course_id=' . $courseId));
+    redirect(url('admin/modules/list.php?course_id=' . $courseId));
+}
+
+// Buscar informações do módulo e curso
+$module = $db->fetch("SELECT * FROM modules WHERE id = ?", [$moduleId]);
+$course = $courseId > 0 ? $db->fetch("SELECT * FROM courses WHERE id = ?", [$courseId]) : null;
+
+if (!$module) {
+    flash('error', 'Módulo não encontrado.');
+    redirect(url('admin/modules/list.php'));
 }
 
 // Processar formulário
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $errors = [];
+    
+    // Validar campos obrigatórios
+    $title = trim($_POST['title'] ?? '');
+    if (empty($title)) {
+        $errors[] = 'O título é obrigatório.';
+    }
+    
+    // Preparar dados
     $data = [
         'module_id' => $moduleId,
-        'title' => trim($_POST['title'] ?? ''),
+        'title' => $title,
         'summary' => trim($_POST['summary'] ?? ''),
         'content_type' => $_POST['content_type'] ?? 'text',
         'content' => $_POST['content'] ?? '',
@@ -27,15 +45,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'is_published' => isset($_POST['is_published']) ? 1 : 0,
         'is_free_preview' => isset($_POST['is_free_preview']) ? 1 : 0,
         'attachment_url' => trim($_POST['attachment_url'] ?? ''),
-        'order_position' => 0, // Será definido pelo DB
+        'order_position' => 0, // Será definido automaticamente
     ];
     
-    if (!$data['title']) {
-        flash('error', 'Informe o título da lição.');
-    } else {
+    // Validar URL de vídeo se fornecida
+    if (!empty($data['video_url']) && !filter_var($data['video_url'], FILTER_VALIDATE_URL)) {
+        $errors[] = 'URL do vídeo inválida.';
+    }
+    
+    // Definir ordem automaticamente (última posição)
+    $lastLesson = $db->fetch(
+        "SELECT MAX(order_position) as max_order FROM lessons WHERE module_id = ?",
+        [$moduleId]
+    );
+    $data['order_position'] = ($lastLesson['max_order'] ?? 0) + 1;
+    
+    if (empty($errors)) {
         $lessonId = $db->insert('lessons', $data);
         flash('success', 'Lição criada com sucesso!');
-        redirect(url('admin/lessons.php?module_id=' . $moduleId . '&course_id=' . $courseId));
+        redirect(url('admin/lessons/list.php?module_id=' . $moduleId . '&course_id=' . $courseId));
+    } else {
+        foreach ($errors as $error) {
+            flash('error', $error);
+        }
     }
 }
 
@@ -43,9 +75,22 @@ showFlashMessages();
 EditorJSLoader::renderStyles();
 ?>
 
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="<?= url('admin/dashboard.php') ?>">Dashboard</a></li>
+        <?php if ($course): ?>
+            <li class="breadcrumb-item"><a href="<?= url('admin/courses.php') ?>">Cursos</a></li>
+            <li class="breadcrumb-item"><a href="<?= url('admin/modules/list.php?course_id=' . $courseId) ?>"><?= escape($course['title']) ?></a></li>
+        <?php endif; ?>
+        <li class="breadcrumb-item"><a href="<?= url('admin/lessons/list.php?module_id=' . $moduleId . '&course_id=' . $courseId) ?>">Lições</a></li>
+        <li class="breadcrumb-item active">Nova Lição</li>
+    </ol>
+</nav>
+
 <!-- Navegação -->
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <a href="<?= url('admin/lessons.php?module_id=' . $moduleId . '&course_id=' . $courseId) ?>" class="btn btn-secondary">
+    <a href="<?= url('admin/lessons/list.php?module_id=' . $moduleId . '&course_id=' . $courseId) ?>" class="btn btn-secondary">
         ← Voltar para Lições
     </a>
 </div>
