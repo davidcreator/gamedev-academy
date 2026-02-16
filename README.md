@@ -7,7 +7,7 @@
 [![GitHub stars](https://img.shields.io/github/stars/davidcreator/gamedev-academy?style=for-the-badge&logo=github)](https://github.com/davidcreator/gamedev-academy/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/davidcreator/gamedev-academy?style=for-the-badge&logo=github)](https://github.com/davidcreator/gamedev-academy/network/members)
 [![GitHub issues](https://img.shields.io/github/issues/davidcreator/gamedev-academy?style=for-the-badge&logo=github)](https://github.com/davidcreator/gamedev-academy/issues)
-[![License](https://img.shields.io/github/license/davidcreator/gamedev-academy?style=for-the-badge)](LICENSE.md)
+[![License](https://github.com/davidcreator/gamedev-academy/blob/main/LICENSE.md)](LICENSE.md)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=for-the-badge)](docs/CONTRIBUTING.md)
 
 <p align="center">
