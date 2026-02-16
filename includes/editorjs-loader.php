@@ -26,17 +26,18 @@ class EditorJSLoader {
         }
 
         $decoded = json_decode($this->content, true);
-        
-        if (json_last_error() === JSON_ERROR_NONE && 
-            isset($decoded['blocks']) && 
-            is_array($decoded['blocks'])) {
+
+        if (
+            json_last_error() === JSON_ERROR_NONE &&
+            isset($decoded['blocks']) &&
+            is_array($decoded['blocks'])
+        ) {
             $this->editorData = $decoded;
         } else {
-            // Conteúdo antigo (HTML ou texto puro) - converte para bloco
             $cleanContent = strip_tags($this->content);
             $cleanContent = html_entity_decode($cleanContent, ENT_QUOTES, 'UTF-8');
             $cleanContent = trim($cleanContent);
-            
+
             if (empty($cleanContent)) {
                 $this->editorData = $defaultData;
             } else {
