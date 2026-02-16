@@ -92,7 +92,7 @@ class EditorJSLoader {
 <script src="https://cdn.jsdelivr.net/npm/@editorjs/embed@2.7.0"></script>
 
 <!-- Editor Tools -->
-<script src="../assets/js/editorjs-tools.js"></script>
+<script src="assets/js/editorjs-tools.js"></script>
         <?php
     }
 
@@ -100,23 +100,23 @@ class EditorJSLoader {
      * Renderiza o CSS
      */
     public static function renderStyles() {
-        echo '<link rel="stylesheet" href="../assets/css/editorjs-custom.css">' . PHP_EOL;
+        echo '<link rel="stylesheet" href="assets/css/editorjs-custom.css">' . PHP_EOL;
     }
 
     /**
      * Inicializa o editor
      */
-    public static function init($editorData, $holderId = 'editorjs', $textareaId = 'content', $formId = 'lessonForm') {
+    public static function init($data) {
         ?>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    new EditorTools({
-        holderId: '<?= $holderId ?>',
-        textareaId: '<?= $textareaId ?>',
-        formId: '<?= $formId ?>',
-        data: <?= $editorData ?>
+    document.addEventListener('DOMContentLoaded', function() {
+        new EditorJSManager({
+            holderId: 'editorjs',
+            textareaId: 'content',
+            formId: 'lessonForm',
+            data: <?= $data ?>
+        });
     });
-});
 </script>
         <?php
     }
