@@ -91,8 +91,8 @@ class EditorJSLoader {
 <script src="https://cdn.jsdelivr.net/npm/@editorjs/image@2.9.0"></script>
 <script src="https://cdn.jsdelivr.net/npm/@editorjs/embed@2.7.0"></script>
 
-<!-- Editor Manager -->
-<script src="../../assets/js/editor-manager.js"></script>
+<!-- Editor Tools -->
+<script src="../assets/js/editorjs-tools.js"></script>
         <?php
     }
 
@@ -110,7 +110,7 @@ class EditorJSLoader {
         ?>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    new EditorManager({
+    new EditorTools({
         holderId: '<?= $holderId ?>',
         textareaId: '<?= $textareaId ?>',
         formId: '<?= $formId ?>',

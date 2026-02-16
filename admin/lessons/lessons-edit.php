@@ -194,6 +194,11 @@ showFlashMessages() ?>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 
-<?php EditorJSLoader::renderScripts(); ?>
-<?php EditorJSLoader::init($editorLoader->getJsonData()); ?>
+<?php
+// Render Editor.js scripts
+EditorJSLoader::renderScripts();
+
+// Initialize Editor.js with existing lesson content (JSON string)
+EditorJSLoader::init($lesson['content'] ?? '');
+?>
 <?php include '../includes/footer.php'; ?>
