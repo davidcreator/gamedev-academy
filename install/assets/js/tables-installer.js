@@ -200,12 +200,9 @@
             }
             
             // Auto submit form after 3 seconds
-            this.log('Redirecionando em 3 segundos...', 'info');
+            this.log('Redirecionando para o próximo passo...', 'info');
             setTimeout(() => {
-                const form = document.getElementById('tablesForm');
-                if (form) {
-                    form.submit();
-                }
+                window.location.href = '?step=4';
             }, 3000);
         },
 
