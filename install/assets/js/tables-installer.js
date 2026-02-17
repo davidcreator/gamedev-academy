@@ -2,6 +2,8 @@
  * Tables Installation Handler
  */
 
+
+
 (function() {
     'use strict';
 
@@ -70,6 +72,12 @@
             this.log('Enviando requisição para criar tabelas...', 'info');
             
             // Make AJAX request
+            // Para PDO (recomendado):
+            //fetch('assets/js/ajax/create_tables_ajax.php', {
+
+            // Para MySQLi:
+            //fetch('assets/js/ajax/create_tables_ajax_mysqli.php', {
+
             fetch('assets/js/ajax/create_tables_ajax.php', {
                 method: 'POST',
                 body: formData

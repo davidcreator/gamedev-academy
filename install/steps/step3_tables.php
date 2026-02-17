@@ -183,7 +183,7 @@ $tables = [
             <h4>Criação da Estrutura do Banco de Dados</h4>
             <p class="mb-0">
                 Agora vamos criar as tabelas necessárias para o funcionamento do sistema.
-                Serão criadas 51 tabelas com toda a estrutura necessária.
+                Serão criadas 54 tabelas com toda a estrutura necessária.
             </p>
         </div>
     </div>
@@ -220,7 +220,7 @@ $tables = [
     <div class="tables-list" id="tablesList">
         <h5 class="section-title">
             <i class="fas fa-list"></i>
-            Tabelas que serão criadas (51 tabelas)
+            Tabelas que serão criadas (54 tabelas)
         </h5>
         <div class="table-grid">
             <?php foreach ($tables as $table => $description): 
