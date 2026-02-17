@@ -32,28 +32,28 @@ try {
 
     // Get database configuration
     $config = $_SESSION['db_config'];
+    $port = isset($config['port']) ? $config['port'] : 3306;
     
-    // Include the table creator - adjust path
-    $create_tables_path = dirname(dirname(__FILE__)) . '/sql/create_tables.php';
+    // Create PDO connection
+    $pdo = new PDO(
+        "mysql:host={$config['host']};port={$port};dbname={$config['name']};charset=utf8mb4",
+        $config['user'],
+        $config['pass'],
+        [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES => false
+        ]
+    );
+    
+    // Include the table creator
+    $create_tables_path = dirname(dirname(dirname(__DIR__))) . '/sql/create_tables.php';
     
     if (!file_exists($create_tables_path)) {
         throw new Exception('Arquivo create_tables.php não encontrado');
-    }
+    } 
     
     require_once $create_tables_path;
-    
-    // Create connection
-    $mysqli = new mysqli(
-        $config['host'],
-        $config['user'],
-        $config['pass'],
-        $config['name'],
-        $config['port'] ?? 3306
-    );
-    
-    if ($mysqli->connect_error) {
-        throw new Exception("Falha na conexão: " . $mysqli->connect_error);
-    }
     
     // Set charset
     if (!$mysqli->set_charset('utf8mb4')) {

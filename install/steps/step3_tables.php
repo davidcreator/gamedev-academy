@@ -3,8 +3,21 @@
  * Step 3 - Criação das Tabelas
  */
 
+/**
+ * Função esperada pelo instalador (step3_tables.php)
+ * Encapsula a classe DatabaseInstaller
+ * 
+ * @param PDO $pdo Conexão PDO ativa
+ * @return array Resultado com 'success', 'errors', 'stats'
+ */
+
 if (!defined('INSTALLER')) {
     die('Acesso negado');
+}
+
+// Define a constante que o create_tables.php espera
+if (!defined('INSTALLING')) {
+    define('INSTALLING', true);
 }
 
 // Verificar se tem configuração do banco
@@ -45,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $pdo = new PDO($dsn, $config['user'], $config['pass'], $options);
         
         // Include create_tables.php
-        $createTablesPath = INSTALL_PATH . '/sql/create_tables.php';
+        $createTablesPath = INSTALL_PATH . 'sql/create_tables.php';        
         
         if (!file_exists($createTablesPath)) {
             throw new Exception('Arquivo create_tables.php não encontrado');
@@ -54,6 +67,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         require_once $createTablesPath;
         
         // Check if function exists
+        function executeDatabaseSetup(PDO $pdo): array
+{
+        $installer = new DatabaseInstaller($pdo);
+        $success = $installer->install();
+
+            return [
+                'success'  => $success,
+                'errors'   => $installer->getErrors(),
+                'messages' => $installer->getSuccess(),
+                'stats'    => [
+                    'tables_created'  => $installer->getTableCount(),
+                    'tables_expected' => 54,
+                ],
+            ];
+        }
+        
         if (!function_exists('executeDatabaseSetup')) {
             throw new Exception('Função executeDatabaseSetup não encontrada');
         }
@@ -77,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 }
 
-// Lista de tabelas (51 tabelas conforme create_tables.php)
+// Lista de tabelas (54 tabelas conforme create_tables.php)
 $tables = [
     'users' => 'Usuários do sistema',
     'user_profiles' => 'Perfis de usuários',
@@ -129,7 +158,10 @@ $tables = [
     'webhooks' => 'Webhooks',
     'cron_jobs' => 'Tarefas cron',
     'error_logs' => 'Logs de erros',
-    'audit_logs' => 'Logs de auditoria'
+    'audit_logs' => 'Logs de auditoria',
+    'rate_limiting' => 'Controle de rate limiting',
+    'user_consents' => 'Consentimentos LGPD/GDPR',
+    'scheduled_tasks' => 'Tarefas agendadas'
 ];
 ?>
 

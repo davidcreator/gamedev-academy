@@ -70,7 +70,7 @@
             this.log('Enviando requisição para criar tabelas...', 'info');
             
             // Make AJAX request
-            fetch('ajax/create_tables_ajax.php', {
+            fetch('assets/js/ajax/create_tables_ajax.php', {
                 method: 'POST',
                 body: formData
             })

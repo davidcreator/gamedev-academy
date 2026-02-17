@@ -1,1978 +1,2247 @@
 <?php
 /**
- * =====================================================
- * GameDev Academy - Script de Criação Completo v2.0
- * =====================================================
+ * ================================================================
+ * GAMEDEV ACADEMY - Script de Criação de Tabelas
+ * ================================================================
  * 
- * Script completo com 51 tabelas para instalação
- * Compatível com PHP 7.4+ e MySQL 5.7+
+ * Este script cria todas as 54 tabelas do banco de dados,
+ * triggers, views e dados iniciais (seeds).
  * 
- * @version 2.0.0
- * @author GameDev Academy Team
- * @date 2024
- */
-
-/**
- * Função principal de setup do banco de dados
+ * DEVE ser executado apenas pelo instalador (install/index.php)
+ * Requer conexão PDO válida na variável $pdo
  * 
- * @param PDO $pdo Conexão PDO com o banco
- * @return array Status e mensagens da instalação
+ * Versão: 2.0.0
+ * Total de tabelas: 54
+ * 
+ * ================================================================
  */
-function executeDatabaseSetup($pdo) {
-    $results = [
-        'success' => true,
-        'messages' => [],
-        'errors' => [],
-        'warnings' => [],
-        'stats' => [
-            'tables_created' => 0,
-            'tables_skipped' => 0,
-            'data_inserted' => 0
-        ]
-    ];
+
+// Impedir acesso direto
+if (!defined('INSTALLING')) {
+    define('AJAX_REQUEST', true);
+    define('INSTALLING', true);    // ← adicionar esta linha
     
-    try {
-        // Desabilitar verificação de chaves estrangeiras
-        $pdo->exec("SET FOREIGN_KEY_CHECKS = 0");
-        $pdo->exec("SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO'");
-        
-        $results['messages'][] = "=== Iniciando instalação do GameDev Academy ===";
-        $results['messages'][] = "Versão: 2.0.0 | Data: " . date('Y-m-d H:i:s');
-        
-        // Criar todas as tabelas
-        $results['messages'][] = "\n=== CRIANDO TABELAS ===";
-        createAllTables($pdo, $results);
-        
-        // Inserir dados iniciais
-        $results['messages'][] = "\n=== INSERINDO DADOS INICIAIS ===";
-        insertInitialData($pdo, $results);
-        
-        // Reabilitar verificação
-        $pdo->exec("SET FOREIGN_KEY_CHECKS = 1");
-        
-        // Verificar integridade
-        verifyInstallation($pdo, $results);
-        
-        $results['messages'][] = "\n=== INSTALAÇÃO CONCLUÍDA ===";
-        $results['messages'][] = "✅ Tabelas criadas: " . $results['stats']['tables_created'];
-        $results['messages'][] = "⏭️  Tabelas existentes: " . $results['stats']['tables_skipped'];
-        $results['messages'][] = "📝 Registros inseridos: " . $results['stats']['data_inserted'];
-        
-    } catch (Exception $e) {
-        $results['success'] = false;
-        $results['errors'][] = "❌ Erro fatal: " . $e->getMessage();
-        $results['errors'][] = "Stack trace: " . $e->getTraceAsString();
+    //http_response_code(403);
+    //die('Acesso negado. Use o instalador.');
+}
+
+/**
+ * Classe responsável por criar toda a estrutura do banco de dados
+ */
+class DatabaseInstaller
+{
+    private PDO $pdo;
+    private array $errors = [];
+    private array $success = [];
+    private int $tableCount = 0;
+    private int $expectedTables = 54;
+
+    public function __construct(PDO $pdo)
+    {
+        $this->pdo = $pdo;
+        $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     }
-    
-    return $results;
-}
 
-/**
- * Cria todas as tabelas necessárias
- */
-function createAllTables($pdo, &$results) {
-    
-    // ==================================================
-    // TABELAS PRINCIPAIS (1-10)
-    // ==================================================
-    
-    // 1. Users
-    createTable($pdo, $results, 'users', "
-        CREATE TABLE IF NOT EXISTS users (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            username VARCHAR(50) UNIQUE NOT NULL,
-            email VARCHAR(100) UNIQUE NOT NULL,
-            password VARCHAR(255) NOT NULL,
-            full_name VARCHAR(100) NOT NULL,
-            name VARCHAR(100),
-            nickname VARCHAR(50),
-            avatar VARCHAR(255) DEFAULT 'default.png',
-            cover_image VARCHAR(255),
-            bio TEXT,
-            location VARCHAR(100),
-            occupation VARCHAR(100),
-            skills TEXT,
-            interests TEXT,
-            role ENUM('student', 'instructor', 'moderator', 'admin') DEFAULT 'student',
-            xp_total INT DEFAULT 0,
-            level INT DEFAULT 1,
-            streak_days INT DEFAULT 0,
-            best_streak INT DEFAULT 0,
-            last_activity DATE,
-            coins INT DEFAULT 0,
-            gems INT DEFAULT 0,
-            github VARCHAR(50),
-            github_url VARCHAR(255),
-            gitlab VARCHAR(50),
-            bitbucket VARCHAR(50),
-            linkedin VARCHAR(100),
-            linkedin_url VARCHAR(255),
-            twitter VARCHAR(50),
-            youtube VARCHAR(100),
-            twitch VARCHAR(50),
-            discord VARCHAR(100),
-            instagram VARCHAR(50),
-            facebook VARCHAR(100),
-            tiktok VARCHAR(50),
-            steam VARCHAR(50),
-            itch_io VARCHAR(50),
-            website VARCHAR(255),
-            portfolio VARCHAR(255),
-            portfolio_url VARCHAR(255),
-            email_notifications TINYINT(1) DEFAULT 1,
-            push_notifications TINYINT(1) DEFAULT 1,
-            newsletter TINYINT(1) DEFAULT 1,
-            marketing_emails TINYINT(1) DEFAULT 0,
-            profile_public TINYINT(1) DEFAULT 1,
-            show_email TINYINT(1) DEFAULT 0,
-            show_social TINYINT(1) DEFAULT 1,
-            show_activity TINYINT(1) DEFAULT 1,
-            show_achievements TINYINT(1) DEFAULT 1,
-            theme VARCHAR(20) DEFAULT 'system',
-            language VARCHAR(10) DEFAULT 'pt-BR',
-            timezone VARCHAR(50) DEFAULT 'America/Sao_Paulo',
-            is_active TINYINT(1) DEFAULT 1,
-            is_verified TINYINT(1) DEFAULT 0,
-            is_premium TINYINT(1) DEFAULT 0,
-            premium_expires_at DATETIME,
-            email_verified TINYINT(1) DEFAULT 0,
-            email_verified_at DATETIME,
-            email_verification_token VARCHAR(255),
-            password_reset_token VARCHAR(255),
-            password_reset_expires DATETIME,
-            two_factor_enabled TINYINT(1) DEFAULT 0,
-            two_factor_secret VARCHAR(255),
-            last_login DATETIME,
-            last_login_ip VARCHAR(45),
-            login_count INT DEFAULT 0,
-            failed_login_attempts INT DEFAULT 0,
-            locked_until DATETIME,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            deleted_at TIMESTAMP NULL,
-            INDEX idx_username (username),
-            INDEX idx_email (email),
-            INDEX idx_xp (xp_total),
-            INDEX idx_level (level),
-            INDEX idx_role (role),
-            INDEX idx_active (is_active),
-            INDEX idx_streak (streak_days)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 2. Levels
-    createTable($pdo, $results, 'levels', "
-        CREATE TABLE IF NOT EXISTS levels (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            level_number INT UNIQUE NOT NULL,
-            title VARCHAR(50) NOT NULL,
-            title_en VARCHAR(50),
-            xp_required INT NOT NULL,
-            badge_icon VARCHAR(100),
-            badge_image VARCHAR(255),
-            color VARCHAR(7) DEFAULT '#6366f1',
-            gradient VARCHAR(100),
-            perks TEXT,
-            perks_json JSON,
-            unlock_features TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_level_number (level_number),
-            INDEX idx_xp_required (xp_required)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 3. Achievements
-    createTable($pdo, $results, 'achievements', "
-        CREATE TABLE IF NOT EXISTS achievements (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            name VARCHAR(100) NOT NULL,
-            name_en VARCHAR(100),
-            slug VARCHAR(100) UNIQUE,
-            description TEXT,
-            description_en TEXT,
-            icon VARCHAR(100),
-            image VARCHAR(255),
-            xp_reward INT DEFAULT 0,
-            coin_reward INT DEFAULT 0,
-            gem_reward INT DEFAULT 0,
-            category ENUM('learning', 'social', 'challenge', 'special', 'secret') DEFAULT 'learning',
-            requirement_type ENUM('lessons_completed', 'courses_completed', 'streak', 'xp_earned', 
-                                  'time_spent', 'perfect_quiz', 'projects_completed', 'comments',
-                                  'followers', 'reviews', 'special') NOT NULL,
-            requirement_value INT DEFAULT 1,
-            requirement_data JSON,
-            is_secret TINYINT(1) DEFAULT 0,
-            is_active TINYINT(1) DEFAULT 1,
-            is_limited TINYINT(1) DEFAULT 0,
-            available_until DATETIME,
-            order_index INT DEFAULT 0,
-            rarity ENUM('common', 'uncommon', 'rare', 'epic', 'legendary') DEFAULT 'common',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            INDEX idx_requirement_type (requirement_type),
-            INDEX idx_category (category),
-            INDEX idx_is_active (is_active),
-            INDEX idx_rarity (rarity)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 4. User Achievements
-    createTable($pdo, $results, 'user_achievements', "
-        CREATE TABLE IF NOT EXISTS user_achievements (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            user_id INT NOT NULL,
-            achievement_id INT NOT NULL,
-            progress INT DEFAULT 0,
-            progress_max INT DEFAULT 100,
-            is_unlocked TINYINT(1) DEFAULT 0,
-            unlocked_at TIMESTAMP NULL,
-            notified TINYINT(1) DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            FOREIGN KEY (achievement_id) REFERENCES achievements(id) ON DELETE CASCADE,
-            UNIQUE KEY unique_user_achievement (user_id, achievement_id),
-            INDEX idx_user_id (user_id),
-            INDEX idx_achievement_id (achievement_id),
-            INDEX idx_unlocked (is_unlocked)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 5. Categories
-    createTable($pdo, $results, 'categories', "
-        CREATE TABLE IF NOT EXISTS categories (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            name VARCHAR(100) NOT NULL,
-            name_en VARCHAR(100),
-            slug VARCHAR(100) UNIQUE NOT NULL,
-            description TEXT,
-            description_en TEXT,
-            icon VARCHAR(50),
-            image VARCHAR(255),
-            color VARCHAR(7) DEFAULT '#6366f1',
-            gradient VARCHAR(100),
-            parent_id INT,
-            order_index INT DEFAULT 0,
-            is_active TINYINT(1) DEFAULT 1,
-            is_featured TINYINT(1) DEFAULT 0,
-            course_count INT DEFAULT 0,
-            meta_title VARCHAR(200),
-            meta_description TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            FOREIGN KEY (parent_id) REFERENCES categories(id) ON DELETE SET NULL,
-            INDEX idx_slug (slug),
-            INDEX idx_parent (parent_id),
-            INDEX idx_active (is_active),
-            INDEX idx_order (order_index)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 6. Courses
-    createTable($pdo, $results, 'courses', "
-        CREATE TABLE IF NOT EXISTS courses (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            category_id INT,
-            instructor_id INT,
-            title VARCHAR(200) NOT NULL,
-            title_en VARCHAR(200),
-            slug VARCHAR(200) UNIQUE NOT NULL,
-            description TEXT,
-            description_en TEXT,
-            short_description VARCHAR(500),
-            thumbnail VARCHAR(255),
-            cover_image VARCHAR(255),
-            preview_video VARCHAR(255),
-            trailer_url VARCHAR(255),
-            difficulty ENUM('beginner', 'intermediate', 'advanced', 'expert') DEFAULT 'beginner',
-            language VARCHAR(10) DEFAULT 'pt-BR',
-            estimated_hours INT DEFAULT 0,
-            total_lessons INT DEFAULT 0,
-            total_modules INT DEFAULT 0,
-            total_quizzes INT DEFAULT 0,
-            total_projects INT DEFAULT 0,
-            xp_reward INT DEFAULT 100,
-            coin_reward INT DEFAULT 10,
-            certificate_available TINYINT(1) DEFAULT 1,
-            certificate_template VARCHAR(100) DEFAULT 'default',
-            is_free TINYINT(1) DEFAULT 0,
-            price DECIMAL(10,2) DEFAULT 0.00,
-            original_price DECIMAL(10,2),
-            discount_price DECIMAL(10,2),
-            discount_ends_at DATETIME,
-            currency VARCHAR(3) DEFAULT 'BRL',
-            is_featured TINYINT(1) DEFAULT 0,
-            is_popular TINYINT(1) DEFAULT 0,
-            is_new TINYINT(1) DEFAULT 0,
-            is_published TINYINT(1) DEFAULT 0,
-            is_approved TINYINT(1) DEFAULT 1,
-            published_at DATETIME,
-            total_students INT DEFAULT 0,
-            total_completions INT DEFAULT 0,
-            average_rating DECIMAL(3,2) DEFAULT 0.00,
-            total_ratings INT DEFAULT 0,
-            completion_rate DECIMAL(5,2) DEFAULT 0.00,
-            tags TEXT,
-            requirements TEXT,
-            requirements_json JSON,
-            what_will_learn TEXT,
-            what_will_learn_json JSON,
-            target_audience TEXT,
-            meta_title VARCHAR(200),
-            meta_description TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            deleted_at TIMESTAMP NULL,
-            FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
-            FOREIGN KEY (instructor_id) REFERENCES users(id) ON DELETE SET NULL,
-            INDEX idx_slug (slug),
-            INDEX idx_published (is_published),
-            INDEX idx_featured (is_featured),
-            INDEX idx_category (category_id),
-            INDEX idx_instructor (instructor_id),
-            INDEX idx_difficulty (difficulty),
-            INDEX idx_free (is_free),
-            INDEX idx_rating (average_rating)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 7. Modules
-    createTable($pdo, $results, 'modules', "
-        CREATE TABLE IF NOT EXISTS modules (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            course_id INT NOT NULL,
-            title VARCHAR(200) NOT NULL,
-            title_en VARCHAR(200),
-            description TEXT,
-            order_index INT DEFAULT 0,
-            xp_reward INT DEFAULT 50,
-            estimated_minutes INT DEFAULT 0,
-            is_published TINYINT(1) DEFAULT 1,
-            is_free_preview TINYINT(1) DEFAULT 0,
-            unlock_after_module INT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
-            FOREIGN KEY (unlock_after_module) REFERENCES modules(id) ON DELETE SET NULL,
-            INDEX idx_course (course_id),
-            INDEX idx_order (order_index)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 8. Lessons
-    createTable($pdo, $results, 'lessons', "
-        CREATE TABLE IF NOT EXISTS lessons (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            module_id INT NOT NULL,
-            title VARCHAR(200) NOT NULL,
-            title_en VARCHAR(200),
-            slug VARCHAR(200),
-            content_type ENUM('video', 'text', 'quiz', 'exercise', 'project', 'live', 'download') DEFAULT 'text',
-            content LONGTEXT,
-            content_en LONGTEXT,
-            summary TEXT,
-            video_url VARCHAR(255),
-            video_provider ENUM('youtube', 'vimeo', 'cloudflare', 'bunny', 'self') DEFAULT 'youtube',
-            video_id VARCHAR(100),
-            video_duration INT DEFAULT 0,
-            video_thumbnail VARCHAR(255),
-            attachment_url VARCHAR(255),
-            attachment_name VARCHAR(200),
-            attachment_size INT,
-            duration_minutes INT DEFAULT 0,
-            order_index INT DEFAULT 0,
-            xp_reward INT DEFAULT 10,
-            coin_reward INT DEFAULT 1,
-            is_free_preview TINYINT(1) DEFAULT 0,
-            is_published TINYINT(1) DEFAULT 1,
-            is_downloadable TINYINT(1) DEFAULT 0,
-            requires_completion TINYINT(1) DEFAULT 1,
-            min_watch_percentage INT DEFAULT 80,
-            view_count INT DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            FOREIGN KEY (module_id) REFERENCES modules(id) ON DELETE CASCADE,
-            INDEX idx_module (module_id),
-            INDEX idx_order (order_index),
-            INDEX idx_content_type (content_type),
-            INDEX idx_slug (slug)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 9. Lesson Resources
-    createTable($pdo, $results, 'lesson_resources', "
-        CREATE TABLE IF NOT EXISTS lesson_resources (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            lesson_id INT NOT NULL,
-            title VARCHAR(200) NOT NULL,
-            description TEXT,
-            type ENUM('file', 'link', 'code', 'image') DEFAULT 'file',
-            url VARCHAR(500) NOT NULL,
-            file_name VARCHAR(200),
-            file_size INT,
-            file_type VARCHAR(50),
-            order_index INT DEFAULT 0,
-            download_count INT DEFAULT 0,
-            is_premium TINYINT(1) DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (lesson_id) REFERENCES lessons(id) ON DELETE CASCADE,
-            INDEX idx_lesson (lesson_id),
-            INDEX idx_type (type)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 10. Enrollments
-    createTable($pdo, $results, 'enrollments', "
-        CREATE TABLE IF NOT EXISTS enrollments (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            user_id INT NOT NULL,
-            course_id INT NOT NULL,
-            enrollment_type ENUM('free', 'paid', 'gifted', 'scholarship', 'admin', 'subscription') DEFAULT 'free',
-            payment_id INT,
-            progress_percentage DECIMAL(5,2) DEFAULT 0.00,
-            completed_lessons INT DEFAULT 0,
-            total_lessons INT DEFAULT 0,
-            total_time_spent INT DEFAULT 0,
-            current_lesson_id INT,
-            current_module_id INT,
-            status ENUM('active', 'completed', 'expired', 'cancelled', 'paused') DEFAULT 'active',
-            certificate_issued TINYINT(1) DEFAULT 0,
-            certificate_id INT,
-            certificate_url VARCHAR(255),
-            rating DECIMAL(2,1),
-            review_id INT,
-            notes TEXT,
-            started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            completed_at TIMESTAMP NULL,
-            last_accessed TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            expiry_date DATE,
-            reminder_sent TINYINT(1) DEFAULT 0,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
-            FOREIGN KEY (current_lesson_id) REFERENCES lessons(id) ON DELETE SET NULL,
-            UNIQUE KEY unique_enrollment (user_id, course_id),
-            INDEX idx_user (user_id),
-            INDEX idx_course (course_id),
-            INDEX idx_status (status),
-            INDEX idx_progress (progress_percentage)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // ==================================================
-    // TABELAS DE PROGRESSO (11-15)
-    // ==================================================
-    
-    // 11. Lesson Progress
-    createTable($pdo, $results, 'lesson_progress', "
-        CREATE TABLE IF NOT EXISTS lesson_progress (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            user_id INT NOT NULL,
-            lesson_id INT NOT NULL,
-            enrollment_id INT,
-            is_completed TINYINT(1) DEFAULT 0,
-            progress_percentage INT DEFAULT 0,
-            time_spent INT DEFAULT 0,
-            video_progress INT DEFAULT 0,
-            video_current_time INT DEFAULT 0,
-            attempts INT DEFAULT 1,
-            score DECIMAL(5,2),
-            max_score DECIMAL(5,2),
-            completed_at TIMESTAMP NULL,
-            xp_earned INT DEFAULT 0,
-            coins_earned INT DEFAULT 0,
-            notes TEXT,
-            bookmarked TINYINT(1) DEFAULT 0,
-            last_position JSON,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            FOREIGN KEY (lesson_id) REFERENCES lessons(id) ON DELETE CASCADE,
-            FOREIGN KEY (enrollment_id) REFERENCES enrollments(id) ON DELETE SET NULL,
-            UNIQUE KEY unique_lesson_progress (user_id, lesson_id),
-            INDEX idx_user (user_id),
-            INDEX idx_lesson (lesson_id),
-            INDEX idx_completed (is_completed)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 12. Module Progress
-    createTable($pdo, $results, 'module_progress', "
-        CREATE TABLE IF NOT EXISTS module_progress (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            user_id INT NOT NULL,
-            module_id INT NOT NULL,
-            enrollment_id INT,
-            is_completed TINYINT(1) DEFAULT 0,
-            progress_percentage DECIMAL(5,2) DEFAULT 0.00,
-            completed_lessons INT DEFAULT 0,
-            total_lessons INT DEFAULT 0,
-            started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            completed_at TIMESTAMP NULL,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            FOREIGN KEY (module_id) REFERENCES modules(id) ON DELETE CASCADE,
-            FOREIGN KEY (enrollment_id) REFERENCES enrollments(id) ON DELETE SET NULL,
-            UNIQUE KEY unique_module_progress (user_id, module_id),
-            INDEX idx_user (user_id),
-            INDEX idx_module (module_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 13. User Daily Stats
-    createTable($pdo, $results, 'user_daily_stats', "
-        CREATE TABLE IF NOT EXISTS user_daily_stats (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            user_id INT NOT NULL,
-            date DATE NOT NULL,
-            xp_earned INT DEFAULT 0,
-            coins_earned INT DEFAULT 0,
-            lessons_completed INT DEFAULT 0,
-            time_spent INT DEFAULT 0,
-            quizzes_completed INT DEFAULT 0,
-            projects_completed INT DEFAULT 0,
-            streak_maintained TINYINT(1) DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            UNIQUE KEY unique_user_date (user_id, date),
-            INDEX idx_user (user_id),
-            INDEX idx_date (date)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 14. Learning Streaks
-    createTable($pdo, $results, 'learning_streaks', "
-        CREATE TABLE IF NOT EXISTS learning_streaks (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            user_id INT NOT NULL,
-            start_date DATE NOT NULL,
-            end_date DATE,
-            streak_length INT DEFAULT 1,
-            is_active TINYINT(1) DEFAULT 1,
-            broken_reason VARCHAR(100),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            INDEX idx_user (user_id),
-            INDEX idx_active (is_active)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 15. XP Transactions
-    createTable($pdo, $results, 'xp_transactions', "
-        CREATE TABLE IF NOT EXISTS xp_transactions (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            user_id INT NOT NULL,
-            amount INT NOT NULL,
-            type ENUM('earned', 'bonus', 'achievement', 'level_up', 'streak', 'challenge', 'refund', 'admin') DEFAULT 'earned',
-            source VARCHAR(50) NOT NULL,
-            source_id INT,
-            description VARCHAR(255),
-            balance_after INT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            INDEX idx_user (user_id),
-            INDEX idx_type (type),
-            INDEX idx_created (created_at)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // Continua com as outras tabelas... (16-51)
-    // Por limitação de espaço, vou criar uma função auxiliar
-    
-    createQuizTables($pdo, $results);
-    createCertificateAndReviewTables($pdo, $results);
-    createProjectTables($pdo, $results);
-    createGamificationTables($pdo, $results);
-    createShopTables($pdo, $results);
-    createSystemTables($pdo, $results);
-    createSocialTables($pdo, $results);
-}
+    /**
+     * Executa a instalação completa
+     * @return bool true se todas as tabelas foram criadas
+     */
+    public function install(): bool
+    {
+        try {
+            // Configurações iniciais de segurança
+            $this->prepareEnvironment();
 
-/**
- * Cria tabelas de Quiz (16-20)
- */
-function createQuizTables($pdo, &$results) {
-    // 16. Quizzes
-    createTable($pdo, $results, 'quizzes', "
-        CREATE TABLE IF NOT EXISTS quizzes (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            lesson_id INT,
-            course_id INT,
-            module_id INT,
-            title VARCHAR(200) NOT NULL,
-            description TEXT,
-            instructions TEXT,
-            type ENUM('lesson', 'module', 'course', 'standalone', 'certification') DEFAULT 'lesson',
-            time_limit INT DEFAULT 0,
-            passing_score INT DEFAULT 70,
-            max_attempts INT DEFAULT 0,
-            shuffle_questions TINYINT(1) DEFAULT 1,
-            shuffle_options TINYINT(1) DEFAULT 1,
-            show_correct_answers TINYINT(1) DEFAULT 1,
-            show_explanations TINYINT(1) DEFAULT 1,
-            xp_reward INT DEFAULT 20,
-            coin_reward INT DEFAULT 5,
-            bonus_xp_perfect INT DEFAULT 50,
-            question_count INT DEFAULT 0,
-            is_published TINYINT(1) DEFAULT 1,
-            is_required TINYINT(1) DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            FOREIGN KEY (lesson_id) REFERENCES lessons(id) ON DELETE CASCADE,
-            FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
-            FOREIGN KEY (module_id) REFERENCES modules(id) ON DELETE CASCADE,
-            INDEX idx_lesson (lesson_id),
-            INDEX idx_course (course_id),
-            INDEX idx_type (type)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 17. Quiz Questions
-    createTable($pdo, $results, 'quiz_questions', "
-        CREATE TABLE IF NOT EXISTS quiz_questions (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            quiz_id INT NOT NULL,
-            question TEXT NOT NULL,
-            question_type ENUM('multiple_choice', 'true_false', 'multiple_answer', 'fill_blank', 
-                               'matching', 'ordering', 'code', 'short_answer') DEFAULT 'multiple_choice',
-            explanation TEXT,
-            hint TEXT,
-            points INT DEFAULT 1,
-            order_index INT DEFAULT 0,
-            image VARCHAR(255),
-            code_snippet TEXT,
-            code_language VARCHAR(20),
-            is_required TINYINT(1) DEFAULT 0,
-            difficulty ENUM('easy', 'medium', 'hard') DEFAULT 'medium',
-            time_limit INT DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE,
-            INDEX idx_quiz (quiz_id),
-            INDEX idx_order (order_index)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 18. Quiz Options
-    createTable($pdo, $results, 'quiz_options', "
-        CREATE TABLE IF NOT EXISTS quiz_options (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            question_id INT NOT NULL,
-            option_text TEXT NOT NULL,
-            is_correct TINYINT(1) DEFAULT 0,
-            explanation TEXT,
-            order_index INT DEFAULT 0,
-            match_pair VARCHAR(200),
-            image VARCHAR(255),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (question_id) REFERENCES quiz_questions(id) ON DELETE CASCADE,
-            INDEX idx_question (question_id),
-            INDEX idx_correct (is_correct)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 19. Quiz Attempts
-    createTable($pdo, $results, 'quiz_attempts', "
-        CREATE TABLE IF NOT EXISTS quiz_attempts (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            user_id INT NOT NULL,
-            quiz_id INT NOT NULL,
-            lesson_progress_id INT,
-            score DECIMAL(5,2) DEFAULT 0.00,
-            max_score DECIMAL(5,2) DEFAULT 100.00,
-            percentage DECIMAL(5,2) DEFAULT 0.00,
-            passed TINYINT(1) DEFAULT 0,
-            is_perfect TINYINT(1) DEFAULT 0,
-            time_taken INT DEFAULT 0,
-            questions_total INT DEFAULT 0,
-            questions_correct INT DEFAULT 0,
-            questions_wrong INT DEFAULT 0,
-            questions_skipped INT DEFAULT 0,
-            xp_earned INT DEFAULT 0,
-            coins_earned INT DEFAULT 0,
-            attempt_number INT DEFAULT 1,
-            answers_data JSON,
-            started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            completed_at TIMESTAMP NULL,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE,
-            FOREIGN KEY (lesson_progress_id) REFERENCES lesson_progress(id) ON DELETE SET NULL,
-            INDEX idx_user (user_id),
-            INDEX idx_quiz (quiz_id),
-            INDEX idx_passed (passed)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 20. Quiz Answers
-    createTable($pdo, $results, 'quiz_answers', "
-        CREATE TABLE IF NOT EXISTS quiz_answers (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            attempt_id INT NOT NULL,
-            question_id INT NOT NULL,
-            selected_option_id INT,
-            selected_options JSON,
-            answer_text TEXT,
-            is_correct TINYINT(1) DEFAULT 0,
-            points_earned DECIMAL(5,2) DEFAULT 0.00,
-            time_spent INT DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (attempt_id) REFERENCES quiz_attempts(id) ON DELETE CASCADE,
-            FOREIGN KEY (question_id) REFERENCES quiz_questions(id) ON DELETE CASCADE,
-            FOREIGN KEY (selected_option_id) REFERENCES quiz_options(id) ON DELETE SET NULL,
-            INDEX idx_attempt (attempt_id),
-            INDEX idx_question (question_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-}
+            // Criar tabelas na ordem correta de dependências
+            $this->createLevel0Tables();  // 14 tabelas sem dependências
+            $this->createLevel1Tables();  // 11 tabelas
+            $this->createLevel2Tables();  // 13 tabelas
+            $this->createLevel3Tables();  //  7 tabelas
+            $this->createLevel4Tables();  //  4 tabelas (lessons)
+            $this->createLevel5Tables();  //  3 tabelas (quizzes)
+            $this->createLevel6Tables();  //  1 tabela
+            $this->createAuditTable();    //  1 tabela
 
-/**
- * Cria tabelas de Certificados e Reviews (21-25)
- */
-function createCertificateAndReviewTables($pdo, &$results) {
-    // 21. Certificates
-    createTable($pdo, $results, 'certificates', "
-        CREATE TABLE IF NOT EXISTS certificates (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            user_id INT NOT NULL,
-            course_id INT NOT NULL,
-            enrollment_id INT,
-            certificate_code VARCHAR(50) UNIQUE NOT NULL,
-            certificate_url VARCHAR(255),
-            pdf_url VARCHAR(255),
-            template_used VARCHAR(50) DEFAULT 'default',
-            data JSON,
-            completion_date DATE NOT NULL,
-            issue_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            expiry_date DATE,
-            is_valid TINYINT(1) DEFAULT 1,
-            verified_count INT DEFAULT 0,
-            last_verified_at TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
-            FOREIGN KEY (enrollment_id) REFERENCES enrollments(id) ON DELETE SET NULL,
-            INDEX idx_user (user_id),
-            INDEX idx_course (course_id),
-            INDEX idx_code (certificate_code)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 22. Course Reviews
-    createTable($pdo, $results, 'course_reviews', "
-        CREATE TABLE IF NOT EXISTS course_reviews (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            user_id INT NOT NULL,
-            course_id INT NOT NULL,
-            enrollment_id INT,
-            rating DECIMAL(2,1) NOT NULL,
-            title VARCHAR(200),
-            review TEXT,
-            pros TEXT,
-            cons TEXT,
-            is_verified_purchase TINYINT(1) DEFAULT 0,
-            is_featured TINYINT(1) DEFAULT 0,
-            is_approved TINYINT(1) DEFAULT 1,
-            is_helpful INT DEFAULT 0,
-            helpful_count INT DEFAULT 0,
-            report_count INT DEFAULT 0,
-            instructor_reply TEXT,
-            instructor_replied_at TIMESTAMP NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
-            FOREIGN KEY (enrollment_id) REFERENCES enrollments(id) ON DELETE SET NULL,
-            UNIQUE KEY unique_user_review (user_id, course_id),
-            INDEX idx_user (user_id),
-            INDEX idx_course (course_id),
-            INDEX idx_rating (rating),
-            INDEX idx_approved (is_approved)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 23. Review Votes
-    createTable($pdo, $results, 'review_votes', "
-        CREATE TABLE IF NOT EXISTS review_votes (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            review_id INT NOT NULL,
-            user_id INT NOT NULL,
-            is_helpful TINYINT(1) NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (review_id) REFERENCES course_reviews(id) ON DELETE CASCADE,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            UNIQUE KEY unique_vote (review_id, user_id),
-            INDEX idx_review (review_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 24. Comments
-    createTable($pdo, $results, 'comments', "
-        CREATE TABLE IF NOT EXISTS comments (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            user_id INT NOT NULL,
-            lesson_id INT NOT NULL,
-            parent_id INT,
-            content TEXT NOT NULL,
-            is_pinned TINYINT(1) DEFAULT 0,
-            is_instructor_reply TINYINT(1) DEFAULT 0,
-            is_approved TINYINT(1) DEFAULT 1,
-            is_resolved TINYINT(1) DEFAULT 0,
-            likes_count INT DEFAULT 0,
-            replies_count INT DEFAULT 0,
-            report_count INT DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            deleted_at TIMESTAMP NULL,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            FOREIGN KEY (lesson_id) REFERENCES lessons(id) ON DELETE CASCADE,
-            FOREIGN KEY (parent_id) REFERENCES comments(id) ON DELETE CASCADE,
-            INDEX idx_user (user_id),
-            INDEX idx_lesson (lesson_id),
-            INDEX idx_parent (parent_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 25. Comment Likes
-    createTable($pdo, $results, 'comment_likes', "
-        CREATE TABLE IF NOT EXISTS comment_likes (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            comment_id INT NOT NULL,
-            user_id INT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (comment_id) REFERENCES comments(id) ON DELETE CASCADE,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            UNIQUE KEY unique_like (comment_id, user_id),
-            INDEX idx_comment (comment_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-}
+            // Triggers, Views e Seeds
+            $this->createTriggers();
+            $this->createViews();
+            $this->insertSeeds();
 
-/**
- * Cria tabelas de Projetos (26-28)
- */
-function createProjectTables($pdo, &$results) {
-    // 26. Projects
-    createTable($pdo, $results, 'projects', "
-        CREATE TABLE IF NOT EXISTS projects (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            lesson_id INT,
-            course_id INT,
-            title VARCHAR(200) NOT NULL,
-            description TEXT,
-            instructions TEXT,
-            requirements TEXT,
-            starter_files_url VARCHAR(255),
-            solution_url VARCHAR(255),
-            difficulty ENUM('beginner', 'intermediate', 'advanced', 'expert') DEFAULT 'beginner',
-            estimated_hours INT DEFAULT 1,
-            xp_reward INT DEFAULT 100,
-            coin_reward INT DEFAULT 20,
-            type ENUM('practice', 'challenge', 'portfolio', 'certification') DEFAULT 'practice',
-            submission_type ENUM('link', 'file', 'github', 'text') DEFAULT 'link',
-            allows_review TINYINT(1) DEFAULT 1,
-            review_criteria TEXT,
-            is_published TINYINT(1) DEFAULT 1,
-            submissions_count INT DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            FOREIGN KEY (lesson_id) REFERENCES lessons(id) ON DELETE CASCADE,
-            FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
-            INDEX idx_lesson (lesson_id),
-            INDEX idx_course (course_id),
-            INDEX idx_difficulty (difficulty)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 27. Project Submissions
-    createTable($pdo, $results, 'project_submissions', "
-        CREATE TABLE IF NOT EXISTS project_submissions (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            project_id INT NOT NULL,
-            user_id INT NOT NULL,
-            title VARCHAR(200),
-            description TEXT,
-            submission_url VARCHAR(500),
-            github_url VARCHAR(255),
-            live_url VARCHAR(255),
-            files_url VARCHAR(255),
-            content TEXT,
-            status ENUM('pending', 'under_review', 'approved', 'rejected', 'needs_revision') DEFAULT 'pending',
-            score DECIMAL(5,2),
-            feedback TEXT,
-            reviewed_by INT,
-            reviewed_at TIMESTAMP NULL,
-            xp_earned INT DEFAULT 0,
-            coins_earned INT DEFAULT 0,
-            likes_count INT DEFAULT 0,
-            views_count INT DEFAULT 0,
-            is_featured TINYINT(1) DEFAULT 0,
-            is_public TINYINT(1) DEFAULT 1,
-            submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            FOREIGN KEY (reviewed_by) REFERENCES users(id) ON DELETE SET NULL,
-            INDEX idx_project (project_id),
-            INDEX idx_user (user_id),
-            INDEX idx_status (status)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 28. Project Likes
-    createTable($pdo, $results, 'project_likes', "
-        CREATE TABLE IF NOT EXISTS project_likes (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            submission_id INT NOT NULL,
-            user_id INT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (submission_id) REFERENCES project_submissions(id) ON DELETE CASCADE,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            UNIQUE KEY unique_like (submission_id, user_id),
-            INDEX idx_submission (submission_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-}
+            // Restaurar configurações
+            $this->restoreEnvironment();
 
-/**
- * Cria tabelas de Gamificação (29-33)
- */
-function createGamificationTables($pdo, &$results) {
-    // 29. Badges
-    createTable($pdo, $results, 'badges', "
-        CREATE TABLE IF NOT EXISTS badges (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            name VARCHAR(100) NOT NULL,
-            description TEXT,
-            icon VARCHAR(100),
-            image VARCHAR(255),
-            color VARCHAR(7) DEFAULT '#6366f1',
-            category VARCHAR(50) DEFAULT 'general',
-            requirement_type VARCHAR(50) NOT NULL,
-            requirement_value INT DEFAULT 1,
-            xp_reward INT DEFAULT 0,
-            coin_reward INT DEFAULT 0,
-            is_active TINYINT(1) DEFAULT 1,
-            is_limited TINYINT(1) DEFAULT 0,
-            available_until DATETIME,
-            order_index INT DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_category (category),
-            INDEX idx_active (is_active)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 30. User Badges
-    createTable($pdo, $results, 'user_badges', "
-        CREATE TABLE IF NOT EXISTS user_badges (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            user_id INT NOT NULL,
-            badge_id INT NOT NULL,
-            earned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            is_featured TINYINT(1) DEFAULT 0,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            FOREIGN KEY (badge_id) REFERENCES badges(id) ON DELETE CASCADE,
-            UNIQUE KEY unique_user_badge (user_id, badge_id),
-            INDEX idx_user (user_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 31. Daily Challenges
-    createTable($pdo, $results, 'daily_challenges', "
-        CREATE TABLE IF NOT EXISTS daily_challenges (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            date DATE UNIQUE NOT NULL,
-            title VARCHAR(200) NOT NULL,
-            description TEXT,
-            type ENUM('lesson', 'quiz', 'time', 'streak', 'social', 'special') DEFAULT 'lesson',
-            requirement_type VARCHAR(50) NOT NULL,
-            requirement_value INT DEFAULT 1,
-            xp_reward INT DEFAULT 50,
-            coin_reward INT DEFAULT 10,
-            bonus_multiplier DECIMAL(3,2) DEFAULT 1.00,
-            is_active TINYINT(1) DEFAULT 1,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_date (date),
-            INDEX idx_active (is_active)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 32. User Daily Challenges
-    createTable($pdo, $results, 'user_daily_challenges', "
-        CREATE TABLE IF NOT EXISTS user_daily_challenges (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            user_id INT NOT NULL,
-            challenge_id INT NOT NULL,
-            progress INT DEFAULT 0,
-            is_completed TINYINT(1) DEFAULT 0,
-            completed_at TIMESTAMP NULL,
-            xp_earned INT DEFAULT 0,
-            coins_earned INT DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            FOREIGN KEY (challenge_id) REFERENCES daily_challenges(id) ON DELETE CASCADE,
-            UNIQUE KEY unique_user_challenge (user_id, challenge_id),
-            INDEX idx_user (user_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 33. Leaderboards
-    createTable($pdo, $results, 'leaderboards', "
-        CREATE TABLE IF NOT EXISTS leaderboards (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            user_id INT NOT NULL,
-            period_type ENUM('daily', 'weekly', 'monthly', 'all_time') NOT NULL,
-            period_start DATE NOT NULL,
-            period_end DATE NOT NULL,
-            xp_earned INT DEFAULT 0,
-            lessons_completed INT DEFAULT 0,
-            courses_completed INT DEFAULT 0,
-            quizzes_perfect INT DEFAULT 0,
-            streak_days INT DEFAULT 0,
-            `rank_position` INT,
-            `previous_rank` INT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            UNIQUE KEY unique_user_period (user_id, period_type, period_start),
-            INDEX idx_user (user_id),
-            INDEX idx_period (period_type, period_start),
-            INDEX `idx_rank` (`rank_position`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-}
+            // Verificar se todas foram criadas
+            return $this->verifyInstallation();
 
-/**
- * Cria tabelas de Loja (34-39)
- */
-function createShopTables($pdo, &$results) {
-    // 34. Shop Items
-    createTable($pdo, $results, 'shop_items', "
-        CREATE TABLE IF NOT EXISTS shop_items (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            name VARCHAR(100) NOT NULL,
-            slug VARCHAR(100) UNIQUE,
-            description TEXT,
-            type ENUM('avatar', 'badge', 'theme', 'power_up', 'cosmetic', 'course_unlock') NOT NULL,
-            category VARCHAR(50) DEFAULT 'general',
-            image VARCHAR(255),
-            preview_url VARCHAR(255),
-            price_coins INT DEFAULT 0,
-            price_gems INT DEFAULT 0,
-            original_price_coins INT,
-            discount_percentage INT DEFAULT 0,
-            discount_ends_at DATETIME,
-            item_data JSON,
-            stock_quantity INT DEFAULT -1,
-            purchase_limit INT DEFAULT 0,
-            level_required INT DEFAULT 1,
-            is_featured TINYINT(1) DEFAULT 0,
-            is_active TINYINT(1) DEFAULT 1,
-            is_limited TINYINT(1) DEFAULT 0,
-            available_from DATETIME,
-            available_until DATETIME,
-            order_index INT DEFAULT 0,
-            purchase_count INT DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            INDEX idx_type (type),
-            INDEX idx_category (category),
-            INDEX idx_active (is_active),
-            INDEX idx_featured (is_featured)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 35. User Inventory
-    createTable($pdo, $results, 'user_inventory', "
-        CREATE TABLE IF NOT EXISTS user_inventory (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            user_id INT NOT NULL,
-            item_id INT NOT NULL,
-            quantity INT DEFAULT 1,
-            is_equipped TINYINT(1) DEFAULT 0,
-            is_active TINYINT(1) DEFAULT 1,
-            purchased_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            expires_at DATETIME,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            FOREIGN KEY (item_id) REFERENCES shop_items(id) ON DELETE CASCADE,
-            UNIQUE KEY unique_user_item (user_id, item_id),
-            INDEX idx_user (user_id),
-            INDEX idx_equipped (is_equipped)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 36. Coin Transactions
-    createTable($pdo, $results, 'coin_transactions', "
-        CREATE TABLE IF NOT EXISTS coin_transactions (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            user_id INT NOT NULL,
-            amount INT NOT NULL,
-            type ENUM('earned', 'spent', 'bonus', 'refund', 'gift', 'admin') NOT NULL,
-            source VARCHAR(50) NOT NULL,
-            source_id INT,
-            description VARCHAR(255),
-            balance_after INT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            INDEX idx_user (user_id),
-            INDEX idx_type (type),
-            INDEX idx_created (created_at)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 37. Payments
-    createTable($pdo, $results, 'payments', "
-        CREATE TABLE IF NOT EXISTS payments (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            user_id INT NOT NULL,
-            course_id INT,
-            subscription_id INT,
-            order_number VARCHAR(50) UNIQUE,
-            payment_method ENUM('pix', 'credit_card', 'boleto', 'paypal', 'stripe') NOT NULL,
-            payment_gateway VARCHAR(50),
-            gateway_transaction_id VARCHAR(100),
-            amount DECIMAL(10,2) NOT NULL,
-            currency VARCHAR(3) DEFAULT 'BRL',
-            discount_amount DECIMAL(10,2) DEFAULT 0.00,
-            coupon_id INT,
-            status ENUM('pending', 'processing', 'completed', 'failed', 'refunded', 'cancelled') DEFAULT 'pending',
-            paid_at TIMESTAMP NULL,
-            refunded_at TIMESTAMP NULL,
-            refund_reason TEXT,
-            invoice_url VARCHAR(255),
-            receipt_url VARCHAR(255),
-            metadata JSON,
-            ip_address VARCHAR(45),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE SET NULL,
-            INDEX idx_user (user_id),
-            INDEX idx_status (status),
-            INDEX idx_order (order_number)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 38. Coupons
-    createTable($pdo, $results, 'coupons', "
-        CREATE TABLE IF NOT EXISTS coupons (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            code VARCHAR(50) UNIQUE NOT NULL,
-            description TEXT,
-            type ENUM('percentage', 'fixed', 'free_course') DEFAULT 'percentage',
-            discount_value DECIMAL(10,2) NOT NULL,
-            min_purchase DECIMAL(10,2) DEFAULT 0.00,
-            max_discount DECIMAL(10,2),
-            applies_to ENUM('all', 'courses', 'subscriptions', 'specific') DEFAULT 'all',
-            course_ids JSON,
-            usage_limit INT DEFAULT 0,
-            usage_count INT DEFAULT 0,
-            per_user_limit INT DEFAULT 1,
-            is_active TINYINT(1) DEFAULT 1,
-            starts_at DATETIME,
-            expires_at DATETIME,
-            created_by INT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
-            INDEX idx_code (code),
-            INDEX idx_active (is_active)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 39. User Coupons
-    createTable($pdo, $results, 'user_coupons', "
-        CREATE TABLE IF NOT EXISTS user_coupons (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            user_id INT NOT NULL,
-            coupon_id INT NOT NULL,
-            payment_id INT,
-            discount_applied DECIMAL(10,2),
-            used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            FOREIGN KEY (coupon_id) REFERENCES coupons(id) ON DELETE CASCADE,
-            FOREIGN KEY (payment_id) REFERENCES payments(id) ON DELETE SET NULL,
-            INDEX idx_user (user_id),
-            INDEX idx_coupon (coupon_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-}
-
-/**
- * Cria tabelas do Sistema (40-45)
- */
-function createSystemTables($pdo, &$results) {
-    // 40. Notifications
-    createTable($pdo, $results, 'notifications', "
-        CREATE TABLE IF NOT EXISTS notifications (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            user_id INT NOT NULL,
-            type VARCHAR(50) NOT NULL,
-            category ENUM('system', 'achievement', 'course', 'social', 'payment', 'reminder') DEFAULT 'system',
-            title VARCHAR(200),
-            message TEXT,
-            action_url VARCHAR(255),
-            action_text VARCHAR(50),
-            icon VARCHAR(50),
-            image VARCHAR(255),
-            data JSON,
-            is_read TINYINT(1) DEFAULT 0,
-            is_email_sent TINYINT(1) DEFAULT 0,
-            is_push_sent TINYINT(1) DEFAULT 0,
-            read_at TIMESTAMP NULL,
-            expires_at TIMESTAMP NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            INDEX idx_user (user_id),
-            INDEX idx_read (is_read),
-            INDEX idx_type (type),
-            INDEX idx_created (created_at)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 41. Activity Logs
-    createTable($pdo, $results, 'activity_logs', "
-        CREATE TABLE IF NOT EXISTS activity_logs (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            user_id INT,
-            action VARCHAR(100) NOT NULL,
-            entity_type VARCHAR(50),
-            entity_id INT,
-            description TEXT,
-            old_values JSON,
-            new_values JSON,
-            ip_address VARCHAR(45),
-            user_agent TEXT,
-            device_type VARCHAR(20),
-            browser VARCHAR(50),
-            os VARCHAR(50),
-            location VARCHAR(100),
-            data JSON,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
-            INDEX idx_user (user_id),
-            INDEX idx_action (action),
-            INDEX idx_entity (entity_type, entity_id),
-            INDEX idx_created (created_at)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 42. User Sessions
-    createTable($pdo, $results, 'user_sessions', "
-        CREATE TABLE IF NOT EXISTS user_sessions (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            user_id INT NOT NULL,
-            session_token VARCHAR(255) UNIQUE NOT NULL,
-            refresh_token VARCHAR(255),
-            ip_address VARCHAR(45),
-            user_agent TEXT,
-            device_name VARCHAR(100),
-            device_type ENUM('desktop', 'mobile', 'tablet', 'other') DEFAULT 'desktop',
-            browser VARCHAR(50),
-            os VARCHAR(50),
-            location VARCHAR(100),
-            is_active TINYINT(1) DEFAULT 1,
-            last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            expires_at TIMESTAMP NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            INDEX idx_user (user_id),
-            INDEX idx_token (session_token),
-            INDEX idx_active (is_active),
-            INDEX idx_expires (expires_at)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 43. Settings
-    createTable($pdo, $results, 'settings', "
-        CREATE TABLE IF NOT EXISTS settings (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            setting_key VARCHAR(100) UNIQUE NOT NULL,
-            setting_value TEXT,
-            setting_type ENUM('string', 'integer', 'boolean', 'json', 'html') DEFAULT 'string',
-            category VARCHAR(50) DEFAULT 'general',
-            label VARCHAR(100),
-            description TEXT,
-            is_public TINYINT(1) DEFAULT 0,
-            is_editable TINYINT(1) DEFAULT 1,
-            order_index INT DEFAULT 0,
-            updated_by INT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL,
-            INDEX idx_key (setting_key),
-            INDEX idx_category (category)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 44. Announcements
-    createTable($pdo, $results, 'announcements', "
-        CREATE TABLE IF NOT EXISTS announcements (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            title VARCHAR(200) NOT NULL,
-            content TEXT NOT NULL,
-            type ENUM('info', 'warning', 'success', 'error', 'promotion') DEFAULT 'info',
-            target ENUM('all', 'students', 'instructors', 'premium', 'specific') DEFAULT 'all',
-            target_course_id INT,
-            action_url VARCHAR(255),
-            action_text VARCHAR(50),
-            image VARCHAR(255),
-            is_dismissible TINYINT(1) DEFAULT 1,
-            is_active TINYINT(1) DEFAULT 1,
-            is_pinned TINYINT(1) DEFAULT 0,
-            priority INT DEFAULT 0,
-            starts_at DATETIME,
-            ends_at DATETIME,
-            view_count INT DEFAULT 0,
-            click_count INT DEFAULT 0,
-            created_by INT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            FOREIGN KEY (target_course_id) REFERENCES courses(id) ON DELETE SET NULL,
-            FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
-            INDEX idx_active (is_active),
-            INDEX idx_dates (starts_at, ends_at)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 45. Password Resets
-    createTable($pdo, $results, 'password_resets', "
-        CREATE TABLE IF NOT EXISTS password_resets (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            email VARCHAR(100) NOT NULL,
-            token VARCHAR(255) NOT NULL,
-            ip_address VARCHAR(45),
-            expires_at TIMESTAMP NOT NULL,
-            used_at TIMESTAMP NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_email (email),
-            INDEX idx_token (token)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 46. Email Verifications
-    createTable($pdo, $results, 'email_verifications', "
-        CREATE TABLE IF NOT EXISTS email_verifications (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            user_id INT NOT NULL,
-            email VARCHAR(100) NOT NULL,
-            token VARCHAR(255) NOT NULL,
-            expires_at TIMESTAMP NOT NULL,
-            verified_at TIMESTAMP NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            INDEX idx_token (token),
-            INDEX idx_expires (expires_at)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-}
-
-/**
- * Cria tabelas Sociais e Auxiliares (47-51)
- */
-function createSocialTables($pdo, &$results) {
-    // 47. Tags
-    createTable($pdo, $results, 'tags', "
-        CREATE TABLE IF NOT EXISTS tags (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            name VARCHAR(50) NOT NULL,
-            slug VARCHAR(50) UNIQUE NOT NULL,
-            description TEXT,
-            color VARCHAR(7) DEFAULT '#6366f1',
-            usage_count INT DEFAULT 0,
-            is_active TINYINT(1) DEFAULT 1,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_slug (slug),
-            INDEX idx_active (is_active)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 48. Course Tags
-    createTable($pdo, $results, 'course_tags', "
-        CREATE TABLE IF NOT EXISTS course_tags (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            course_id INT NOT NULL,
-            tag_id INT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
-            FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE,
-            UNIQUE KEY unique_course_tag (course_id, tag_id),
-            INDEX idx_course (course_id),
-            INDEX idx_tag (tag_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 49. User Follows
-    createTable($pdo, $results, 'user_follows', "
-        CREATE TABLE IF NOT EXISTS user_follows (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            follower_id INT NOT NULL,
-            following_id INT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (follower_id) REFERENCES users(id) ON DELETE CASCADE,
-            FOREIGN KEY (following_id) REFERENCES users(id) ON DELETE CASCADE,
-            UNIQUE KEY unique_follow (follower_id, following_id),
-            INDEX idx_follower (follower_id),
-            INDEX idx_following (following_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 50. User Bookmarks
-    createTable($pdo, $results, 'user_bookmarks', "
-        CREATE TABLE IF NOT EXISTS user_bookmarks (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            user_id INT NOT NULL,
-            entity_type ENUM('course', 'lesson', 'project', 'article') NOT NULL,
-            entity_id INT NOT NULL,
-            notes TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            UNIQUE KEY unique_bookmark (user_id, entity_type, entity_id),
-            INDEX idx_user (user_id),
-            INDEX idx_entity (entity_type, entity_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // 51. Course Prerequisites
-    createTable($pdo, $results, 'course_prerequisites', "
-        CREATE TABLE IF NOT EXISTS course_prerequisites (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            course_id INT NOT NULL,
-            prerequisite_course_id INT NOT NULL,
-            is_required TINYINT(1) DEFAULT 1,
-            order_index INT DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
-            FOREIGN KEY (prerequisite_course_id) REFERENCES courses(id) ON DELETE CASCADE,
-            UNIQUE KEY unique_prerequisite (course_id, prerequisite_course_id),
-            INDEX idx_course (course_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // Tabela News (do seu script original)
-    createTable($pdo, $results, 'news', "
-        CREATE TABLE IF NOT EXISTS news (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            title VARCHAR(200) NOT NULL,
-            slug VARCHAR(200) UNIQUE NOT NULL,
-            excerpt TEXT,
-            content LONGTEXT,
-            thumbnail VARCHAR(255),
-            author_id INT,
-            category ENUM('update', 'tutorial', 'news', 'event', 'announcement') DEFAULT 'news',
-            tags TEXT,
-            is_featured TINYINT(1) DEFAULT 0,
-            is_published TINYINT(1) DEFAULT 0,
-            allow_comments TINYINT(1) DEFAULT 1,
-            views INT DEFAULT 0,
-            likes INT DEFAULT 0,
-            published_at TIMESTAMP NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE SET NULL,
-            INDEX idx_slug (slug),
-            INDEX idx_published (is_published),
-            INDEX idx_featured (is_featured),
-            INDEX idx_category (category),
-            INDEX idx_author (author_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // XP History (do seu script)
-    createTable($pdo, $results, 'xp_history', "
-        CREATE TABLE IF NOT EXISTS xp_history (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            user_id INT NOT NULL,
-            xp_amount INT NOT NULL,
-            action_type VARCHAR(50) NOT NULL,
-            description VARCHAR(255),
-            reference_id INT,
-            reference_type VARCHAR(50),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            INDEX idx_user (user_id),
-            INDEX idx_action (action_type),
-            INDEX idx_created (created_at)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    
-    // Weekly Leaderboard (do seu script)
-    createTable($pdo, $results, 'weekly_leaderboard', "
-        CREATE TABLE IF NOT EXISTS weekly_leaderboard (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            user_id INT NOT NULL,
-            week_start DATE NOT NULL,
-            week_end DATE NOT NULL,
-            xp_earned INT DEFAULT 0,
-            lessons_completed INT DEFAULT 0,
-            quizzes_passed INT DEFAULT 0,
-            time_spent INT DEFAULT 0,
-            `rank` INT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            UNIQUE KEY unique_weekly (user_id, week_start),
-            INDEX idx_user (user_id),
-            INDEX idx_week (week_start),
-            INDEX idx_xp (xp_earned),
-            INDEX `idx_rank` (`rank`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-}
-
-/**
- * Função auxiliar para criar tabela
- */
-function createTable($pdo, &$results, $tableName, $sql) {
-    try {
-        // Verificar se a tabela já existe
-        $stmt = $pdo->query("SHOW TABLES LIKE '$tableName'");
-        if ($stmt->rowCount() > 0) {
-            $results['messages'][] = "⏭️  Tabela '$tableName' já existe";
-            $results['stats']['tables_skipped']++;
-            return;
+        } catch (Exception $e) {
+            $this->errors[] = "ERRO FATAL: " . $e->getMessage();
+            $this->restoreEnvironment();
+            return false;
         }
-        
-        // Criar a tabela
-        $pdo->exec($sql);
-        $results['messages'][] = "✅ Tabela '$tableName' criada com sucesso";
-        $results['stats']['tables_created']++;
-        
-    } catch (PDOException $e) {
-        $results['errors'][] = "❌ Erro ao criar tabela '$tableName': " . $e->getMessage();
-        $results['success'] = false;
     }
-}
 
-/**
- * Insere dados iniciais (mantive a sua função com pequenas melhorias)
- */
-function insertInitialData($pdo, &$results) {
-    // Inserir Níveis
-    insertLevels($pdo, $results);
-    
-    // Inserir Conquistas
-    insertAchievements($pdo, $results);
-    
-    // Inserir Categorias
-    insertCategories($pdo, $results);
-    
-    // Inserir Configurações
-    insertSettings($pdo, $results);
-    
-    // Inserir Notícias (opcional)
-    insertNews($pdo, $results);
-}
+    /**
+     * Retorna erros ocorridos
+     */
+    public function getErrors(): array
+    {
+        return $this->errors;
+    }
 
-/**
- * Insere os níveis iniciais
- */
-function insertLevels($pdo, &$results) {
-    try {
-        $stmt = $pdo->query("SELECT COUNT(*) FROM levels");
-        if ($stmt->fetchColumn() > 0) {
-            $results['messages'][] = "⏭️  Níveis já existem";
-            return;
+    /**
+     * Retorna tabelas criadas com sucesso
+     */
+    public function getSuccess(): array
+    {
+        return $this->success;
+    }
+
+    /**
+     * Retorna contagem de tabelas criadas
+     */
+    public function getTableCount(): int
+    {
+        return $this->tableCount;
+    }
+
+    // ================================================================
+    // MÉTODOS AUXILIARES
+    // ================================================================
+
+    /**
+     * Prepara o ambiente para instalação segura
+     */
+    private function prepareEnvironment(): void
+    {
+        $this->pdo->exec("SET @OLD_FOREIGN_KEY_CHECKS = @@FOREIGN_KEY_CHECKS");
+        $this->pdo->exec("SET @OLD_UNIQUE_CHECKS = @@UNIQUE_CHECKS");
+        $this->pdo->exec("SET FOREIGN_KEY_CHECKS = 0");
+        $this->pdo->exec("SET UNIQUE_CHECKS = 0");
+        $this->pdo->exec("SET NAMES utf8mb4");
+        $this->pdo->exec("SET CHARACTER SET utf8mb4");
+        $this->pdo->exec("SET SESSION sql_mode = 'STRICT_TRANS_TABLES,NO_ZERO_DATE,NO_ZERO_IN_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'");
+        $this->pdo->exec("SET TIME_ZONE = '+00:00'");
+    }
+
+    /**
+     * Restaura configurações originais do MySQL
+     */
+    private function restoreEnvironment(): void
+    {
+        try {
+            $this->pdo->exec("SET FOREIGN_KEY_CHECKS = @OLD_FOREIGN_KEY_CHECKS");
+            $this->pdo->exec("SET UNIQUE_CHECKS = @OLD_UNIQUE_CHECKS");
+        } catch (Exception $e) {
+            // Fallback seguro
+            $this->pdo->exec("SET FOREIGN_KEY_CHECKS = 1");
+            $this->pdo->exec("SET UNIQUE_CHECKS = 1");
         }
-        
-        $levels = [
-            [1, 'Iniciante', 0, '🌱', '#10b981', 'Acesso aos cursos básicos'],
-            [2, 'Aprendiz', 100, '📚', '#6366f1', 'Desbloqueio de conquistas'],
-            [3, 'Estudante', 300, '✏️', '#8b5cf6', 'Acesso a quizzes avançados'],
-            [4, 'Praticante', 600, '💻', '#ec4899', 'Projetos práticos'],
-            [5, 'Desenvolvedor Jr', 1000, '🚀', '#f59e0b', 'Certificados personalizados'],
-            [6, 'Desenvolvedor', 1500, '⚡', '#ef4444', 'Acesso a conteúdo exclusivo'],
-            [7, 'Desenvolvedor Sr', 2500, '🔥', '#dc2626', 'Mentoria com instrutores'],
-            [8, 'Especialista', 4000, '💎', '#0ea5e9', 'Criar seus próprios cursos'],
-            [9, 'Mestre', 6000, '👑', '#fbbf24', 'Acesso vitalício'],
-            [10, 'Lenda', 10000, '🏆', '#f59e0b', 'Reconhecimento especial']
+    }
+
+    /**
+     * Executa um SQL de criação de tabela com tratamento de erros
+     */
+    private function createTable(string $tableName, string $sql): bool
+    {
+        try {
+            $this->pdo->exec("DROP TABLE IF EXISTS `{$tableName}`");
+            $this->pdo->exec($sql);
+            $this->tableCount++;
+            $this->success[] = "✅ Tabela '{$tableName}' criada ({$this->tableCount}/{$this->expectedTables})";
+            return true;
+        } catch (PDOException $e) {
+            $this->errors[] = "❌ Erro ao criar tabela '{$tableName}': " . $e->getMessage();
+            return false;
+        }
+    }
+
+    /**
+     * Executa SQL genérico com tratamento de erros
+     */
+    private function executeSQL(string $description, string $sql): bool
+    {
+        try {
+            $this->pdo->exec($sql);
+            $this->success[] = "✅ {$description}";
+            return true;
+        } catch (PDOException $e) {
+            $this->errors[] = "⚠️ Aviso em '{$description}': " . $e->getMessage();
+            return false;
+        }
+    }
+
+    /**
+     * Verifica se todas as 54 tabelas foram criadas
+     */
+    private function verifyInstallation(): bool
+    {
+        $expectedTables = [
+            'users', 'categories', 'tags', 'settings', 'pages', 'badges',
+            'certificate_templates', 'email_templates', 'email_log',
+            'faq_categories', 'faqs', 'announcements', 'countries', 'languages',
+            'user_sessions', 'user_streaks', 'user_badges', 'user_points',
+            'leaderboard', 'notifications', 'notification_preferences', 'media',
+            'coupons', 'courses', 'blog_posts', 'course_tags', 'course_categories',
+            'blog_post_tags', 'modules', 'enrollments', 'reviews', 'wishlists',
+            'certificates', 'payments', 'coupon_uses', 'discussions',
+            'support_tickets', 'instructor_payouts', 'lessons', 'discussion_replies',
+            'ticket_messages', 'blog_comments', 'course_announcements',
+            'course_bookmarks', 'report_abuse', 'lesson_progress', 'quizzes',
+            'assignments', 'student_notes', 'quiz_questions', 'quiz_attempts',
+            'assignment_submissions', 'quiz_options', 'activity_log'
         ];
-        
-        $stmt = $pdo->prepare("
-            INSERT INTO levels (level_number, title, xp_required, badge_icon, color, perks) 
-            VALUES (?, ?, ?, ?, ?, ?)
-        ");
-        
-        foreach ($levels as $level) {
-            $stmt->execute($level);
-            $results['stats']['data_inserted']++;
+
+        $stmt = $this->pdo->query("SHOW TABLES");
+        $existingTables = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+        $missing = [];
+        foreach ($expectedTables as $table) {
+            if (!in_array($table, $existingTables)) {
+                $missing[] = $table;
+            }
         }
-        
-        $results['messages'][] = "✅ 10 níveis inseridos";
-        
-    } catch (PDOException $e) {
-        $results['errors'][] = "❌ Erro ao inserir níveis: " . $e->getMessage();
+
+        if (!empty($missing)) {
+            $this->errors[] = "❌ Tabelas faltantes: " . implode(', ', $missing);
+            return false;
+        }
+
+        $this->success[] = "✅ Verificação completa: todas as {$this->expectedTables} tabelas existem!";
+        return true;
+    }
+
+    // ================================================================
+    // ================================================================
+    //
+    //   NÍVEL 0 - TABELAS SEM DEPENDÊNCIAS (14 tabelas)
+    //
+    // ================================================================
+    // ================================================================
+
+    private function createLevel0Tables(): void
+    {
+        // --------------------------------------------------------
+        // TABELA 01/54: users
+        // --------------------------------------------------------
+        $this->createTable('users', "
+            CREATE TABLE `users` (
+                `id`                        INT UNSIGNED       NOT NULL AUTO_INCREMENT,
+                `name`                      VARCHAR(100)       NOT NULL                          COMMENT 'Nome completo',
+                `email`                     VARCHAR(150)       NOT NULL                          COMMENT 'Email único para login',
+                `password`                  VARCHAR(255)       NOT NULL                          COMMENT 'Hash bcrypt da senha',
+                `role`                      ENUM('student','instructor','admin','super_admin')
+                                                               NOT NULL DEFAULT 'student'        COMMENT 'Papel do usuário',
+                `avatar`                    VARCHAR(500)       DEFAULT NULL                      COMMENT 'URL da foto de perfil',
+                `bio`                       TEXT               DEFAULT NULL                      COMMENT 'Biografia',
+                `phone`                     VARCHAR(20)        DEFAULT NULL                      COMMENT 'Telefone com DDD',
+                `website`                   VARCHAR(255)       DEFAULT NULL                      COMMENT 'Site pessoal',
+                `social_github`             VARCHAR(255)       DEFAULT NULL,
+                `social_linkedin`           VARCHAR(255)       DEFAULT NULL,
+                `social_twitter`            VARCHAR(255)       DEFAULT NULL,
+                `social_youtube`            VARCHAR(255)       DEFAULT NULL,
+                `specialization`            VARCHAR(255)       DEFAULT NULL                      COMMENT 'Área de especialização',
+                `total_points`              INT UNSIGNED       NOT NULL DEFAULT 0                COMMENT 'Cache pontos gamificação',
+                `email_verified_at`         TIMESTAMP          NULL DEFAULT NULL,
+                `email_verification_token`  VARCHAR(100)       DEFAULT NULL,
+                `password_reset_token`      VARCHAR(100)       DEFAULT NULL,
+                `password_reset_expires`    TIMESTAMP          NULL DEFAULT NULL,
+                `two_factor_secret`         VARCHAR(255)       DEFAULT NULL,
+                `two_factor_enabled`        TINYINT(1)         NOT NULL DEFAULT 0,
+                `last_login_at`             TIMESTAMP          NULL DEFAULT NULL,
+                `last_login_ip`             VARCHAR(45)        DEFAULT NULL                      COMMENT 'Suporta IPv6',
+                `is_active`                 TINYINT(1)         NOT NULL DEFAULT 1,
+                `preferences`               JSON               DEFAULT NULL,
+                `created_at`                TIMESTAMP          NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at`                TIMESTAMP          NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uk_users_email` (`email`),
+                KEY `idx_users_role` (`role`),
+                KEY `idx_users_active` (`is_active`),
+                KEY `idx_users_created` (`created_at`),
+                KEY `idx_users_points` (`total_points` DESC)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Usuários do sistema'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 02/54: categories
+        // --------------------------------------------------------
+        $this->createTable('categories', "
+            CREATE TABLE `categories` (
+                `id`            INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+                `name`          VARCHAR(100)     NOT NULL,
+                `slug`          VARCHAR(120)     NOT NULL,
+                `description`   TEXT             DEFAULT NULL,
+                `icon`          VARCHAR(100)     DEFAULT NULL                      COMMENT 'Classe CSS do ícone',
+                `image`         VARCHAR(500)     DEFAULT NULL,
+                `color`         VARCHAR(7)       DEFAULT '#6366f1',
+                `parent_id`     INT UNSIGNED     DEFAULT NULL                      COMMENT 'Categoria pai',
+                `sort_order`    INT              NOT NULL DEFAULT 0,
+                `is_active`     TINYINT(1)       NOT NULL DEFAULT 1,
+                `course_count`  INT UNSIGNED     NOT NULL DEFAULT 0               COMMENT 'Cache total cursos',
+                `created_at`    TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at`    TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uk_categories_slug` (`slug`),
+                KEY `idx_categories_parent` (`parent_id`),
+                KEY `idx_categories_active_order` (`is_active`, `sort_order`),
+                CONSTRAINT `fk_categories_parent` FOREIGN KEY (`parent_id`)
+                    REFERENCES `categories` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Categorias hierárquicas de cursos'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 03/54: tags
+        // --------------------------------------------------------
+        $this->createTable('tags', "
+            CREATE TABLE `tags` (
+                `id`          INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+                `name`        VARCHAR(50)     NOT NULL,
+                `slug`        VARCHAR(60)     NOT NULL,
+                `usage_count` INT UNSIGNED    NOT NULL DEFAULT 0,
+                `created_at`  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uk_tags_slug` (`slug`),
+                KEY `idx_tags_usage` (`usage_count` DESC)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Tags para classificação de conteúdo'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 04/54: settings
+        // --------------------------------------------------------
+        $this->createTable('settings', "
+            CREATE TABLE `settings` (
+                `id`              INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+                `setting_key`     VARCHAR(100)     NOT NULL,
+                `setting_value`   LONGTEXT         DEFAULT NULL,
+                `setting_type`    ENUM('string','number','boolean','json','html','text')
+                                                   NOT NULL DEFAULT 'string',
+                `setting_group`   VARCHAR(50)      NOT NULL DEFAULT 'general',
+                `description`     VARCHAR(255)     DEFAULT NULL,
+                `is_public`       TINYINT(1)       NOT NULL DEFAULT 0,
+                `updated_at`      TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uk_settings_key` (`setting_key`),
+                KEY `idx_settings_group` (`setting_group`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Configurações dinâmicas do sistema'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 05/54: pages
+        // --------------------------------------------------------
+        $this->createTable('pages', "
+            CREATE TABLE `pages` (
+                `id`               INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+                `title`            VARCHAR(255)     NOT NULL,
+                `slug`             VARCHAR(280)     NOT NULL,
+                `content`          LONGTEXT         NOT NULL,
+                `meta_title`       VARCHAR(255)     DEFAULT NULL,
+                `meta_description` VARCHAR(500)     DEFAULT NULL,
+                `template`         VARCHAR(50)      DEFAULT 'default',
+                `sort_order`       INT              NOT NULL DEFAULT 0,
+                `show_in_menu`     TINYINT(1)       NOT NULL DEFAULT 0,
+                `show_in_footer`   TINYINT(1)       NOT NULL DEFAULT 0,
+                `is_published`     TINYINT(1)       NOT NULL DEFAULT 1,
+                `created_at`       TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at`       TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uk_pages_slug` (`slug`),
+                KEY `idx_pages_published` (`is_published`),
+                KEY `idx_pages_menu` (`show_in_menu`, `sort_order`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Páginas estáticas do site'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 06/54: badges
+        // --------------------------------------------------------
+        $this->createTable('badges', "
+            CREATE TABLE `badges` (
+                `id`              INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+                `name`            VARCHAR(100)     NOT NULL,
+                `slug`            VARCHAR(120)     NOT NULL,
+                `description`     TEXT             DEFAULT NULL,
+                `icon`            VARCHAR(500)     NOT NULL,
+                `category`        ENUM('course','engagement','achievement','special','community')
+                                                   NOT NULL DEFAULT 'achievement',
+                `criteria_type`   VARCHAR(50)      NOT NULL,
+                `criteria_value`  INT UNSIGNED     NOT NULL DEFAULT 1,
+                `points_reward`   INT UNSIGNED     NOT NULL DEFAULT 0,
+                `rarity`          ENUM('common','uncommon','rare','epic','legendary')
+                                                   NOT NULL DEFAULT 'common',
+                `sort_order`      INT              NOT NULL DEFAULT 0,
+                `is_active`       TINYINT(1)       NOT NULL DEFAULT 1,
+                `created_at`      TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uk_badges_slug` (`slug`),
+                KEY `idx_badges_category` (`category`),
+                KEY `idx_badges_criteria` (`criteria_type`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Conquistas do sistema de gamificação'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 07/54: certificate_templates
+        // --------------------------------------------------------
+        $this->createTable('certificate_templates', "
+            CREATE TABLE `certificate_templates` (
+                `id`                INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+                `name`              VARCHAR(100)     NOT NULL,
+                `html_template`     LONGTEXT         NOT NULL,
+                `css_styles`        LONGTEXT         DEFAULT NULL,
+                `background_image`  VARCHAR(500)     DEFAULT NULL,
+                `orientation`       ENUM('landscape','portrait') NOT NULL DEFAULT 'landscape',
+                `paper_size`        ENUM('a4','letter','custom') NOT NULL DEFAULT 'a4',
+                `is_default`        TINYINT(1)       NOT NULL DEFAULT 0,
+                `is_active`         TINYINT(1)       NOT NULL DEFAULT 1,
+                `created_at`        TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at`        TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Templates visuais para certificados'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 08/54: email_templates
+        // --------------------------------------------------------
+        $this->createTable('email_templates', "
+            CREATE TABLE `email_templates` (
+                `id`           INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+                `name`         VARCHAR(100)     NOT NULL,
+                `subject`      VARCHAR(255)     NOT NULL,
+                `body_html`    LONGTEXT         NOT NULL,
+                `body_text`    LONGTEXT         DEFAULT NULL,
+                `variables`    JSON             DEFAULT NULL,
+                `is_active`    TINYINT(1)       NOT NULL DEFAULT 1,
+                `created_at`   TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at`   TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uk_email_templates_name` (`name`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Templates de emails transacionais'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 09/54: email_log
+        // --------------------------------------------------------
+        $this->createTable('email_log', "
+            CREATE TABLE `email_log` (
+                `id`             INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+                `to_email`       VARCHAR(150)     NOT NULL,
+                `to_name`        VARCHAR(100)     DEFAULT NULL,
+                `subject`        VARCHAR(255)     NOT NULL,
+                `template`       VARCHAR(50)      DEFAULT NULL,
+                `body_preview`   VARCHAR(500)     DEFAULT NULL,
+                `status`         ENUM('queued','sent','failed','bounced')
+                                                  NOT NULL DEFAULT 'queued',
+                `error_message`  TEXT             DEFAULT NULL,
+                `attempts`       TINYINT UNSIGNED NOT NULL DEFAULT 0,
+                `sent_at`        TIMESTAMP        NULL DEFAULT NULL,
+                `created_at`     TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                KEY `idx_emaillog_status` (`status`),
+                KEY `idx_emaillog_created` (`created_at`),
+                KEY `idx_emaillog_to` (`to_email`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Log de emails enviados'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 10/54: faq_categories
+        // --------------------------------------------------------
+        $this->createTable('faq_categories', "
+            CREATE TABLE `faq_categories` (
+                `id`          INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+                `name`        VARCHAR(100)    NOT NULL,
+                `slug`        VARCHAR(120)    NOT NULL,
+                `icon`        VARCHAR(100)    DEFAULT NULL,
+                `sort_order`  INT             NOT NULL DEFAULT 0,
+                `is_active`   TINYINT(1)      NOT NULL DEFAULT 1,
+                `created_at`  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uk_faqcat_slug` (`slug`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Categorias de FAQs'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 11/54: faqs
+        // --------------------------------------------------------
+        $this->createTable('faqs', "
+            CREATE TABLE `faqs` (
+                `id`           INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+                `category_id`  INT UNSIGNED    DEFAULT NULL,
+                `question`     VARCHAR(500)    NOT NULL,
+                `answer`       LONGTEXT        NOT NULL,
+                `sort_order`   INT             NOT NULL DEFAULT 0,
+                `is_published` TINYINT(1)      NOT NULL DEFAULT 1,
+                `view_count`   INT UNSIGNED    NOT NULL DEFAULT 0,
+                `helpful_yes`  INT UNSIGNED    NOT NULL DEFAULT 0,
+                `helpful_no`   INT UNSIGNED    NOT NULL DEFAULT 0,
+                `created_at`   TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at`   TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                KEY `idx_faqs_category` (`category_id`),
+                KEY `idx_faqs_published` (`is_published`, `sort_order`),
+                CONSTRAINT `fk_faqs_category` FOREIGN KEY (`category_id`)
+                    REFERENCES `faq_categories` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Perguntas frequentes'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 12/54: announcements
+        // --------------------------------------------------------
+        $this->createTable('announcements', "
+            CREATE TABLE `announcements` (
+                `id`              INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+                `title`           VARCHAR(255)     NOT NULL,
+                `content`         LONGTEXT         NOT NULL,
+                `type`            ENUM('info','warning','success','danger','promotion')
+                                                   NOT NULL DEFAULT 'info',
+                `target_audience` ENUM('all','students','instructors','admins')
+                                                   NOT NULL DEFAULT 'all',
+                `display_type`    ENUM('banner','modal','notification')
+                                                   NOT NULL DEFAULT 'banner',
+                `action_url`      VARCHAR(500)     DEFAULT NULL,
+                `action_text`     VARCHAR(100)     DEFAULT NULL,
+                `starts_at`       TIMESTAMP        NULL DEFAULT NULL,
+                `ends_at`         TIMESTAMP        NULL DEFAULT NULL,
+                `is_active`       TINYINT(1)       NOT NULL DEFAULT 1,
+                `created_at`      TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                KEY `idx_announcements_active` (`is_active`, `starts_at`, `ends_at`),
+                KEY `idx_announcements_target` (`target_audience`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Anúncios globais do sistema'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 13/54: countries
+        // --------------------------------------------------------
+        $this->createTable('countries', "
+            CREATE TABLE `countries` (
+                `id`          INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+                `name`        VARCHAR(100)    NOT NULL,
+                `code`        CHAR(2)         NOT NULL,
+                `phone_code`  VARCHAR(5)      DEFAULT NULL,
+                `currency`    VARCHAR(3)      DEFAULT NULL,
+                `is_active`   TINYINT(1)      NOT NULL DEFAULT 1,
+
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uk_countries_code` (`code`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Países para formulários'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 14/54: languages
+        // --------------------------------------------------------
+        $this->createTable('languages', "
+            CREATE TABLE `languages` (
+                `id`          INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+                `name`        VARCHAR(50)     NOT NULL,
+                `code`        VARCHAR(10)     NOT NULL,
+                `native_name` VARCHAR(50)     DEFAULT NULL,
+                `is_active`   TINYINT(1)      NOT NULL DEFAULT 1,
+
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uk_languages_code` (`code`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Idiomas disponíveis para cursos'
+        ");
+    }
+
+    // ================================================================
+    // ================================================================
+    //
+    //   NÍVEL 1 - DEPENDEM APENAS DO NÍVEL 0 (11 tabelas)
+    //
+    // ================================================================
+    // ================================================================
+
+    private function createLevel1Tables(): void
+    {
+        // --------------------------------------------------------
+        // TABELA 15/54: user_sessions
+        // --------------------------------------------------------
+        $this->createTable('user_sessions', "
+            CREATE TABLE `user_sessions` (
+                `id`             INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+                `user_id`        INT UNSIGNED     NOT NULL,
+                `session_token`  VARCHAR(255)     NOT NULL,
+                `ip_address`     VARCHAR(45)      DEFAULT NULL,
+                `user_agent`     TEXT             DEFAULT NULL,
+                `device_type`    ENUM('desktop','mobile','tablet','unknown')
+                                                  NOT NULL DEFAULT 'unknown',
+                `last_activity`  TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                `expires_at`     TIMESTAMP        NOT NULL,
+                `created_at`     TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uk_session_token` (`session_token`),
+                KEY `idx_sessions_user` (`user_id`),
+                KEY `idx_sessions_expires` (`expires_at`),
+                CONSTRAINT `fk_sessions_user` FOREIGN KEY (`user_id`)
+                    REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Sessões ativas dos usuários'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 16/54: user_streaks
+        // --------------------------------------------------------
+        $this->createTable('user_streaks', "
+            CREATE TABLE `user_streaks` (
+                `id`                 INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+                `user_id`            INT UNSIGNED    NOT NULL,
+                `current_streak`     INT UNSIGNED    NOT NULL DEFAULT 0,
+                `longest_streak`     INT UNSIGNED    NOT NULL DEFAULT 0,
+                `last_activity_date` DATE            DEFAULT NULL,
+                `updated_at`         TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uk_streak_user` (`user_id`),
+                CONSTRAINT `fk_streaks_user` FOREIGN KEY (`user_id`)
+                    REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Streak de dias de estudo'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 17/54: user_badges
+        // --------------------------------------------------------
+        $this->createTable('user_badges', "
+            CREATE TABLE `user_badges` (
+                `id`         INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+                `user_id`    INT UNSIGNED    NOT NULL,
+                `badge_id`   INT UNSIGNED    NOT NULL,
+                `earned_at`  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uk_user_badge` (`user_id`, `badge_id`),
+                KEY `idx_userbadges_badge` (`badge_id`),
+                KEY `idx_userbadges_earned` (`earned_at`),
+                CONSTRAINT `fk_userbadges_user` FOREIGN KEY (`user_id`)
+                    REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+                CONSTRAINT `fk_userbadges_badge` FOREIGN KEY (`badge_id`)
+                    REFERENCES `badges` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Conquistas desbloqueadas pelos usuários'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 18/54: user_points
+        // --------------------------------------------------------
+        $this->createTable('user_points', "
+            CREATE TABLE `user_points` (
+                `id`              INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+                `user_id`         INT UNSIGNED     NOT NULL,
+                `points`          INT              NOT NULL,
+                `action`          VARCHAR(50)      NOT NULL,
+                `reference_type`  VARCHAR(50)      DEFAULT NULL,
+                `reference_id`    INT UNSIGNED     DEFAULT NULL,
+                `description`     VARCHAR(255)     DEFAULT NULL,
+                `created_at`      TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                KEY `idx_points_user` (`user_id`),
+                KEY `idx_points_action` (`action`),
+                KEY `idx_points_created` (`created_at`),
+                KEY `idx_points_ref` (`reference_type`, `reference_id`),
+                CONSTRAINT `fk_points_user` FOREIGN KEY (`user_id`)
+                    REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Histórico de pontos da gamificação'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 19/54: leaderboard
+        // --------------------------------------------------------
+        $this->createTable('leaderboard', "
+            CREATE TABLE `leaderboard` (
+                `id`                INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+                `user_id`           INT UNSIGNED     NOT NULL,
+                `total_points`      INT UNSIGNED     NOT NULL DEFAULT 0,
+                `courses_completed` INT UNSIGNED     NOT NULL DEFAULT 0,
+                `badges_earned`     INT UNSIGNED     NOT NULL DEFAULT 0,
+                `rank_position`     INT UNSIGNED     DEFAULT NULL,
+                `period`            ENUM('weekly','monthly','all_time')
+                                                     NOT NULL DEFAULT 'all_time',
+                `period_start`      DATE             DEFAULT NULL,
+                `updated_at`        TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uk_leaderboard` (`user_id`, `period`, `period_start`),
+                KEY `idx_leaderboard_rank` (`period`, `rank_position`),
+                KEY `idx_leaderboard_points` (`period`, `total_points` DESC),
+                CONSTRAINT `fk_leaderboard_user` FOREIGN KEY (`user_id`)
+                    REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Rankings de gamificação'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 20/54: notifications
+        // --------------------------------------------------------
+        $this->createTable('notifications', "
+            CREATE TABLE `notifications` (
+                `id`          INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+                `user_id`     INT UNSIGNED     NOT NULL,
+                `type`        VARCHAR(50)      NOT NULL,
+                `title`       VARCHAR(255)     NOT NULL,
+                `message`     TEXT             NOT NULL,
+                `icon`        VARCHAR(100)     DEFAULT NULL,
+                `action_url`  VARCHAR(500)     DEFAULT NULL,
+                `data`        JSON             DEFAULT NULL,
+                `is_read`     TINYINT(1)       NOT NULL DEFAULT 0,
+                `read_at`     TIMESTAMP        NULL DEFAULT NULL,
+                `created_at`  TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                KEY `idx_notif_user_read` (`user_id`, `is_read`, `created_at` DESC),
+                KEY `idx_notif_type` (`type`),
+                KEY `idx_notif_created` (`created_at`),
+                CONSTRAINT `fk_notifications_user` FOREIGN KEY (`user_id`)
+                    REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Notificações in-app'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 21/54: notification_preferences
+        // --------------------------------------------------------
+        $this->createTable('notification_preferences', "
+            CREATE TABLE `notification_preferences` (
+                `id`                  INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+                `user_id`             INT UNSIGNED    NOT NULL,
+                `notification_type`   VARCHAR(50)     NOT NULL,
+                `email_enabled`       TINYINT(1)      NOT NULL DEFAULT 1,
+                `push_enabled`        TINYINT(1)      NOT NULL DEFAULT 1,
+                `in_app_enabled`      TINYINT(1)      NOT NULL DEFAULT 1,
+
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uk_notifpref` (`user_id`, `notification_type`),
+                CONSTRAINT `fk_notifpref_user` FOREIGN KEY (`user_id`)
+                    REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Preferências de notificação por tipo'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 22/54: media
+        // --------------------------------------------------------
+        $this->createTable('media', "
+            CREATE TABLE `media` (
+                `id`                INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+                `user_id`           INT UNSIGNED     DEFAULT NULL,
+                `filename`          VARCHAR(255)     NOT NULL,
+                `original_filename` VARCHAR(255)     NOT NULL,
+                `file_path`         VARCHAR(500)     NOT NULL,
+                `file_url`          VARCHAR(500)     NOT NULL,
+                `mime_type`         VARCHAR(100)     NOT NULL,
+                `file_size`         BIGINT UNSIGNED  NOT NULL,
+                `dimensions`        VARCHAR(20)      DEFAULT NULL,
+                `alt_text`          VARCHAR(255)     DEFAULT NULL,
+                `folder`            VARCHAR(100)     DEFAULT 'general',
+                `disk`              VARCHAR(20)      DEFAULT 'local',
+                `created_at`        TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                KEY `idx_media_user` (`user_id`),
+                KEY `idx_media_folder` (`folder`),
+                KEY `idx_media_mime` (`mime_type`),
+                KEY `idx_media_created` (`created_at`),
+                CONSTRAINT `fk_media_user` FOREIGN KEY (`user_id`)
+                    REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Biblioteca de mídia'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 23/54: coupons
+        // --------------------------------------------------------
+        $this->createTable('coupons', "
+            CREATE TABLE `coupons` (
+                `id`                 INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+                `code`               VARCHAR(50)      NOT NULL,
+                `description`        VARCHAR(255)     DEFAULT NULL,
+                `discount_type`      ENUM('percentage','fixed') NOT NULL DEFAULT 'percentage',
+                `discount_value`     DECIMAL(10,2)    NOT NULL,
+                `min_purchase`       DECIMAL(10,2)    DEFAULT NULL,
+                `max_discount`       DECIMAL(10,2)    DEFAULT NULL,
+                `max_uses`           INT UNSIGNED     DEFAULT NULL,
+                `max_uses_per_user`  INT UNSIGNED     NOT NULL DEFAULT 1,
+                `used_count`         INT UNSIGNED     NOT NULL DEFAULT 0,
+                `applicable_courses` JSON             DEFAULT NULL,
+                `starts_at`          TIMESTAMP        NULL DEFAULT NULL,
+                `expires_at`         TIMESTAMP        NULL DEFAULT NULL,
+                `is_active`          TINYINT(1)       NOT NULL DEFAULT 1,
+                `created_by`         INT UNSIGNED     DEFAULT NULL,
+                `created_at`         TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at`         TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uk_coupon_code` (`code`),
+                KEY `idx_coupons_active_dates` (`is_active`, `starts_at`, `expires_at`),
+                CONSTRAINT `fk_coupons_creator` FOREIGN KEY (`created_by`)
+                    REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Cupons de desconto'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 24/54: courses
+        // --------------------------------------------------------
+        $this->createTable('courses', "
+            CREATE TABLE `courses` (
+                `id`                INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+                `title`             VARCHAR(255)     NOT NULL,
+                `slug`              VARCHAR(280)     NOT NULL,
+                `subtitle`          VARCHAR(300)     DEFAULT NULL,
+                `description`       LONGTEXT         DEFAULT NULL,
+                `short_description` VARCHAR(500)     DEFAULT NULL,
+                `thumbnail`         VARCHAR(500)     DEFAULT NULL,
+                `preview_video`     VARCHAR(500)     DEFAULT NULL,
+                `instructor_id`     INT UNSIGNED     NOT NULL,
+                `category_id`       INT UNSIGNED     DEFAULT NULL,
+                `level`             ENUM('beginner','intermediate','advanced','all_levels')
+                                                     NOT NULL DEFAULT 'beginner',
+                `language`          VARCHAR(10)      NOT NULL DEFAULT 'pt-BR',
+                `price`             DECIMAL(10,2)    NOT NULL DEFAULT 0.00,
+                `original_price`    DECIMAL(10,2)    DEFAULT NULL,
+                `currency`          VARCHAR(3)       NOT NULL DEFAULT 'BRL',
+                `duration_hours`    DECIMAL(6,1)     NOT NULL DEFAULT 0.0,
+                `total_lessons`     INT UNSIGNED     NOT NULL DEFAULT 0,
+                `total_modules`     INT UNSIGNED     NOT NULL DEFAULT 0,
+                `requirements`      JSON             DEFAULT NULL,
+                `what_you_learn`    JSON             DEFAULT NULL,
+                `target_audience`   JSON             DEFAULT NULL,
+                `resources`         JSON             DEFAULT NULL,
+                `game_engine`       ENUM('unity','unreal','godot','gamemaker','construct','phaser','pygame','love2d','custom','none')
+                                                     DEFAULT NULL,
+                `programming_lang`  VARCHAR(50)      DEFAULT NULL,
+                `status`            ENUM('draft','pending_review','published','archived','suspended')
+                                                     NOT NULL DEFAULT 'draft',
+                `is_featured`       TINYINT(1)       NOT NULL DEFAULT 0,
+                `is_free`           TINYINT(1)       NOT NULL DEFAULT 0,
+                `is_bestseller`     TINYINT(1)       NOT NULL DEFAULT 0,
+                `is_new`            TINYINT(1)       NOT NULL DEFAULT 0,
+                `enrollment_count`  INT UNSIGNED     NOT NULL DEFAULT 0,
+                `rating_average`    DECIMAL(3,2)     NOT NULL DEFAULT 0.00,
+                `rating_count`      INT UNSIGNED     NOT NULL DEFAULT 0,
+                `completion_rate`   DECIMAL(5,2)     NOT NULL DEFAULT 0.00,
+                `meta_title`        VARCHAR(255)     DEFAULT NULL,
+                `meta_description`  VARCHAR(500)     DEFAULT NULL,
+                `published_at`      TIMESTAMP        NULL DEFAULT NULL,
+                `created_at`        TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at`        TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uk_courses_slug` (`slug`),
+                KEY `idx_courses_instructor` (`instructor_id`),
+                KEY `idx_courses_category` (`category_id`),
+                KEY `idx_courses_status` (`status`),
+                KEY `idx_courses_featured` (`is_featured`, `status`),
+                KEY `idx_courses_level` (`level`),
+                KEY `idx_courses_engine` (`game_engine`),
+                KEY `idx_courses_price` (`price`),
+                KEY `idx_courses_free` (`is_free`, `status`),
+                KEY `idx_courses_rating` (`rating_average` DESC),
+                KEY `idx_courses_enrollment` (`enrollment_count` DESC),
+                KEY `idx_courses_published` (`published_at` DESC),
+                KEY `idx_courses_created` (`created_at`),
+                FULLTEXT KEY `ft_courses_search` (`title`, `description`, `short_description`),
+                CONSTRAINT `fk_courses_instructor` FOREIGN KEY (`instructor_id`)
+                    REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+                CONSTRAINT `fk_courses_category` FOREIGN KEY (`category_id`)
+                    REFERENCES `categories` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Cursos da plataforma'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 25/54: blog_posts
+        // --------------------------------------------------------
+        $this->createTable('blog_posts', "
+            CREATE TABLE `blog_posts` (
+                `id`               INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+                `title`            VARCHAR(255)     NOT NULL,
+                `slug`             VARCHAR(280)     NOT NULL,
+                `excerpt`          VARCHAR(500)     DEFAULT NULL,
+                `content`          LONGTEXT         NOT NULL,
+                `featured_image`   VARCHAR(500)     DEFAULT NULL,
+                `author_id`        INT UNSIGNED     NOT NULL,
+                `category_id`      INT UNSIGNED     DEFAULT NULL,
+                `status`           ENUM('draft','published','archived') NOT NULL DEFAULT 'draft',
+                `is_featured`      TINYINT(1)       NOT NULL DEFAULT 0,
+                `allow_comments`   TINYINT(1)       NOT NULL DEFAULT 1,
+                `view_count`       INT UNSIGNED     NOT NULL DEFAULT 0,
+                `reading_time`     INT UNSIGNED     DEFAULT NULL,
+                `meta_title`       VARCHAR(255)     DEFAULT NULL,
+                `meta_description` VARCHAR(500)     DEFAULT NULL,
+                `published_at`     TIMESTAMP        NULL DEFAULT NULL,
+                `created_at`       TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at`       TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uk_blogposts_slug` (`slug`),
+                KEY `idx_blogposts_author` (`author_id`),
+                KEY `idx_blogposts_category` (`category_id`),
+                KEY `idx_blogposts_status` (`status`, `published_at` DESC),
+                KEY `idx_blogposts_featured` (`is_featured`),
+                FULLTEXT KEY `ft_blogposts_search` (`title`, `content`),
+                CONSTRAINT `fk_blogposts_author` FOREIGN KEY (`author_id`)
+                    REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+                CONSTRAINT `fk_blogposts_category` FOREIGN KEY (`category_id`)
+                    REFERENCES `categories` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Artigos do blog'
+        ");
+    }
+
+    // ================================================================
+    // ================================================================
+    //
+    //   NÍVEL 2 - DEPENDEM DOS NÍVEIS 0 E 1 (13 tabelas)
+    //
+    // ================================================================
+    // ================================================================
+
+    private function createLevel2Tables(): void
+    {
+        // --------------------------------------------------------
+        // TABELA 26/54: course_tags
+        // --------------------------------------------------------
+        $this->createTable('course_tags', "
+            CREATE TABLE `course_tags` (
+                `course_id`  INT UNSIGNED    NOT NULL,
+                `tag_id`     INT UNSIGNED    NOT NULL,
+
+                PRIMARY KEY (`course_id`, `tag_id`),
+                KEY `idx_coursetags_tag` (`tag_id`),
+                CONSTRAINT `fk_coursetags_course` FOREIGN KEY (`course_id`)
+                    REFERENCES `courses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+                CONSTRAINT `fk_coursetags_tag` FOREIGN KEY (`tag_id`)
+                    REFERENCES `tags` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='N:N cursos e tags'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 27/54: course_categories
+        // --------------------------------------------------------
+        $this->createTable('course_categories', "
+            CREATE TABLE `course_categories` (
+                `course_id`    INT UNSIGNED    NOT NULL,
+                `category_id`  INT UNSIGNED    NOT NULL,
+
+                PRIMARY KEY (`course_id`, `category_id`),
+                KEY `idx_coursecat_category` (`category_id`),
+                CONSTRAINT `fk_coursecat_course` FOREIGN KEY (`course_id`)
+                    REFERENCES `courses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+                CONSTRAINT `fk_coursecat_category` FOREIGN KEY (`category_id`)
+                    REFERENCES `categories` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Categorias secundárias dos cursos'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 28/54: blog_post_tags
+        // --------------------------------------------------------
+        $this->createTable('blog_post_tags', "
+            CREATE TABLE `blog_post_tags` (
+                `post_id`  INT UNSIGNED    NOT NULL,
+                `tag_id`   INT UNSIGNED    NOT NULL,
+
+                PRIMARY KEY (`post_id`, `tag_id`),
+                KEY `idx_blogposttags_tag` (`tag_id`),
+                CONSTRAINT `fk_blogposttags_post` FOREIGN KEY (`post_id`)
+                    REFERENCES `blog_posts` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+                CONSTRAINT `fk_blogposttags_tag` FOREIGN KEY (`tag_id`)
+                    REFERENCES `tags` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Tags dos artigos do blog'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 29/54: modules
+        // --------------------------------------------------------
+        $this->createTable('modules', "
+            CREATE TABLE `modules` (
+                `id`               INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+                `course_id`        INT UNSIGNED     NOT NULL,
+                `title`            VARCHAR(255)     NOT NULL,
+                `description`      TEXT             DEFAULT NULL,
+                `sort_order`       INT              NOT NULL DEFAULT 0,
+                `is_free_preview`  TINYINT(1)       NOT NULL DEFAULT 0,
+                `is_published`     TINYINT(1)       NOT NULL DEFAULT 1,
+                `duration_minutes` INT UNSIGNED     NOT NULL DEFAULT 0,
+                `lesson_count`     INT UNSIGNED     NOT NULL DEFAULT 0,
+                `created_at`       TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at`       TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                KEY `idx_modules_course_order` (`course_id`, `sort_order`),
+                CONSTRAINT `fk_modules_course` FOREIGN KEY (`course_id`)
+                    REFERENCES `courses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Módulos/seções dos cursos'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 30/54: enrollments
+        // --------------------------------------------------------
+        $this->createTable('enrollments', "
+            CREATE TABLE `enrollments` (
+                `id`                INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+                `user_id`           INT UNSIGNED     NOT NULL,
+                `course_id`         INT UNSIGNED     NOT NULL,
+                `status`            ENUM('active','completed','cancelled','expired','refunded','paused')
+                                                     NOT NULL DEFAULT 'active',
+                `progress_percent`  DECIMAL(5,2)     NOT NULL DEFAULT 0.00,
+                `lessons_completed` INT UNSIGNED     NOT NULL DEFAULT 0,
+                `last_lesson_id`    INT UNSIGNED     DEFAULT NULL,
+                `last_accessed_at`  TIMESTAMP        NULL DEFAULT NULL,
+                `enrolled_at`       TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `completed_at`      TIMESTAMP        NULL DEFAULT NULL,
+                `expires_at`        TIMESTAMP        NULL DEFAULT NULL,
+                `payment_id`        INT UNSIGNED     DEFAULT NULL,
+                `source`            VARCHAR(50)      DEFAULT 'direct',
+                `created_at`        TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at`        TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uk_enrollment` (`user_id`, `course_id`),
+                KEY `idx_enrollments_course` (`course_id`),
+                KEY `idx_enrollments_status` (`status`),
+                KEY `idx_enrollments_enrolled` (`enrolled_at`),
+                KEY `idx_enrollments_progress` (`progress_percent`),
+                KEY `idx_enrollments_created` (`created_at`),
+                CONSTRAINT `fk_enrollments_user` FOREIGN KEY (`user_id`)
+                    REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+                CONSTRAINT `fk_enrollments_course` FOREIGN KEY (`course_id`)
+                    REFERENCES `courses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Matrículas dos alunos'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 31/54: reviews
+        // --------------------------------------------------------
+        $this->createTable('reviews', "
+            CREATE TABLE `reviews` (
+                `id`                    INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+                `user_id`               INT UNSIGNED     NOT NULL,
+                `course_id`             INT UNSIGNED     NOT NULL,
+                `rating`                TINYINT UNSIGNED NOT NULL,
+                `title`                 VARCHAR(255)     DEFAULT NULL,
+                `comment`               TEXT             DEFAULT NULL,
+                `is_approved`           TINYINT(1)       NOT NULL DEFAULT 0,
+                `instructor_reply`      TEXT             DEFAULT NULL,
+                `instructor_reply_at`   TIMESTAMP        NULL DEFAULT NULL,
+                `helpful_count`         INT UNSIGNED     NOT NULL DEFAULT 0,
+                `reported_count`        INT UNSIGNED     NOT NULL DEFAULT 0,
+                `created_at`            TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at`            TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uk_review` (`user_id`, `course_id`),
+                KEY `idx_reviews_course` (`course_id`),
+                KEY `idx_reviews_rating` (`rating`),
+                KEY `idx_reviews_approved` (`is_approved`),
+                KEY `idx_reviews_created` (`created_at`),
+                CONSTRAINT `fk_reviews_user` FOREIGN KEY (`user_id`)
+                    REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+                CONSTRAINT `fk_reviews_course` FOREIGN KEY (`course_id`)
+                    REFERENCES `courses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+                CONSTRAINT `chk_reviews_rating` CHECK (`rating` BETWEEN 1 AND 5)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Avaliações de cursos'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 32/54: wishlists
+        // --------------------------------------------------------
+        $this->createTable('wishlists', "
+            CREATE TABLE `wishlists` (
+                `id`          INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+                `user_id`     INT UNSIGNED    NOT NULL,
+                `course_id`   INT UNSIGNED    NOT NULL,
+                `created_at`  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uk_wishlist` (`user_id`, `course_id`),
+                KEY `idx_wishlist_course` (`course_id`),
+                CONSTRAINT `fk_wishlist_user` FOREIGN KEY (`user_id`)
+                    REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+                CONSTRAINT `fk_wishlist_course` FOREIGN KEY (`course_id`)
+                    REFERENCES `courses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Lista de desejos'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 33/54: certificates
+        // --------------------------------------------------------
+        $this->createTable('certificates', "
+            CREATE TABLE `certificates` (
+                `id`                INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+                `user_id`           INT UNSIGNED     NOT NULL,
+                `course_id`         INT UNSIGNED     NOT NULL,
+                `template_id`       INT UNSIGNED     DEFAULT NULL,
+                `certificate_code`  VARCHAR(50)      NOT NULL,
+                `certificate_url`   VARCHAR(500)     DEFAULT NULL,
+                `final_grade`       DECIMAL(5,2)     DEFAULT NULL,
+                `total_hours`       DECIMAL(6,1)     DEFAULT NULL,
+                `metadata`          JSON             DEFAULT NULL,
+                `issued_at`         TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uk_certificate` (`user_id`, `course_id`),
+                UNIQUE KEY `uk_certificate_code` (`certificate_code`),
+                KEY `idx_certificates_course` (`course_id`),
+                KEY `idx_certificates_issued` (`issued_at`),
+                CONSTRAINT `fk_certificates_user` FOREIGN KEY (`user_id`)
+                    REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+                CONSTRAINT `fk_certificates_course` FOREIGN KEY (`course_id`)
+                    REFERENCES `courses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+                CONSTRAINT `fk_certificates_template` FOREIGN KEY (`template_id`)
+                    REFERENCES `certificate_templates` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Certificados emitidos'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 34/54: payments
+        // --------------------------------------------------------
+        $this->createTable('payments', "
+            CREATE TABLE `payments` (
+                `id`                      INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+                `user_id`                 INT UNSIGNED     NOT NULL,
+                `course_id`               INT UNSIGNED     DEFAULT NULL,
+                `coupon_id`               INT UNSIGNED     DEFAULT NULL,
+                `amount`                  DECIMAL(10,2)    NOT NULL,
+                `original_amount`         DECIMAL(10,2)    DEFAULT NULL,
+                `discount_amount`         DECIMAL(10,2)    NOT NULL DEFAULT 0.00,
+                `currency`                VARCHAR(3)       NOT NULL DEFAULT 'BRL',
+                `payment_method`          ENUM('credit_card','debit_card','pix','boleto','paypal','stripe','free','coupon','admin')
+                                                           NOT NULL,
+                `payment_gateway`         VARCHAR(50)      DEFAULT NULL,
+                `gateway_transaction_id`  VARCHAR(255)     DEFAULT NULL,
+                `gateway_response`        JSON             DEFAULT NULL,
+                `status`                  ENUM('pending','processing','completed','failed','cancelled','refunded','disputed','chargeback')
+                                                           NOT NULL DEFAULT 'pending',
+                `invoice_number`          VARCHAR(50)      DEFAULT NULL,
+                `receipt_url`             VARCHAR(500)     DEFAULT NULL,
+                `refund_reason`           TEXT             DEFAULT NULL,
+                `refunded_amount`         DECIMAL(10,2)    DEFAULT NULL,
+                `refunded_at`             TIMESTAMP        NULL DEFAULT NULL,
+                `paid_at`                 TIMESTAMP        NULL DEFAULT NULL,
+                `created_at`              TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at`              TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                KEY `idx_payments_user` (`user_id`),
+                KEY `idx_payments_course` (`course_id`),
+                KEY `idx_payments_status` (`status`),
+                KEY `idx_payments_method` (`payment_method`),
+                KEY `idx_payments_gateway_tx` (`gateway_transaction_id`),
+                KEY `idx_payments_created` (`created_at`),
+                KEY `idx_payments_paid` (`paid_at`),
+                CONSTRAINT `fk_payments_user` FOREIGN KEY (`user_id`)
+                    REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+                CONSTRAINT `fk_payments_course` FOREIGN KEY (`course_id`)
+                    REFERENCES `courses` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+                CONSTRAINT `fk_payments_coupon` FOREIGN KEY (`coupon_id`)
+                    REFERENCES `coupons` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Pagamentos e transações'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 35/54: coupon_uses
+        // --------------------------------------------------------
+        $this->createTable('coupon_uses', "
+            CREATE TABLE `coupon_uses` (
+                `id`          INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+                `coupon_id`   INT UNSIGNED    NOT NULL,
+                `user_id`     INT UNSIGNED    NOT NULL,
+                `payment_id`  INT UNSIGNED    DEFAULT NULL,
+                `used_at`     TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                KEY `idx_couponuses_coupon` (`coupon_id`),
+                KEY `idx_couponuses_user` (`user_id`),
+                UNIQUE KEY `uk_coupon_user_payment` (`coupon_id`, `user_id`, `payment_id`),
+                CONSTRAINT `fk_couponuses_coupon` FOREIGN KEY (`coupon_id`)
+                    REFERENCES `coupons` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+                CONSTRAINT `fk_couponuses_user` FOREIGN KEY (`user_id`)
+                    REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+                CONSTRAINT `fk_couponuses_payment` FOREIGN KEY (`payment_id`)
+                    REFERENCES `payments` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Registro de uso de cupons'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 36/54: discussions
+        // --------------------------------------------------------
+        $this->createTable('discussions', "
+            CREATE TABLE `discussions` (
+                `id`            INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+                `course_id`     INT UNSIGNED     DEFAULT NULL,
+                `lesson_id`     INT UNSIGNED     DEFAULT NULL,
+                `user_id`       INT UNSIGNED     NOT NULL,
+                `title`         VARCHAR(255)     NOT NULL,
+                `content`       LONGTEXT         NOT NULL,
+                `is_pinned`     TINYINT(1)       NOT NULL DEFAULT 0,
+                `is_resolved`   TINYINT(1)       NOT NULL DEFAULT 0,
+                `is_locked`     TINYINT(1)       NOT NULL DEFAULT 0,
+                `reply_count`   INT UNSIGNED     NOT NULL DEFAULT 0,
+                `view_count`    INT UNSIGNED     NOT NULL DEFAULT 0,
+                `last_reply_at` TIMESTAMP        NULL DEFAULT NULL,
+                `last_reply_by` INT UNSIGNED     DEFAULT NULL,
+                `created_at`    TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at`    TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                KEY `idx_discussions_course` (`course_id`),
+                KEY `idx_discussions_user` (`user_id`),
+                KEY `idx_discussions_pinned` (`is_pinned`, `last_reply_at` DESC),
+                KEY `idx_discussions_resolved` (`is_resolved`),
+                FULLTEXT KEY `ft_discussions_search` (`title`, `content`),
+                CONSTRAINT `fk_discussions_course` FOREIGN KEY (`course_id`)
+                    REFERENCES `courses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+                CONSTRAINT `fk_discussions_user` FOREIGN KEY (`user_id`)
+                    REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Tópicos do fórum'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 37/54: support_tickets
+        // --------------------------------------------------------
+        $this->createTable('support_tickets', "
+            CREATE TABLE `support_tickets` (
+                `id`            INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+                `ticket_number` VARCHAR(20)      NOT NULL,
+                `user_id`       INT UNSIGNED     NOT NULL,
+                `subject`       VARCHAR(255)     NOT NULL,
+                `description`   LONGTEXT         NOT NULL,
+                `category`      ENUM('technical','billing','content','account','bug_report','feature_request','other')
+                                                 NOT NULL DEFAULT 'other',
+                `priority`      ENUM('low','medium','high','urgent')
+                                                 NOT NULL DEFAULT 'medium',
+                `status`        ENUM('open','in_progress','waiting_response','on_hold','resolved','closed')
+                                                 NOT NULL DEFAULT 'open',
+                `assigned_to`   INT UNSIGNED     DEFAULT NULL,
+                `course_id`     INT UNSIGNED     DEFAULT NULL,
+                `resolved_at`   TIMESTAMP        NULL DEFAULT NULL,
+                `closed_at`     TIMESTAMP        NULL DEFAULT NULL,
+                `satisfaction`  TINYINT UNSIGNED DEFAULT NULL,
+                `created_at`    TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at`    TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uk_ticket_number` (`ticket_number`),
+                KEY `idx_tickets_user` (`user_id`),
+                KEY `idx_tickets_status` (`status`),
+                KEY `idx_tickets_priority` (`priority`),
+                KEY `idx_tickets_assigned` (`assigned_to`),
+                KEY `idx_tickets_category` (`category`),
+                KEY `idx_tickets_created` (`created_at`),
+                CONSTRAINT `fk_tickets_user` FOREIGN KEY (`user_id`)
+                    REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+                CONSTRAINT `fk_tickets_assigned` FOREIGN KEY (`assigned_to`)
+                    REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+                CONSTRAINT `fk_tickets_course` FOREIGN KEY (`course_id`)
+                    REFERENCES `courses` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Tickets de suporte'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 38/54: instructor_payouts
+        // --------------------------------------------------------
+        $this->createTable('instructor_payouts', "
+            CREATE TABLE `instructor_payouts` (
+                `id`              INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+                `instructor_id`   INT UNSIGNED     NOT NULL,
+                `amount`          DECIMAL(10,2)    NOT NULL,
+                `currency`        VARCHAR(3)       NOT NULL DEFAULT 'BRL',
+                `period_start`    DATE             NOT NULL,
+                `period_end`      DATE             NOT NULL,
+                `total_sales`     INT UNSIGNED     NOT NULL DEFAULT 0,
+                `gross_amount`    DECIMAL(10,2)    NOT NULL,
+                `platform_fee`    DECIMAL(10,2)    NOT NULL DEFAULT 0.00,
+                `payment_method`  VARCHAR(50)      DEFAULT NULL,
+                `payment_details` JSON             DEFAULT NULL,
+                `status`          ENUM('pending','processing','completed','failed','cancelled')
+                                                   NOT NULL DEFAULT 'pending',
+                `paid_at`         TIMESTAMP        NULL DEFAULT NULL,
+                `notes`           TEXT             DEFAULT NULL,
+                `created_at`      TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at`      TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                KEY `idx_payouts_instructor` (`instructor_id`),
+                KEY `idx_payouts_status` (`status`),
+                KEY `idx_payouts_period` (`period_start`, `period_end`),
+                CONSTRAINT `fk_payouts_instructor` FOREIGN KEY (`instructor_id`)
+                    REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Repasses para instrutores'
+        ");
+    }
+
+    // ================================================================
+    // ================================================================
+    //
+    //   NÍVEL 3 - DEPENDEM DAS TABELAS ANTERIORES (7 tabelas)
+    //
+    // ================================================================
+    // ================================================================
+
+    private function createLevel3Tables(): void
+    {
+        // --------------------------------------------------------
+        // TABELA 39/54: lessons
+        // --------------------------------------------------------
+        $this->createTable('lessons', "
+            CREATE TABLE `lessons` (
+                `id`               INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+                `module_id`        INT UNSIGNED     NOT NULL,
+                `course_id`        INT UNSIGNED     NOT NULL,
+                `title`            VARCHAR(255)     NOT NULL,
+                `slug`             VARCHAR(280)     NOT NULL,
+                `content_type`     ENUM('video','text','quiz','assignment','download','live','interactive')
+                                                    NOT NULL DEFAULT 'video',
+                `content`          LONGTEXT         DEFAULT NULL,
+                `video_url`        VARCHAR(500)     DEFAULT NULL,
+                `video_provider`   ENUM('youtube','vimeo','bunny','wistia','self_hosted','other')
+                                                    DEFAULT NULL,
+                `video_duration`   INT UNSIGNED     NOT NULL DEFAULT 0,
+                `video_thumbnail`  VARCHAR(500)     DEFAULT NULL,
+                `attachments`      JSON             DEFAULT NULL,
+                `resources`        JSON             DEFAULT NULL,
+                `sort_order`       INT              NOT NULL DEFAULT 0,
+                `is_free_preview`  TINYINT(1)       NOT NULL DEFAULT 0,
+                `is_published`     TINYINT(1)       NOT NULL DEFAULT 1,
+                `is_mandatory`     TINYINT(1)       NOT NULL DEFAULT 1,
+                `completion_rule`  ENUM('video_watched','content_read','quiz_passed','manual')
+                                                    NOT NULL DEFAULT 'video_watched',
+                `created_at`       TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at`       TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uk_lessons_slug_course` (`course_id`, `slug`),
+                KEY `idx_lessons_module_order` (`module_id`, `sort_order`),
+                KEY `idx_lessons_course` (`course_id`),
+                KEY `idx_lessons_type` (`content_type`),
+                KEY `idx_lessons_published` (`is_published`),
+                KEY `idx_lessons_free` (`is_free_preview`),
+                CONSTRAINT `fk_lessons_module` FOREIGN KEY (`module_id`)
+                    REFERENCES `modules` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+                CONSTRAINT `fk_lessons_course` FOREIGN KEY (`course_id`)
+                    REFERENCES `courses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Aulas dos cursos'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 40/54: discussion_replies
+        // --------------------------------------------------------
+        $this->createTable('discussion_replies', "
+            CREATE TABLE `discussion_replies` (
+                `id`              INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+                `discussion_id`   INT UNSIGNED     NOT NULL,
+                `user_id`         INT UNSIGNED     NOT NULL,
+                `parent_reply_id` INT UNSIGNED     DEFAULT NULL,
+                `content`         LONGTEXT         NOT NULL,
+                `is_best_answer`  TINYINT(1)       NOT NULL DEFAULT 0,
+                `upvote_count`    INT UNSIGNED     NOT NULL DEFAULT 0,
+                `downvote_count`  INT UNSIGNED     NOT NULL DEFAULT 0,
+                `is_edited`       TINYINT(1)       NOT NULL DEFAULT 0,
+                `edited_at`       TIMESTAMP        NULL DEFAULT NULL,
+                `created_at`      TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at`      TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                KEY `idx_replies_discussion` (`discussion_id`),
+                KEY `idx_replies_user` (`user_id`),
+                KEY `idx_replies_parent` (`parent_reply_id`),
+                KEY `idx_replies_best` (`is_best_answer`),
+                CONSTRAINT `fk_replies_discussion` FOREIGN KEY (`discussion_id`)
+                    REFERENCES `discussions` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+                CONSTRAINT `fk_replies_user` FOREIGN KEY (`user_id`)
+                    REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+                CONSTRAINT `fk_replies_parent` FOREIGN KEY (`parent_reply_id`)
+                    REFERENCES `discussion_replies` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Respostas do fórum'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 41/54: ticket_messages
+        // --------------------------------------------------------
+        $this->createTable('ticket_messages', "
+            CREATE TABLE `ticket_messages` (
+                `id`               INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+                `ticket_id`        INT UNSIGNED     NOT NULL,
+                `user_id`          INT UNSIGNED     NOT NULL,
+                `message`          LONGTEXT         NOT NULL,
+                `attachments`      JSON             DEFAULT NULL,
+                `is_internal_note` TINYINT(1)       NOT NULL DEFAULT 0,
+                `created_at`       TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                KEY `idx_ticketmsg_ticket` (`ticket_id`, `created_at`),
+                CONSTRAINT `fk_ticketmsg_ticket` FOREIGN KEY (`ticket_id`)
+                    REFERENCES `support_tickets` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+                CONSTRAINT `fk_ticketmsg_user` FOREIGN KEY (`user_id`)
+                    REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Mensagens dos tickets de suporte'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 42/54: blog_comments
+        // --------------------------------------------------------
+        $this->createTable('blog_comments', "
+            CREATE TABLE `blog_comments` (
+                `id`              INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+                `post_id`         INT UNSIGNED     NOT NULL,
+                `user_id`         INT UNSIGNED     DEFAULT NULL,
+                `parent_id`       INT UNSIGNED     DEFAULT NULL,
+                `author_name`     VARCHAR(100)     DEFAULT NULL,
+                `author_email`    VARCHAR(150)     DEFAULT NULL,
+                `content`         TEXT             NOT NULL,
+                `is_approved`     TINYINT(1)       NOT NULL DEFAULT 0,
+                `created_at`      TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                KEY `idx_blogcomments_post` (`post_id`, `is_approved`),
+                KEY `idx_blogcomments_user` (`user_id`),
+                KEY `idx_blogcomments_parent` (`parent_id`),
+                CONSTRAINT `fk_blogcomments_post` FOREIGN KEY (`post_id`)
+                    REFERENCES `blog_posts` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+                CONSTRAINT `fk_blogcomments_user` FOREIGN KEY (`user_id`)
+                    REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+                CONSTRAINT `fk_blogcomments_parent` FOREIGN KEY (`parent_id`)
+                    REFERENCES `blog_comments` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Comentários do blog'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 43/54: course_announcements
+        // --------------------------------------------------------
+        $this->createTable('course_announcements', "
+            CREATE TABLE `course_announcements` (
+                `id`          INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+                `course_id`   INT UNSIGNED     NOT NULL,
+                `author_id`   INT UNSIGNED     NOT NULL,
+                `title`       VARCHAR(255)     NOT NULL,
+                `content`     LONGTEXT         NOT NULL,
+                `is_pinned`   TINYINT(1)       NOT NULL DEFAULT 0,
+                `created_at`  TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at`  TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                KEY `idx_courseannounce_course` (`course_id`, `created_at` DESC),
+                CONSTRAINT `fk_courseannounce_course` FOREIGN KEY (`course_id`)
+                    REFERENCES `courses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+                CONSTRAINT `fk_courseannounce_author` FOREIGN KEY (`author_id`)
+                    REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Anúncios por curso'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 44/54: course_bookmarks
+        // --------------------------------------------------------
+        $this->createTable('course_bookmarks', "
+            CREATE TABLE `course_bookmarks` (
+                `id`          INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+                `user_id`     INT UNSIGNED    NOT NULL,
+                `course_id`   INT UNSIGNED    NOT NULL,
+                `lesson_id`   INT UNSIGNED    DEFAULT NULL,
+                `note`        VARCHAR(500)    DEFAULT NULL,
+                `created_at`  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                KEY `idx_bookmarks_user` (`user_id`, `course_id`),
+                CONSTRAINT `fk_bookmarks_user` FOREIGN KEY (`user_id`)
+                    REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+                CONSTRAINT `fk_bookmarks_course` FOREIGN KEY (`course_id`)
+                    REFERENCES `courses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Aulas favoritas'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 45/54: report_abuse
+        // --------------------------------------------------------
+        $this->createTable('report_abuse', "
+            CREATE TABLE `report_abuse` (
+                `id`              INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+                `reporter_id`     INT UNSIGNED     NOT NULL,
+                `entity_type`     VARCHAR(50)      NOT NULL,
+                `entity_id`       INT UNSIGNED     NOT NULL,
+                `reason`          ENUM('spam','inappropriate','harassment','copyright','misinformation','other')
+                                                   NOT NULL,
+                `description`     TEXT             DEFAULT NULL,
+                `status`          ENUM('pending','reviewing','action_taken','dismissed')
+                                                   NOT NULL DEFAULT 'pending',
+                `reviewed_by`     INT UNSIGNED     DEFAULT NULL,
+                `reviewed_at`     TIMESTAMP        NULL DEFAULT NULL,
+                `action_taken`    VARCHAR(255)     DEFAULT NULL,
+                `created_at`      TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                KEY `idx_reports_entity` (`entity_type`, `entity_id`),
+                KEY `idx_reports_status` (`status`),
+                KEY `idx_reports_reporter` (`reporter_id`),
+                CONSTRAINT `fk_reports_reporter` FOREIGN KEY (`reporter_id`)
+                    REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+                CONSTRAINT `fk_reports_reviewer` FOREIGN KEY (`reviewed_by`)
+                    REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Denúncias de conteúdo'
+        ");
+    }
+
+    // ================================================================
+    // ================================================================
+    //
+    //   NÍVEL 4 - DEPENDEM DAS AULAS (4 tabelas)
+    //
+    // ================================================================
+    // ================================================================
+
+    private function createLevel4Tables(): void
+    {
+        // --------------------------------------------------------
+        // TABELA 46/54: lesson_progress
+        // --------------------------------------------------------
+        $this->createTable('lesson_progress', "
+            CREATE TABLE `lesson_progress` (
+                `id`            INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+                `user_id`       INT UNSIGNED     NOT NULL,
+                `lesson_id`     INT UNSIGNED     NOT NULL,
+                `course_id`     INT UNSIGNED     NOT NULL,
+                `status`        ENUM('not_started','in_progress','completed')
+                                                 NOT NULL DEFAULT 'not_started',
+                `watch_time`    INT UNSIGNED     NOT NULL DEFAULT 0,
+                `last_position` INT UNSIGNED     NOT NULL DEFAULT 0,
+                `completed_at`  TIMESTAMP        NULL DEFAULT NULL,
+                `created_at`    TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at`    TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uk_lesson_progress` (`user_id`, `lesson_id`),
+                KEY `idx_progress_course` (`user_id`, `course_id`),
+                KEY `idx_progress_status` (`status`),
+                KEY `idx_progress_completed` (`completed_at`),
+                CONSTRAINT `fk_progress_user` FOREIGN KEY (`user_id`)
+                    REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+                CONSTRAINT `fk_progress_lesson` FOREIGN KEY (`lesson_id`)
+                    REFERENCES `lessons` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+                CONSTRAINT `fk_progress_course` FOREIGN KEY (`course_id`)
+                    REFERENCES `courses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Progresso por aula'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 47/54: quizzes
+        // --------------------------------------------------------
+        $this->createTable('quizzes', "
+            CREATE TABLE `quizzes` (
+                `id`                    INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+                `lesson_id`             INT UNSIGNED     NOT NULL,
+                `title`                 VARCHAR(255)     NOT NULL,
+                `description`           TEXT             DEFAULT NULL,
+                `time_limit`            INT UNSIGNED     DEFAULT NULL,
+                `pass_percentage`       DECIMAL(5,2)     NOT NULL DEFAULT 70.00,
+                `max_attempts`          INT UNSIGNED     DEFAULT NULL,
+                `shuffle_questions`     TINYINT(1)       NOT NULL DEFAULT 0,
+                `shuffle_options`       TINYINT(1)       NOT NULL DEFAULT 0,
+                `show_correct_answers`  TINYINT(1)       NOT NULL DEFAULT 1,
+                `show_explanation`      TINYINT(1)       NOT NULL DEFAULT 1,
+                `question_count`        INT UNSIGNED     NOT NULL DEFAULT 0,
+                `is_active`             TINYINT(1)       NOT NULL DEFAULT 1,
+                `created_at`            TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at`            TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                KEY `idx_quizzes_lesson` (`lesson_id`),
+                CONSTRAINT `fk_quizzes_lesson` FOREIGN KEY (`lesson_id`)
+                    REFERENCES `lessons` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Quizzes avaliativos'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 48/54: assignments
+        // --------------------------------------------------------
+        $this->createTable('assignments', "
+            CREATE TABLE `assignments` (
+                `id`                   INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+                `lesson_id`            INT UNSIGNED     NOT NULL,
+                `title`                VARCHAR(255)     NOT NULL,
+                `description`          LONGTEXT         NOT NULL,
+                `instructions`         LONGTEXT         DEFAULT NULL,
+                `starter_files_url`    VARCHAR(500)     DEFAULT NULL,
+                `max_score`            INT UNSIGNED     NOT NULL DEFAULT 100,
+                `due_days`             INT UNSIGNED     DEFAULT NULL,
+                `allow_late`           TINYINT(1)       NOT NULL DEFAULT 0,
+                `late_penalty_percent` DECIMAL(5,2)     DEFAULT NULL,
+                `submission_type`      ENUM('file','text','url','github','zip')
+                                                        NOT NULL DEFAULT 'file',
+                `allowed_extensions`   JSON             DEFAULT NULL,
+                `max_file_size`        INT UNSIGNED     DEFAULT 52428800,
+                `rubric`               JSON             DEFAULT NULL,
+                `is_active`            TINYINT(1)       NOT NULL DEFAULT 1,
+                `created_at`           TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at`           TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                KEY `idx_assignments_lesson` (`lesson_id`),
+                CONSTRAINT `fk_assignments_lesson` FOREIGN KEY (`lesson_id`)
+                    REFERENCES `lessons` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Tarefas e projetos práticos'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 49/54: student_notes
+        // --------------------------------------------------------
+        $this->createTable('student_notes', "
+            CREATE TABLE `student_notes` (
+                `id`                  INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+                `user_id`             INT UNSIGNED    NOT NULL,
+                `lesson_id`           INT UNSIGNED    NOT NULL,
+                `content`             TEXT            NOT NULL,
+                `timestamp_seconds`   INT UNSIGNED    DEFAULT NULL,
+                `color`               VARCHAR(7)      DEFAULT '#fbbf24',
+                `created_at`          TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at`          TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                KEY `idx_notes_user_lesson` (`user_id`, `lesson_id`),
+                KEY `idx_notes_timestamp` (`lesson_id`, `timestamp_seconds`),
+                CONSTRAINT `fk_notes_user` FOREIGN KEY (`user_id`)
+                    REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+                CONSTRAINT `fk_notes_lesson` FOREIGN KEY (`lesson_id`)
+                    REFERENCES `lessons` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Anotações dos alunos nas aulas'
+        ");
+    }
+
+    // ================================================================
+    // ================================================================
+    //
+    //   NÍVEL 5 - DEPENDEM DOS QUIZZES E ASSIGNMENTS (3 tabelas)
+    //
+    // ================================================================
+    // ================================================================
+
+    private function createLevel5Tables(): void
+    {
+        // --------------------------------------------------------
+        // TABELA 50/54: quiz_questions
+        // --------------------------------------------------------
+        $this->createTable('quiz_questions', "
+            CREATE TABLE `quiz_questions` (
+                `id`              INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+                `quiz_id`         INT UNSIGNED     NOT NULL,
+                `question_type`   ENUM('multiple_choice','multiple_select','true_false','short_answer','code','fill_blank')
+                                                   NOT NULL DEFAULT 'multiple_choice',
+                `question_text`   TEXT             NOT NULL,
+                `code_snippet`    TEXT             DEFAULT NULL,
+                `code_language`   VARCHAR(20)      DEFAULT NULL,
+                `image_url`       VARCHAR(500)     DEFAULT NULL,
+                `explanation`     TEXT             DEFAULT NULL,
+                `points`          INT UNSIGNED     NOT NULL DEFAULT 1,
+                `sort_order`      INT              NOT NULL DEFAULT 0,
+                `created_at`      TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                KEY `idx_questions_quiz_order` (`quiz_id`, `sort_order`),
+                CONSTRAINT `fk_questions_quiz` FOREIGN KEY (`quiz_id`)
+                    REFERENCES `quizzes` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Perguntas dos quizzes'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 51/54: quiz_attempts
+        // --------------------------------------------------------
+        $this->createTable('quiz_attempts', "
+            CREATE TABLE `quiz_attempts` (
+                `id`             INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+                `user_id`        INT UNSIGNED     NOT NULL,
+                `quiz_id`        INT UNSIGNED     NOT NULL,
+                `score`          DECIMAL(5,2)     NOT NULL DEFAULT 0.00,
+                `total_points`   INT UNSIGNED     NOT NULL DEFAULT 0,
+                `earned_points`  INT UNSIGNED     NOT NULL DEFAULT 0,
+                `passed`         TINYINT(1)       NOT NULL DEFAULT 0,
+                `answers`        JSON             DEFAULT NULL,
+                `attempt_number` INT UNSIGNED     NOT NULL DEFAULT 1,
+                `started_at`     TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `completed_at`   TIMESTAMP        NULL DEFAULT NULL,
+                `time_spent`     INT UNSIGNED     DEFAULT NULL,
+
+                PRIMARY KEY (`id`),
+                KEY `idx_attempts_user_quiz` (`user_id`, `quiz_id`),
+                KEY `idx_attempts_quiz` (`quiz_id`),
+                KEY `idx_attempts_passed` (`passed`),
+                CONSTRAINT `fk_attempts_user` FOREIGN KEY (`user_id`)
+                    REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+                CONSTRAINT `fk_attempts_quiz` FOREIGN KEY (`quiz_id`)
+                    REFERENCES `quizzes` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Tentativas de quiz'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 52/54: assignment_submissions
+        // --------------------------------------------------------
+        $this->createTable('assignment_submissions', "
+            CREATE TABLE `assignment_submissions` (
+                `id`              INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+                `assignment_id`   INT UNSIGNED     NOT NULL,
+                `user_id`         INT UNSIGNED     NOT NULL,
+                `content`         LONGTEXT         DEFAULT NULL,
+                `file_url`        VARCHAR(500)     DEFAULT NULL,
+                `github_url`      VARCHAR(500)     DEFAULT NULL,
+                `additional_urls` JSON             DEFAULT NULL,
+                `score`           INT UNSIGNED     DEFAULT NULL,
+                `feedback`        TEXT             DEFAULT NULL,
+                `status`          ENUM('submitted','under_review','graded','returned','resubmitted')
+                                                   NOT NULL DEFAULT 'submitted',
+                `is_late`         TINYINT(1)       NOT NULL DEFAULT 0,
+                `graded_by`       INT UNSIGNED     DEFAULT NULL,
+                `graded_at`       TIMESTAMP        NULL DEFAULT NULL,
+                `attempt_number`  INT UNSIGNED     NOT NULL DEFAULT 1,
+                `submitted_at`    TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at`      TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                KEY `idx_submissions_assignment` (`assignment_id`),
+                KEY `idx_submissions_user` (`user_id`),
+                KEY `idx_submissions_status` (`status`),
+                KEY `idx_submissions_grader` (`graded_by`),
+                CONSTRAINT `fk_submissions_assignment` FOREIGN KEY (`assignment_id`)
+                    REFERENCES `assignments` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+                CONSTRAINT `fk_submissions_user` FOREIGN KEY (`user_id`)
+                    REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+                CONSTRAINT `fk_submissions_grader` FOREIGN KEY (`graded_by`)
+                    REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Entregas de projetos'
+        ");
+    }
+
+    // ================================================================
+    // ================================================================
+    //
+    //   NÍVEL 6 - DEPENDÊNCIA MAIS PROFUNDA (1 tabela)
+    //
+    // ================================================================
+    // ================================================================
+
+    private function createLevel6Tables(): void
+    {
+        // --------------------------------------------------------
+        // TABELA 53/54: quiz_options
+        // --------------------------------------------------------
+        $this->createTable('quiz_options', "
+            CREATE TABLE `quiz_options` (
+                `id`           INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+                `question_id`  INT UNSIGNED     NOT NULL,
+                `option_text`  TEXT             NOT NULL,
+                `is_correct`   TINYINT(1)       NOT NULL DEFAULT 0,
+                `sort_order`   INT              NOT NULL DEFAULT 0,
+
+                PRIMARY KEY (`id`),
+                KEY `idx_options_question` (`question_id`, `sort_order`),
+                CONSTRAINT `fk_options_question` FOREIGN KEY (`question_id`)
+                    REFERENCES `quiz_questions` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Alternativas de múltipla escolha'
+        ");
+    }
+
+    // ================================================================
+    // ================================================================
+    //
+    //   TABELA DE AUDITORIA (1 tabela)
+    //
+    // ================================================================
+    // ================================================================
+
+    private function createAuditTable(): void
+    {
+        // --------------------------------------------------------
+        // TABELA 54/54: activity_log
+        // --------------------------------------------------------
+        $this->createTable('activity_log', "
+            CREATE TABLE `activity_log` (
+                `id`           BIGINT UNSIGNED  NOT NULL AUTO_INCREMENT,
+                `user_id`      INT UNSIGNED     DEFAULT NULL,
+                `action`       VARCHAR(100)     NOT NULL,
+                `entity_type`  VARCHAR(50)      DEFAULT NULL,
+                `entity_id`    INT UNSIGNED     DEFAULT NULL,
+                `old_values`   JSON             DEFAULT NULL,
+                `new_values`   JSON             DEFAULT NULL,
+                `ip_address`   VARCHAR(45)      DEFAULT NULL,
+                `user_agent`   VARCHAR(500)     DEFAULT NULL,
+                `extra`        JSON             DEFAULT NULL,
+                `created_at`   TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                KEY `idx_actlog_user` (`user_id`),
+                KEY `idx_actlog_action` (`action`),
+                KEY `idx_actlog_entity` (`entity_type`, `entity_id`),
+                KEY `idx_actlog_created` (`created_at`),
+                CONSTRAINT `fk_actlog_user` FOREIGN KEY (`user_id`)
+                    REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Log de auditoria do sistema'
+        ");
+    }
+
+    // ================================================================
+    // ================================================================
+    //
+    //   TRIGGERS DE CACHE AUTOMÁTICO
+    //
+    // ================================================================
+    // ================================================================
+
+    private function createTriggers(): void
+    {
+        // Trigger: enrollment_count ao matricular
+        $this->executeSQL('Trigger: enrollment insert', "
+            CREATE TRIGGER `trg_enrollment_after_insert`
+            AFTER INSERT ON `enrollments`
+            FOR EACH ROW
+            UPDATE `courses` SET `enrollment_count` = `enrollment_count` + 1
+            WHERE `id` = NEW.`course_id`
+        ");
+
+        // Trigger: enrollment_count ao deletar
+        $this->executeSQL('Trigger: enrollment delete', "
+            CREATE TRIGGER `trg_enrollment_after_delete`
+            AFTER DELETE ON `enrollments`
+            FOR EACH ROW
+            UPDATE `courses` SET `enrollment_count` = GREATEST(`enrollment_count` - 1, 0)
+            WHERE `id` = OLD.`course_id`
+        ");
+
+        // Trigger: rating ao inserir review aprovada
+        $this->executeSQL('Trigger: review insert', "
+            CREATE TRIGGER `trg_review_after_insert`
+            AFTER INSERT ON `reviews`
+            FOR EACH ROW
+            BEGIN
+                IF NEW.`is_approved` = 1 THEN
+                    UPDATE `courses` SET
+                        `rating_average` = (SELECT COALESCE(AVG(`rating`), 0) FROM `reviews` WHERE `course_id` = NEW.`course_id` AND `is_approved` = 1),
+                        `rating_count` = (SELECT COUNT(*) FROM `reviews` WHERE `course_id` = NEW.`course_id` AND `is_approved` = 1)
+                    WHERE `id` = NEW.`course_id`;
+                END IF;
+            END
+        ");
+
+        // Trigger: rating ao atualizar review
+        $this->executeSQL('Trigger: review update', "
+            CREATE TRIGGER `trg_review_after_update`
+            AFTER UPDATE ON `reviews`
+            FOR EACH ROW
+            BEGIN
+                UPDATE `courses` SET
+                    `rating_average` = (SELECT COALESCE(AVG(`rating`), 0) FROM `reviews` WHERE `course_id` = NEW.`course_id` AND `is_approved` = 1),
+                    `rating_count` = (SELECT COUNT(*) FROM `reviews` WHERE `course_id` = NEW.`course_id` AND `is_approved` = 1)
+                WHERE `id` = NEW.`course_id`;
+            END
+        ");
+
+        // Trigger: reply_count ao inserir resposta
+        $this->executeSQL('Trigger: reply insert', "
+            CREATE TRIGGER `trg_reply_after_insert`
+            AFTER INSERT ON `discussion_replies`
+            FOR EACH ROW
+            UPDATE `discussions` SET
+                `reply_count` = `reply_count` + 1,
+                `last_reply_at` = NEW.`created_at`,
+                `last_reply_by` = NEW.`user_id`
+            WHERE `id` = NEW.`discussion_id`
+        ");
+
+        // Trigger: reply_count ao deletar resposta
+        $this->executeSQL('Trigger: reply delete', "
+            CREATE TRIGGER `trg_reply_after_delete`
+            AFTER DELETE ON `discussion_replies`
+            FOR EACH ROW
+            UPDATE `discussions` SET
+                `reply_count` = GREATEST(`reply_count` - 1, 0)
+            WHERE `id` = OLD.`discussion_id`
+        ");
+
+        // Trigger: used_count do cupom
+        $this->executeSQL('Trigger: coupon use insert', "
+            CREATE TRIGGER `trg_couponuse_after_insert`
+            AFTER INSERT ON `coupon_uses`
+            FOR EACH ROW
+            UPDATE `coupons` SET `used_count` = `used_count` + 1
+            WHERE `id` = NEW.`coupon_id`
+        ");
+
+        // Trigger: total_points do usuário
+        $this->executeSQL('Trigger: points insert', "
+            CREATE TRIGGER `trg_points_after_insert`
+            AFTER INSERT ON `user_points`
+            FOR EACH ROW
+            UPDATE `users` SET
+                `total_points` = (SELECT COALESCE(SUM(`points`), 0) FROM `user_points` WHERE `user_id` = NEW.`user_id`)
+            WHERE `id` = NEW.`user_id`
+        ");
+    }
+
+    // ================================================================
+    // ================================================================
+    //
+    //   VIEWS ÚTEIS
+    //
+    // ================================================================
+    // ================================================================
+
+    private function createViews(): void
+    {
+        // View: Listagem de cursos completa
+        $this->executeSQL('View: vw_courses_listing', "
+            CREATE OR REPLACE VIEW `vw_courses_listing` AS
+            SELECT
+                c.`id`, c.`title`, c.`slug`, c.`short_description`, c.`thumbnail`,
+                c.`level`, c.`price`, c.`original_price`, c.`is_free`, c.`is_featured`,
+                c.`is_bestseller`, c.`duration_hours`, c.`total_lessons`,
+                c.`enrollment_count`, c.`rating_average`, c.`rating_count`,
+                c.`game_engine`, c.`status`, c.`published_at`,
+                u.`id` AS `instructor_id`, u.`name` AS `instructor_name`, u.`avatar` AS `instructor_avatar`,
+                cat.`id` AS `category_id`, cat.`name` AS `category_name`, cat.`slug` AS `category_slug`
+            FROM `courses` c
+            INNER JOIN `users` u ON c.`instructor_id` = u.`id`
+            LEFT JOIN `categories` cat ON c.`category_id` = cat.`id`
+        ");
+
+        // View: Estatísticas do dashboard
+        $this->executeSQL('View: vw_dashboard_stats', "
+            CREATE OR REPLACE VIEW `vw_dashboard_stats` AS
+            SELECT
+                (SELECT COUNT(*) FROM `users` WHERE `role` = 'student' AND `is_active` = 1) AS `total_students`,
+                (SELECT COUNT(*) FROM `users` WHERE `role` = 'instructor' AND `is_active` = 1) AS `total_instructors`,
+                (SELECT COUNT(*) FROM `courses` WHERE `status` = 'published') AS `total_courses`,
+                (SELECT COUNT(*) FROM `enrollments` WHERE `status` = 'active') AS `active_enrollments`,
+                (SELECT COUNT(*) FROM `enrollments` WHERE `status` = 'completed') AS `completed_enrollments`,
+                (SELECT COALESCE(SUM(`amount` - `discount_amount`), 0) FROM `payments` WHERE `status` = 'completed') AS `total_revenue`,
+                (SELECT COUNT(*) FROM `enrollments` WHERE `enrolled_at` >= DATE_SUB(NOW(), INTERVAL 30 DAY)) AS `monthly_enrollments`,
+                (SELECT COUNT(*) FROM `enrollments` WHERE `enrolled_at` >= DATE_SUB(NOW(), INTERVAL 7 DAY)) AS `weekly_enrollments`,
+                (SELECT COALESCE(SUM(`amount` - `discount_amount`), 0) FROM `payments` WHERE `status` = 'completed' AND `paid_at` >= DATE_SUB(NOW(), INTERVAL 30 DAY)) AS `monthly_revenue`,
+                (SELECT COUNT(*) FROM `support_tickets` WHERE `status` IN ('open', 'in_progress')) AS `open_tickets`,
+                (SELECT COUNT(*) FROM `reviews` WHERE `is_approved` = 0) AS `pending_reviews`
+        ");
+
+        // View: Progresso dos alunos
+        $this->executeSQL('View: vw_student_progress', "
+            CREATE OR REPLACE VIEW `vw_student_progress` AS
+            SELECT
+                e.`user_id`, e.`course_id`, c.`title` AS `course_title`, c.`total_lessons`,
+                e.`progress_percent`, e.`lessons_completed`, e.`status` AS `enrollment_status`,
+                e.`enrolled_at`, e.`completed_at`, e.`last_accessed_at`,
+                u.`name` AS `student_name`, u.`email` AS `student_email`
+            FROM `enrollments` e
+            INNER JOIN `courses` c ON e.`course_id` = c.`id`
+            INNER JOIN `users` u ON e.`user_id` = u.`id`
+        ");
+    }
+
+    // ================================================================
+    // ================================================================
+    //
+    //   SEEDS (DADOS INICIAIS)
+    //
+    // ================================================================
+    // ================================================================
+
+    private function insertSeeds(): void
+    {
+        // --------------------------------------------------------
+        // Admin padrão
+        // --------------------------------------------------------
+        $this->executeSQL('Seed: admin user', "
+            INSERT INTO `users` (`name`, `email`, `password`, `role`, `email_verified_at`, `is_active`)
+            SELECT 'Administrador', 'admin@gamedevacademy.com',
+                   '" . password_hash('Admin@123', PASSWORD_BCRYPT, ['cost' => 12]) . "',
+                   'super_admin', NOW(), 1
+            FROM DUAL
+            WHERE NOT EXISTS (SELECT 1 FROM `users` WHERE `email` = 'admin@gamedevacademy.com')
+        ");
+
+        // --------------------------------------------------------
+        // Categorias
+        // --------------------------------------------------------
+        $this->executeSQL('Seed: categories', "
+            INSERT INTO `categories` (`name`, `slug`, `description`, `icon`, `color`, `sort_order`)
+            SELECT * FROM (
+                SELECT 'Unity' AS n, 'unity' AS s, 'Desenvolvimento de jogos com Unity Engine e C#' AS d, 'fas fa-cube' AS i, '#000000' AS c, 1 AS o
+                UNION ALL SELECT 'Unreal Engine', 'unreal-engine', 'Desenvolvimento com Unreal Engine e C++/Blueprints', 'fas fa-fire', '#2563eb', 2
+                UNION ALL SELECT 'Godot', 'godot', 'Desenvolvimento com Godot Engine e GDScript', 'fas fa-robot', '#478cbf', 3
+                UNION ALL SELECT 'GameMaker', 'gamemaker', 'Desenvolvimento com GameMaker Studio', 'fas fa-gamepad', '#8bc34a', 4
+                UNION ALL SELECT 'Game Design', 'game-design', 'Princípios, mecânicas e teoria de game design', 'fas fa-pencil-ruler', '#8b5cf6', 5
+                UNION ALL SELECT 'Arte 2D', 'arte-2d', 'Pixel art, sprites, animação e arte 2D para jogos', 'fas fa-palette', '#ec4899', 6
+                UNION ALL SELECT 'Arte 3D', 'arte-3d', 'Modelagem, texturização, rigging e arte 3D', 'fas fa-shapes', '#f59e0b', 7
+                UNION ALL SELECT 'Programação', 'programacao', 'Fundamentos de programação aplicados a jogos', 'fas fa-code', '#10b981', 8
+                UNION ALL SELECT 'Áudio e Música', 'audio', 'Sound design, efeitos sonoros e trilha para jogos', 'fas fa-music', '#6366f1', 9
+                UNION ALL SELECT 'Narrativa', 'narrativa', 'Roteiro, storytelling e narrativa interativa', 'fas fa-book', '#ef4444', 10
+                UNION ALL SELECT 'Mobile Games', 'mobile-games', 'Desenvolvimento de jogos para iOS e Android', 'fas fa-mobile-alt', '#14b8a6', 11
+                UNION ALL SELECT 'Web Games', 'web-games', 'Jogos para navegador com HTML5/JavaScript', 'fas fa-globe', '#0ea5e9', 12
+                UNION ALL SELECT 'Multiplayer', 'multiplayer', 'Networking, servidores e jogos multiplayer', 'fas fa-users', '#a855f7', 13
+                UNION ALL SELECT 'VR/AR', 'vr-ar', 'Realidade virtual e aumentada para jogos', 'fas fa-vr-cardboard', '#f43f5e', 14
+                UNION ALL SELECT 'Marketing de Jogos', 'marketing-jogos', 'Monetização, publicação e marketing', 'fas fa-bullhorn', '#84cc16', 15
+            ) AS seed
+            WHERE NOT EXISTS (SELECT 1 FROM `categories` LIMIT 1)
+        ");
+
+        // --------------------------------------------------------
+        // Configurações
+        // --------------------------------------------------------
+        $this->executeSQL('Seed: settings', "
+            INSERT INTO `settings` (`setting_key`, `setting_value`, `setting_type`, `setting_group`, `description`, `is_public`)
+            SELECT * FROM (
+                SELECT 'site_name' AS k, 'GameDev Academy' AS v, 'string' AS t, 'general' AS g, 'Nome do site' AS d, 1 AS p
+                UNION ALL SELECT 'site_description', 'Aprenda a criar jogos do zero ao profissional', 'string', 'general', 'Descrição do site', 1
+                UNION ALL SELECT 'site_tagline', 'Sua jornada no desenvolvimento de jogos começa aqui', 'string', 'general', 'Tagline', 1
+                UNION ALL SELECT 'site_logo', '/assets/images/logo.png', 'string', 'general', 'URL do logo', 1
+                UNION ALL SELECT 'site_favicon', '/assets/images/favicon.ico', 'string', 'general', 'Favicon', 1
+                UNION ALL SELECT 'site_url', 'http://localhost', 'string', 'general', 'URL base', 1
+                UNION ALL SELECT 'contact_email', 'contato@gamedevacademy.com', 'string', 'general', 'Email de contato', 1
+                UNION ALL SELECT 'maintenance_mode', 'false', 'boolean', 'general', 'Modo manutenção', 0
+                UNION ALL SELECT 'items_per_page', '12', 'number', 'general', 'Itens por página', 0
+                UNION ALL SELECT 'timezone', 'America/Sao_Paulo', 'string', 'general', 'Fuso horário', 0
+                UNION ALL SELECT 'currency', 'BRL', 'string', 'payment', 'Moeda padrão', 0
+                UNION ALL SELECT 'currency_symbol', 'R\$', 'string', 'payment', 'Símbolo moeda', 1
+                UNION ALL SELECT 'stripe_enabled', 'false', 'boolean', 'payment', 'Stripe ativo', 0
+                UNION ALL SELECT 'stripe_public_key', '', 'string', 'payment', 'Stripe Public Key', 0
+                UNION ALL SELECT 'stripe_secret_key', '', 'string', 'payment', 'Stripe Secret Key', 0
+                UNION ALL SELECT 'pix_enabled', 'false', 'boolean', 'payment', 'PIX ativo', 0
+                UNION ALL SELECT 'instructor_commission', '70', 'number', 'payment', 'Comissão instrutor %', 0
+                UNION ALL SELECT 'smtp_host', '', 'string', 'email', 'Servidor SMTP', 0
+                UNION ALL SELECT 'smtp_port', '587', 'number', 'email', 'Porta SMTP', 0
+                UNION ALL SELECT 'smtp_user', '', 'string', 'email', 'Usuário SMTP', 0
+                UNION ALL SELECT 'smtp_pass', '', 'string', 'email', 'Senha SMTP', 0
+                UNION ALL SELECT 'smtp_encryption', 'tls', 'string', 'email', 'Encriptação SMTP', 0
+                UNION ALL SELECT 'email_from_name', 'GameDev Academy', 'string', 'email', 'Nome remetente', 0
+                UNION ALL SELECT 'email_from_address', 'noreply@gamedevacademy.com', 'string', 'email', 'Email remetente', 0
+                UNION ALL SELECT 'certificate_enabled', 'true', 'boolean', 'features', 'Certificados', 0
+                UNION ALL SELECT 'gamification_enabled', 'true', 'boolean', 'features', 'Gamificação', 0
+                UNION ALL SELECT 'forum_enabled', 'true', 'boolean', 'features', 'Fórum', 0
+                UNION ALL SELECT 'blog_enabled', 'true', 'boolean', 'features', 'Blog', 0
+                UNION ALL SELECT 'reviews_enabled', 'true', 'boolean', 'features', 'Avaliações', 0
+                UNION ALL SELECT 'wishlist_enabled', 'true', 'boolean', 'features', 'Lista desejos', 0
+                UNION ALL SELECT 'support_enabled', 'true', 'boolean', 'features', 'Suporte', 0
+                UNION ALL SELECT 'registration_enabled', 'true', 'boolean', 'features', 'Cadastros', 0
+                UNION ALL SELECT 'instructor_registration', 'false', 'boolean', 'features', 'Cadastro instrutores', 0
+                UNION ALL SELECT 'google_analytics_id', '', 'string', 'seo', 'Google Analytics', 0
+                UNION ALL SELECT 'google_tag_manager_id', '', 'string', 'seo', 'Tag Manager', 0
+                UNION ALL SELECT 'facebook_pixel_id', '', 'string', 'seo', 'Facebook Pixel', 0
+                UNION ALL SELECT 'social_github', 'https://github.com/davidcreator/gamedev-academy', 'string', 'social', 'GitHub', 1
+                UNION ALL SELECT 'social_youtube', '', 'string', 'social', 'YouTube', 1
+                UNION ALL SELECT 'social_discord', '', 'string', 'social', 'Discord', 1
+                UNION ALL SELECT 'social_twitter', '', 'string', 'social', 'Twitter/X', 1
+                UNION ALL SELECT 'social_instagram', '', 'string', 'social', 'Instagram', 1
+            ) AS seed
+            WHERE NOT EXISTS (SELECT 1 FROM `settings` LIMIT 1)
+        ");
+
+        // --------------------------------------------------------
+        // Badges
+        // --------------------------------------------------------
+        $this->executeSQL('Seed: badges', "
+            INSERT INTO `badges` (`name`, `slug`, `description`, `icon`, `category`, `criteria_type`, `criteria_value`, `points_reward`, `rarity`, `sort_order`)
+            SELECT * FROM (
+                SELECT 'Primeiro Passo' AS n, 'primeiro-passo' AS s, 'Complete sua primeira aula' AS d, '🎮' AS i, 'achievement' AS c, 'lessons_completed' AS ct, 1 AS cv, 10 AS pr, 'common' AS r, 1 AS so
+                UNION ALL SELECT 'Estudante Dedicado', 'estudante-dedicado', 'Complete 10 aulas', '📚', 'engagement', 'lessons_completed', 10, 50, 'common', 2
+                UNION ALL SELECT 'Maratonista', 'maratonista', 'Complete 50 aulas', '🏃', 'engagement', 'lessons_completed', 50, 200, 'uncommon', 3
+                UNION ALL SELECT 'Máquina de Aprender', 'maquina-aprender', 'Complete 100 aulas', '🤖', 'engagement', 'lessons_completed', 100, 500, 'rare', 4
+                UNION ALL SELECT 'Primeiro Curso', 'primeiro-curso', 'Complete seu primeiro curso', '🎓', 'course', 'courses_completed', 1, 100, 'common', 5
+                UNION ALL SELECT 'Colecionador', 'colecionador', 'Complete 5 cursos', '🏆', 'course', 'courses_completed', 5, 500, 'rare', 6
+                UNION ALL SELECT 'Mestre dos Jogos', 'mestre-dos-jogos', 'Complete 10 cursos', '👑', 'course', 'courses_completed', 10, 1000, 'epic', 7
+                UNION ALL SELECT 'Lendário', 'lendario', 'Complete 25 cursos', '⭐', 'course', 'courses_completed', 25, 2500, 'legendary', 8
+                UNION ALL SELECT 'Streak Semanal', 'streak-7', 'Estude por 7 dias seguidos', '🔥', 'engagement', 'streak_days', 7, 70, 'common', 9
+                UNION ALL SELECT 'Streak Mensal', 'streak-30', 'Estude por 30 dias seguidos', '⚡', 'engagement', 'streak_days', 30, 300, 'rare', 10
+                UNION ALL SELECT 'Streak Épico', 'streak-90', 'Estude por 90 dias seguidos', '💫', 'engagement', 'streak_days', 90, 900, 'epic', 11
+                UNION ALL SELECT 'Quiz Master', 'quiz-master', 'Acerte 100% em 10 quizzes', '🧠', 'achievement', 'perfect_quizzes', 10, 250, 'rare', 12
+                UNION ALL SELECT 'Sem Erros', 'sem-erros', 'Acerte 100% no primeiro quiz', '✅', 'achievement', 'perfect_quizzes', 1, 25, 'common', 13
+                UNION ALL SELECT 'Ajudante', 'ajudante', 'Responda 10 perguntas no fórum', '🤝', 'community', 'forum_replies', 10, 150, 'uncommon', 14
+                UNION ALL SELECT 'Mentor', 'mentor', 'Tenha 5 melhores respostas', '🌟', 'community', 'best_answers', 5, 300, 'rare', 15
+                UNION ALL SELECT 'Pioneiro', 'pioneiro', 'Seja um dos primeiros 100 alunos', '🚀', 'special', 'early_adopter', 1, 200, 'epic', 16
+                UNION ALL SELECT 'Avaliador', 'avaliador', 'Avalie 5 cursos', '📝', 'community', 'reviews_posted', 5, 100, 'uncommon', 17
+            ) AS seed
+            WHERE NOT EXISTS (SELECT 1 FROM `badges` LIMIT 1)
+        ");
+
+        // --------------------------------------------------------
+        // Páginas
+        // --------------------------------------------------------
+        $this->executeSQL('Seed: pages', "
+            INSERT INTO `pages` (`title`, `slug`, `content`, `show_in_footer`, `is_published`)
+            SELECT * FROM (
+                SELECT 'Sobre Nós' AS t, 'sobre' AS s, '<h1>Sobre a GameDev Academy</h1><p>Plataforma brasileira de ensino de desenvolvimento de jogos.</p>' AS c, 1 AS f, 1 AS p
+                UNION ALL SELECT 'Termos de Uso', 'termos-de-uso', '<h1>Termos de Uso</h1><p>Ao utilizar a plataforma, você concorda com os termos.</p>', 1, 1
+                UNION ALL SELECT 'Política de Privacidade', 'politica-de-privacidade', '<h1>Política de Privacidade</h1><p>Sua privacidade é importante para nós.</p>', 1, 1
+                UNION ALL SELECT 'Política de Reembolso', 'politica-de-reembolso', '<h1>Política de Reembolso</h1><p>Garantia de 7 dias para cursos pagos.</p>', 1, 1
+                UNION ALL SELECT 'Contato', 'contato', '<h1>Fale Conosco</h1><p>Entre em contato pelo formulário ou email.</p>', 1, 1
+            ) AS seed
+            WHERE NOT EXISTS (SELECT 1 FROM `pages` LIMIT 1)
+        ");
+
+        // --------------------------------------------------------
+        // Template de certificado
+        // --------------------------------------------------------
+        $this->executeSQL('Seed: certificate template', "
+            INSERT INTO `certificate_templates` (`name`, `html_template`, `css_styles`, `orientation`, `is_default`, `is_active`)
+            SELECT 'Certificado Padrão',
+                   '<div class=\"certificate\"><div class=\"header\"><h1>Certificado de Conclusão</h1></div><div class=\"body\"><p>Certificamos que</p><h2>{{student_name}}</h2><p>concluiu o curso</p><h3>{{course_name}}</h3><p>Carga horária: {{total_hours}}h | Data: {{completion_date}}</p></div><div class=\"footer\"><p>Código: {{certificate_code}}</p></div></div>',
+                   '.certificate{font-family:Georgia,serif;text-align:center;padding:60px;border:3px solid #6366f1}h2{color:#1e293b;border-bottom:2px solid #6366f1;display:inline-block;padding:10px 40px}h3{color:#6366f1}',
+                   'landscape', 1, 1
+            FROM DUAL
+            WHERE NOT EXISTS (SELECT 1 FROM `certificate_templates` LIMIT 1)
+        ");
+
+        // --------------------------------------------------------
+        // Templates de email
+        // --------------------------------------------------------
+        $this->executeSQL('Seed: email templates', "
+            INSERT INTO `email_templates` (`name`, `subject`, `body_html`, `variables`)
+            SELECT * FROM (
+                SELECT 'welcome' AS n, 'Bem-vindo à GameDev Academy, {{name}}!' AS s,
+                       '<h1>Olá, {{name}}! 🎮</h1><p>Bem-vindo à GameDev Academy!</p><p><a href=\"{{site_url}}/cursos\">Ver Cursos</a></p>' AS b,
+                       '[\"name\", \"email\", \"site_url\"]' AS v
+                UNION ALL SELECT 'password_reset', 'Redefinição de Senha', '<h1>Redefinir Senha</h1><p>Olá, {{name}}.</p><p><a href=\"{{reset_url}}\">Clique aqui</a></p><p>Expira em {{expiry_hours}} horas.</p>', '[\"name\", \"reset_url\", \"expiry_hours\"]'
+                UNION ALL SELECT 'enrollment_confirmation', 'Matrícula Confirmada: {{course_title}}', '<h1>Matrícula Confirmada! 🎉</h1><p>Curso: <strong>{{course_title}}</strong></p><p><a href=\"{{course_url}}\">Começar</a></p>', '[\"name\", \"course_title\", \"course_url\"]'
+                UNION ALL SELECT 'course_completed', 'Parabéns! Você concluiu {{course_title}} 🎓', '<h1>Parabéns! 🏆</h1><p>Curso: <strong>{{course_title}}</strong></p><p><a href=\"{{certificate_url}}\">Ver Certificado</a></p>', '[\"name\", \"course_title\", \"certificate_url\"]'
+                UNION ALL SELECT 'payment_confirmation', 'Pagamento Confirmado', '<h1>Pagamento Confirmado ✅</h1><p>Valor: {{amount}}</p><p>Curso: {{course_title}}</p><p>Transação: {{transaction_id}}</p>', '[\"name\", \"amount\", \"course_title\", \"transaction_id\"]'
+            ) AS seed
+            WHERE NOT EXISTS (SELECT 1 FROM `email_templates` LIMIT 1)
+        ");
+
+        // --------------------------------------------------------
+        // FAQ Categories
+        // --------------------------------------------------------
+        $this->executeSQL('Seed: faq categories', "
+            INSERT INTO `faq_categories` (`name`, `slug`, `icon`, `sort_order`)
+            SELECT * FROM (
+                SELECT 'Conta e Acesso' AS n, 'conta-acesso' AS s, 'fas fa-user-circle' AS i, 1 AS o
+                UNION ALL SELECT 'Cursos e Aulas', 'cursos-aulas', 'fas fa-graduation-cap', 2
+                UNION ALL SELECT 'Pagamentos', 'pagamentos', 'fas fa-credit-card', 3
+                UNION ALL SELECT 'Certificados', 'certificados', 'fas fa-certificate', 4
+                UNION ALL SELECT 'Problemas Técnicos', 'problemas-tecnicos', 'fas fa-tools', 5
+            ) AS seed
+            WHERE NOT EXISTS (SELECT 1 FROM `faq_categories` LIMIT 1)
+        ");
+
+        // --------------------------------------------------------
+        // FAQs
+        // --------------------------------------------------------
+        $this->executeSQL('Seed: faqs', "
+            INSERT INTO `faqs` (`category_id`, `question`, `answer`, `sort_order`)
+            SELECT * FROM (
+                SELECT 1 AS c, 'Como criar minha conta?' AS q, '<p>Clique em Cadastrar e preencha o formulário.</p>' AS a, 1 AS o
+                UNION ALL SELECT 1, 'Esqueci minha senha', '<p>Clique em Esqueci minha senha na tela de login.</p>', 2
+                UNION ALL SELECT 2, 'Posso acessar de qualquer dispositivo?', '<p>Sim! Funciona em desktop, tablet e mobile.</p>', 3
+                UNION ALL SELECT 2, 'Os cursos têm prazo?', '<p>Não! Acesso vitalício após matrícula.</p>', 4
+                UNION ALL SELECT 3, 'Formas de pagamento?', '<p>Cartão de crédito, PIX e boleto.</p>', 5
+                UNION ALL SELECT 3, 'Política de reembolso?', '<p>Garantia de 7 dias, 100% do valor.</p>', 6
+                UNION ALL SELECT 4, 'Como obter certificado?', '<p>Gerado ao completar 100% das aulas obrigatórias.</p>', 7
+                UNION ALL SELECT 4, 'O certificado tem validade?', '<p>Sim, com código de verificação único.</p>', 8
+            ) AS seed
+            WHERE NOT EXISTS (SELECT 1 FROM `faqs` LIMIT 1)
+        ");
+
+        // --------------------------------------------------------
+        // Idiomas
+        // --------------------------------------------------------
+        $this->executeSQL('Seed: languages', "
+            INSERT INTO `languages` (`name`, `code`, `native_name`)
+            SELECT * FROM (
+                SELECT 'Português (Brasil)' AS n, 'pt-BR' AS c, 'Português' AS nn
+                UNION ALL SELECT 'English', 'en-US', 'English'
+                UNION ALL SELECT 'Español', 'es', 'Español'
+            ) AS seed
+            WHERE NOT EXISTS (SELECT 1 FROM `languages` LIMIT 1)
+        ");
+
+        // --------------------------------------------------------
+        // Países
+        // --------------------------------------------------------
+        $this->executeSQL('Seed: countries', "
+            INSERT INTO `countries` (`name`, `code`, `phone_code`, `currency`)
+            SELECT * FROM (
+                SELECT 'Brasil' AS n, 'BR' AS c, '+55' AS p, 'BRL' AS cu
+                UNION ALL SELECT 'Portugal', 'PT', '+351', 'EUR'
+                UNION ALL SELECT 'Estados Unidos', 'US', '+1', 'USD'
+                UNION ALL SELECT 'Angola', 'AO', '+244', 'AOA'
+                UNION ALL SELECT 'Moçambique', 'MZ', '+258', 'MZN'
+            ) AS seed
+            WHERE NOT EXISTS (SELECT 1 FROM `countries` LIMIT 1)
+        ");
     }
 }
 
-/**
- * Insere conquistas iniciais
- */
-function insertAchievements($pdo, &$results) {
-    try {
-        $stmt = $pdo->query("SELECT COUNT(*) FROM achievements");
-        if ($stmt->fetchColumn() > 0) {
-            $results['messages'][] = "⏭️  Conquistas já existem";
-            return;
-        }
-        
-        $achievements = [
-            ['Primeiro Passo', 'primeiro-passo', 'Complete sua primeira lição', '🎯', 10, 5, 'learning', 'lessons_completed', 1, 'common', 1],
-            ['Estudante Dedicado', 'estudante-dedicado', 'Complete 10 lições', '📖', 50, 15, 'learning', 'lessons_completed', 10, 'common', 2],
-            ['Maratonista', 'maratonista', 'Complete 50 lições', '🏃', 150, 50, 'learning', 'lessons_completed', 50, 'uncommon', 3],
-            ['Mestre das Lições', 'mestre-licoes', 'Complete 100 lições', '📚', 300, 100, 'learning', 'lessons_completed', 100, 'rare', 4],
-            ['Formando', 'formando', 'Complete seu primeiro curso', '🎓', 100, 30, 'learning', 'courses_completed', 1, 'uncommon', 5],
-            ['Multitarefa', 'multitarefa', 'Complete 5 cursos', '🎖️', 500, 150, 'learning', 'courses_completed', 5, 'rare', 6],
-            ['Acadêmico', 'academico', 'Complete 10 cursos', '🏅', 1000, 300, 'learning', 'courses_completed', 10, 'epic', 7],
-            ['Constante', 'constante', 'Mantenha um streak de 7 dias', '🔥', 70, 25, 'challenge', 'streak', 7, 'uncommon', 8],
-            ['Imparável', 'imparavel', 'Mantenha um streak de 30 dias', '⚡', 300, 100, 'challenge', 'streak', 30, 'rare', 9],
-            ['Lenda Viva', 'lenda-viva', 'Mantenha um streak de 100 dias', '💫', 1000, 500, 'challenge', 'streak', 100, 'legendary', 10],
-            ['Nota Perfeita', 'nota-perfeita', 'Acerte 100% em um quiz', '💯', 50, 20, 'learning', 'perfect_quiz', 1, 'uncommon', 11],
-            ['Gênio', 'genio', 'Acerte 100% em 10 quizzes', '🧠', 200, 75, 'learning', 'perfect_quiz', 10, 'rare', 12],
-            ['Caçador de XP', 'cacador-xp', 'Ganhe 1000 XP', '⭐', 100, 30, 'challenge', 'xp_earned', 1000, 'common', 13],
-            ['Mestre do XP', 'mestre-xp', 'Ganhe 10000 XP', '🌟', 500, 150, 'challenge', 'xp_earned', 10000, 'epic', 14],
-            ['Social', 'social', 'Faça seu primeiro comentário', '💬', 10, 5, 'social', 'comments', 1, 'common', 15]
-        ];
-        
-        $stmt = $pdo->prepare("
-            INSERT INTO achievements (name, slug, description, icon, xp_reward, coin_reward, category, requirement_type, requirement_value, rarity, order_index) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ");
-        
-        foreach ($achievements as $achievement) {
-            $stmt->execute($achievement);
-            $results['stats']['data_inserted']++;
-        }
-        
-        $results['messages'][] = "✅ 15 conquistas inseridas";
-        
-    } catch (PDOException $e) {
-        $results['errors'][] = "❌ Erro ao inserir conquistas: " . $e->getMessage();
-    }
+
+// ================================================================
+// ================================================================
+//
+//   EXECUÇÃO
+//
+//   Este bloco é chamado pelo instalador principal
+//
+// ================================================================
+// ================================================================
+
+// $pdo deve ser passado pelo script de instalação
+if (!isset($pdo) || !($pdo instanceof PDO)) {
+    die('Erro: Conexão PDO não disponível.');
 }
 
-/**
- * Insere categorias iniciais
- */
-function insertCategories($pdo, &$results) {
-    try {
-        $stmt = $pdo->query("SELECT COUNT(*) FROM categories");
-        if ($stmt->fetchColumn() > 0) {
-            $results['messages'][] = "⏭️  Categorias já existem";
-            return;
-        }
-        
-        $categories = [
-            ['Phaser 3', 'phaser-3', 'Framework JavaScript para desenvolvimento de jogos 2D', '🎮', '#6366f1', 1],
-            ['React', 'react', 'Biblioteca JavaScript para construção de interfaces', '⚛️', '#61dafb', 2],
-            ['JavaScript', 'javascript', 'Linguagem de programação essencial para web', '📜', '#f7df1e', 3],
-            ['TypeScript', 'typescript', 'JavaScript com tipagem estática', '📘', '#3178c6', 4],
-            ['Game Design', 'game-design', 'Princípios e técnicas de design de jogos', '🎨', '#ec4899', 5],
-            ['Unity', 'unity', 'Motor de jogos profissional', '🎯', '#000000', 6],
-            ['Godot', 'godot', 'Motor de jogos open source', '🤖', '#478cbf', 7],
-            ['Pixel Art', 'pixel-art', 'Arte em pixel para jogos', '🖼️', '#ff6b6b', 8]
-        ];
-        
-        $stmt = $pdo->prepare("
-            INSERT INTO categories (name, slug, description, icon, color, order_index) 
-            VALUES (?, ?, ?, ?, ?, ?)
-        ");
-        
-        foreach ($categories as $category) {
-            $stmt->execute($category);
-            $results['stats']['data_inserted']++;
-        }
-        
-        $results['messages'][] = "✅ 8 categorias inseridas";
-        
-    } catch (PDOException $e) {
-        $results['errors'][] = "❌ Erro ao inserir categorias: " . $e->getMessage();
-    }
-}
+$installer = new DatabaseInstaller($pdo);
+$result = $installer->install();
 
-/**
- * Insere configurações do sistema
- */
-function insertSettings($pdo, &$results) {
-    try {
-        $stmt = $pdo->query("SELECT COUNT(*) FROM settings");
-        if ($stmt->fetchColumn() > 0) {
-            $results['messages'][] = "⏭️  Configurações já existem";
-            return;
-        }
-        
-        $settings = [
-            ['site_name', 'GameDev Academy', 'string', 'general', 'Nome do site', 1],
-            ['site_description', 'Plataforma gamificada de ensino de desenvolvimento de jogos', 'string', 'general', 'Descrição', 1],
-            ['maintenance_mode', '0', 'boolean', 'system', 'Modo manutenção', 0],
-            ['registration_enabled', '1', 'boolean', 'system', 'Permitir registro', 0],
-            ['xp_per_lesson', '10', 'integer', 'gamification', 'XP por lição', 0],
-            ['coins_per_lesson', '1', 'integer', 'gamification', 'Moedas por lição', 0],
-            ['default_theme', 'system', 'string', 'appearance', 'Tema padrão', 0],
-            ['default_language', 'pt-BR', 'string', 'general', 'Idioma padrão', 0]
-        ];
-        
-        $stmt = $pdo->prepare("
-            INSERT INTO settings (setting_key, setting_value, setting_type, category, description, is_public) 
-            VALUES (?, ?, ?, ?, ?, ?)
-        ");
-        
-        foreach ($settings as $setting) {
-            $stmt->execute($setting);
-            $results['stats']['data_inserted']++;
-        }
-        
-        $results['messages'][] = "✅ Configurações inseridas";
-        
-    } catch (PDOException $e) {
-        $results['errors'][] = "❌ Erro ao inserir configurações: " . $e->getMessage();
-    }
-}
-
-/**
- * Insere notícias de exemplo (opcional)
- */
-function insertNews($pdo, &$results) {
-    try {
-        $stmt = $pdo->query("SELECT COUNT(*) FROM news");
-        if ($stmt->fetchColumn() > 0) {
-            $results['messages'][] = "⏭️  Notícias já existem";
-            return;
-        }
-        
-        $news = [
-            [
-                'Bem-vindo ao GameDev Academy!',
-                'bem-vindo-gamedev-academy',
-                'Conheça nossa plataforma gamificada',
-                '<p>Bem-vindo à nossa comunidade! Aprenda desenvolvimento de jogos de forma divertida e gamificada.</p>',
-                1,
-                'announcement',
-                1,
-                1,
-                date('Y-m-d H:i:s')
-            ]
-        ];
-        
-        $stmt = $pdo->prepare("
-            INSERT INTO news (title, slug, excerpt, content, author_id, category, is_featured, is_published, published_at) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ");
-        
-        foreach ($news as $article) {
-            $stmt->execute($article);
-            $results['stats']['data_inserted']++;
-        }
-        
-        $results['messages'][] = "✅ Notícias inseridas";
-        
-    } catch (PDOException $e) {
-        $results['errors'][] = "❌ Erro ao inserir notícias: " . $e->getMessage();
-    }
-}
-
-/**
- * Verifica a integridade da instalação
- */
-function verifyInstallation($pdo, &$results) {
-    try {
-        // Contar tabelas criadas
-        $stmt = $pdo->query("
-            SELECT COUNT(*) as total 
-            FROM INFORMATION_SCHEMA.TABLES 
-            WHERE TABLE_SCHEMA = DATABASE()
-        ");
-        $totalTables = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
-        
-        $results['messages'][] = "\n=== VERIFICAÇÃO ===";
-        $results['messages'][] = "📊 Total de tabelas no banco: $totalTables";
-        
-        if ($totalTables >= 51) {
-            $results['messages'][] = "✅ Instalação completa!";
-        } else {
-            $results['warnings'][] = "⚠️  Esperado: 51+ tabelas | Encontrado: $totalTables";
-        }
-        
-    } catch (PDOException $e) {
-        $results['errors'][] = "❌ Erro na verificação: " . $e->getMessage();
-    }
-}
-
-/**
- * Execução direta do script (para testes)
- */
-if (basename($_SERVER['PHP_SELF']) == 'create_tables.php') {
-    echo "<!DOCTYPE html>
-    <html lang='pt-BR'>
-    <head>
-        <meta charset='UTF-8'>
-        <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-        <title>Instalação - GameDev Academy</title>
-        <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { 
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                min-height: 100vh;
-                padding: 20px;
-            }
-            .container { 
-                max-width: 900px; 
-                margin: 0 auto; 
-                background: #1a1a2e;
-                border-radius: 20px;
-                padding: 30px;
-                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            }
-            h1 { 
-                color: #fff; 
-                text-align: center;
-                margin-bottom: 10px;
-                font-size: 2.5em;
-            }
-            .version {
-                text-align: center;
-                color: #888;
-                margin-bottom: 30px;
-                font-size: 0.9em;
-            }
-            .message { 
-                padding: 12px 20px; 
-                margin: 8px 0; 
-                background: #16213e;
-                border-radius: 8px;
-                border-left: 4px solid #6366f1;
-                color: #e0e0e0;
-                font-family: 'Courier New', monospace;
-                font-size: 0.9em;
-                line-height: 1.6;
-            }
-            .success { 
-                border-left-color: #10b981;
-                background: #0f3d2f;
-            }
-            .error { 
-                border-left-color: #ef4444;
-                background: #3d0f0f;
-            }
-            .warning {
-                border-left-color: #f59e0b;
-                background: #3d2f0f;
-            }
-            .stats {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: 15px;
-                margin: 20px 0;
-                padding: 20px;
-                background: #0f1419;
-                border-radius: 10px;
-            }
-            .stat-item {
-                text-align: center;
-                padding: 15px;
-                background: #1a1a2e;
-                border-radius: 8px;
-            }
-            .stat-value {
-                font-size: 2em;
-                font-weight: bold;
-                color: #6366f1;
-            }
-            .stat-label {
-                color: #888;
-                margin-top: 5px;
-                font-size: 0.9em;
-            }
-            .separator {
-                height: 2px;
-                background: linear-gradient(90deg, transparent, #6366f1, transparent);
-                margin: 20px 0;
-            }
-        </style>
-    </head>
-    <body>
-        <div class='container'>
-            <h1>🎮 GameDev Academy</h1>
-            <div class='version'>Instalação do Banco de Dados v2.0</div>";
-    
-    try {
-        // Configurar conexão
-        $host = 'localhost';
-        $dbname = 'gamedev_academy';
-        $user = 'root';
-        $pass = '';
-        
-        $pdo = new PDO(
-            "mysql:host={$host};dbname={$dbname};charset=utf8mb4",
-            $user,
-            $pass,
-            [
-                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
-            ]
-        );
-        
-        // Executar instalação
-        $results = executeDatabaseSetup($pdo);
-        
-        // Mostrar estatísticas
-        echo "<div class='stats'>
-                <div class='stat-item'>
-                    <div class='stat-value'>{$results['stats']['tables_created']}</div>
-                    <div class='stat-label'>Tabelas Criadas</div>
-                </div>
-                <div class='stat-item'>
-                    <div class='stat-value'>{$results['stats']['tables_skipped']}</div>
-                    <div class='stat-label'>Já Existentes</div>
-                </div>
-                <div class='stat-item'>
-                    <div class='stat-value'>{$results['stats']['data_inserted']}</div>
-                    <div class='stat-label'>Registros Inseridos</div>
-                </div>
-              </div>";
-        
-        echo "<div class='separator'></div>";
-        
-        // Mostrar mensagens
-        foreach ($results['messages'] as $msg) {
-            $class = '';
-            if (strpos($msg, '✅') !== false || strpos($msg, '✓') !== false) {
-                $class = 'success';
-            } elseif (strpos($msg, '===') !== false) {
-                $class = 'message';
-            }
-            echo "<div class='message $class'>$msg</div>";
-        }
-        
-        // Mostrar warnings
-        foreach ($results['warnings'] as $warning) {
-            echo "<div class='message warning'>$warning</div>";
-        }
-        
-        // Mostrar erros
-        foreach ($results['errors'] as $error) {
-            echo "<div class='message error'>$error</div>";
-        }
-        
-        // Status final
-        if ($results['success']) {
-            echo "<div class='message success' style='margin-top: 30px; font-size: 1.2em; text-align: center;'>
-                    🎉 INSTALAÇÃO CONCLUÍDA COM SUCESSO!
-                  </div>";
-        } else {
-            echo "<div class='message error' style='margin-top: 30px; font-size: 1.2em; text-align: center;'>
-                    ❌ INSTALAÇÃO COM ERROS - Verifique os logs acima
-                  </div>";
-        }
-        
-    } catch (Exception $e) {
-        echo "<div class='message error'>
-                <strong>ERRO FATAL:</strong><br>
-                {$e->getMessage()}<br><br>
-                <strong>Stack Trace:</strong><br>
-                <pre style='color: #ff6b6b; font-size: 0.8em;'>{$e->getTraceAsString()}</pre>
-              </div>";
-    }
-    
-    echo "</div></body></html>";
-}
-?>
+// Armazenar resultados para o instalador exibir
+$installResults = [
+    'success'     => $result,
+    'tables'      => $installer->getTableCount(),
+    'expected'    => 54,
+    'messages'    => $installer->getSuccess(),
+    'errors'      => $installer->getErrors(),
+];
