@@ -144,8 +144,10 @@ class DatabaseInstaller
     private function createTable(string $tableName, string $sql): bool
     {
         try {
+            $this->pdo->exec("SET FOREIGN_KEY_CHECKS = 0");
             $this->pdo->exec("DROP TABLE IF EXISTS `{$tableName}`");
             $this->pdo->exec($sql);
+            $this->pdo->exec("SET FOREIGN_KEY_CHECKS = 1");
             $this->tableCount++;
             $this->success[] = "✅ Tabela '{$tableName}' criada ({$this->tableCount}/{$this->expectedTables})";
             return true;
@@ -2216,6 +2218,22 @@ class DatabaseInstaller
             WHERE NOT EXISTS (SELECT 1 FROM `countries` LIMIT 1)
         ");
     }
+}
+
+function executeDatabaseSetup(PDO $pdo): array
+{
+    $installer = new DatabaseInstaller($pdo);
+    $success = $installer->install();
+
+    return [
+        'success'  => $success,
+        'errors'   => $installer->getErrors(),
+        'messages' => $installer->getSuccess(),
+        'stats'    => [
+            'tables_created'  => $installer->getTableCount(),
+            'tables_expected' => 54,
+        ],
+    ];
 }
 
 

@@ -1,15 +1,8 @@
 <?php
 /**
- * AJAX Handler - Criação das Tabelas (PDO)
- * GameDev Academy - Sistema de Instalação
- * 
- * Chamado via AJAX pelo tables-installer.js
- * Usa PDO para conexão com o banco de dados
+ * AJAX Handler - Criação das Tabelas
+ * Executa o schema.sql diretamente - rápido e leve
  */
-
-// ================================================================
-// SEGURANÇA
-// ================================================================
 
 if (!defined('AJAX_REQUEST')) {
     define('AJAX_REQUEST', true);
@@ -24,15 +17,6 @@ if (session_status() === PHP_SESSION_NONE) {
 
 header('Content-Type: application/json; charset=utf-8');
 
-// Capturar erros fatais
-set_error_handler(function ($severity, $message, $file, $line) {
-    throw new ErrorException($message, 0, $severity, $file, $line);
-});
-
-// ================================================================
-// PROCESSAMENTO
-// ================================================================
-
 try {
     // Verificar sessão
     if (!isset($_SESSION['db_config'])) {
@@ -40,83 +24,119 @@ try {
     }
 
     $config = $_SESSION['db_config'];
-    $host   = $config['host'] ?? 'localhost';
     $port   = isset($config['port']) ? (int) $config['port'] : 3306;
-    $name   = $config['name'] ?? '';
-    $user   = $config['user'] ?? 'root';
-    $pass   = $config['pass'] ?? '';
 
-    // Validar dados
-    if (empty($name)) {
-        throw new Exception('Nome do banco de dados não informado');
+    // Conectar via PDO
+    $pdo = new PDO(
+        "mysql:host={$config['host']};port={$port};dbname={$config['name']};charset=utf8mb4",
+        $config['user'],
+        $config['pass'],
+        [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4"
+        ]
+    );
+
+    // Carregar schema.sql
+    $schemaPath = dirname(dirname(dirname(__DIR__))) . '/install/database/schema.sql';
+
+    // Tentar caminhos alternativos
+    if (!file_exists($schemaPath)) {
+        $schemaPath = dirname(dirname(dirname(__DIR__))) . '/sql/schema.sql';
+    }
+    if (!file_exists($schemaPath)) {
+        $schemaPath = dirname(dirname(dirname(dirname(__DIR__)))) . '/install/database/schema.sql';
     }
 
-    // Verificar extensão PDO
-    if (!extension_loaded('pdo') || !extension_loaded('pdo_mysql')) {
-        throw new Exception('Extensão PDO MySQL não está instalada');
+    if (!file_exists($schemaPath)) {
+        throw new Exception('Arquivo schema.sql não encontrado');
     }
 
-    // ============================================================
-    // CONEXÃO PDO
-    // ============================================================
-    $dsn = "mysql:host={$host};port={$port};dbname={$name};charset=utf8mb4";
+    $sql = file_get_contents($schemaPath);
 
-    $pdo = new PDO($dsn, $user, $pass, [
-        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_EMULATE_PREPARES   => false,
-        PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci"
-    ]);
-
-    // Testar conexão
-    $pdo->query("SELECT 1");
-
-    // ============================================================
-    // INCLUIR E EXECUTAR CREATE_TABLES
-    // ============================================================
-    $create_tables_path = dirname(dirname(dirname(__DIR__))) . '/sql/create_tables.php';
-
-    if (!file_exists($create_tables_path)) {
-        throw new Exception('Arquivo create_tables.php não encontrado');
+    if (empty($sql)) {
+        throw new Exception('Arquivo schema.sql está vazio');
     }
 
-    require_once $create_tables_path;
+    // Executar schema.sql de uma vez
+    $pdo->exec("SET FOREIGN_KEY_CHECKS = 0");
+    $pdo->exec("SET UNIQUE_CHECKS = 0");
+    $pdo->exec("SET AUTOCOMMIT = 0");
 
-    if (!function_exists('executeDatabaseSetup')) {
-        throw new Exception('Função executeDatabaseSetup não encontrada');
+    // Separar statements e executar
+    $statements = array_filter(
+        array_map('trim', explode(';', $sql)),
+        function ($s) { return !empty($s) && $s !== "\n"; }
+    );
+
+    $errors = [];
+    $created = 0;
+
+    foreach ($statements as $statement) {
+        // Pular comentários e linhas vazias
+        if (empty($statement) || strpos($statement, '--') === 0) {
+            continue;
+        }
+
+        try {
+            $pdo->exec($statement);
+            // Contar CREATE TABLEs
+            if (stripos($statement, 'CREATE TABLE') !== false) {
+                $created++;
+            }
+        } catch (PDOException $e) {
+            $errors[] = $e->getMessage();
+        }
     }
 
-    // Executar criação das tabelas
-    $result = executeDatabaseSetup($pdo);
+    $pdo->exec("COMMIT");
+    $pdo->exec("SET FOREIGN_KEY_CHECKS = 1");
+    $pdo->exec("SET UNIQUE_CHECKS = 1");
+    $pdo->exec("SET AUTOCOMMIT = 1");
 
-    // ============================================================
-    // RESPOSTA
-    // ============================================================
-    if ($result['success']) {
+    // Contar tabelas reais no banco
+    $stmt = $pdo->query("SHOW TABLES");
+    $totalTables = $stmt->rowCount();
+
+    // Resultado
+    if ($totalTables > 0 && empty($errors)) {
         $_SESSION['tables_created'] = true;
-        $_SESSION['install_step']   = 3;
+        $_SESSION['install_step'] = 3;
 
         echo json_encode([
             'success' => true,
-            'message' => "Tabelas criadas com sucesso! {$result['stats']['tables_created']} tabelas instaladas.",
-            'stats'   => $result['stats'],
-            'details' => isset($result['messages']) ? $result['messages'] : []
+            'message' => "Tabelas criadas com sucesso! {$totalTables} tabelas instaladas.",
+            'stats'   => [
+                'tables_created'  => $totalTables,
+                'tables_expected' => 54
+            ]
+        ]);
+    } elseif ($totalTables > 0 && !empty($errors)) {
+        $_SESSION['tables_created'] = true;
+        $_SESSION['install_step'] = 3;
+
+        echo json_encode([
+            'success' => true,
+            'message' => "{$totalTables} tabelas criadas com alguns avisos.",
+            'stats'   => [
+                'tables_created'  => $totalTables,
+                'tables_expected' => 54
+            ],
+            'warnings' => $errors
         ]);
     } else {
         echo json_encode([
             'success' => false,
-            'message' => 'Erro ao criar tabelas',
-            'errors'  => $result['errors'],
-            'stats'   => isset($result['stats']) ? $result['stats'] : null
+            'message' => 'Nenhuma tabela foi criada',
+            'errors'  => $errors
         ]);
     }
 
 } catch (PDOException $e) {
     http_response_code(500);
     echo json_encode([
-        'success'    => false,
-        'message'    => 'Erro de banco de dados: ' . $e->getMessage(),
-        'error_code' => $e->getCode()
+        'success' => false,
+        'message' => 'Erro de banco de dados: ' . $e->getMessage()
     ]);
 } catch (Exception $e) {
     http_response_code(500);
@@ -125,5 +145,3 @@ try {
         'message' => $e->getMessage()
     ]);
 }
-
-restore_error_handler();

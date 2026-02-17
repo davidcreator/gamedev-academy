@@ -75,6 +75,7 @@ DROP TABLE IF EXISTS `users`;
 CREATE TABLE `users` (
     `id`                      INT UNSIGNED       NOT NULL AUTO_INCREMENT,
     `name`                    VARCHAR(100)       NOT NULL                          COMMENT 'Nome completo',
+    `username`                VARCHAR(50)        NOT NULL                          COMMENT 'Apelido/username único',
     `email`                   VARCHAR(150)       NOT NULL                          COMMENT 'Email único para login',
     `password`                VARCHAR(255)       NOT NULL                          COMMENT 'Hash bcrypt da senha',
     `role`                    ENUM('student','instructor','admin','super_admin') 
@@ -104,6 +105,7 @@ CREATE TABLE `users` (
 
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_users_email` (`email`),
+    UNIQUE KEY `uk_users_username` (`username`),
     KEY `idx_users_role` (`role`),
     KEY `idx_users_active` (`is_active`),
     KEY `idx_users_created` (`created_at`),

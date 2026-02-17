@@ -58,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $pdo = new PDO($dsn, $config['user'], $config['pass'], $options);
         
         // Include create_tables.php
-        $createTablesPath = INSTALL_PATH . 'sql/create_tables.php';        
+        $createTablesPath = __DIR__ . '/../sql/create_tables.php';
         
         if (!file_exists($createTablesPath)) {
             throw new Exception('Arquivo create_tables.php não encontrado');

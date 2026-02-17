@@ -21,6 +21,9 @@ try {
     // Start session
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
+
+        set_time_limit(300);
+        ini_set('max_execution_time', 300);
     }
     
     // Check CSRF token
