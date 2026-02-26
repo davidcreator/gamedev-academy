@@ -43,6 +43,8 @@ if (!isset($activePage)) {
     
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TCT3cRj7lFQpHG2xg8fYB+FA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     
     <!-- CSS Principal -->
     <link rel="stylesheet" href="<?= asset('/../assets/css/admin.css') ?>">
@@ -81,13 +83,13 @@ if (!isset($activePage)) {
         <div class="navbar-container">
             <!-- Logo/Brand -->
             <a href="<?= url() ?>" class="navbar-brand">
-                <span class="logo-icon">🎮</span>
+                <span class="logo-icon" aria-hidden="true"><i class="fa-solid fa-gamepad"></i></span>
                 <span>GameDev Academy</span>
             </a>
             
             <!-- Mobile Menu Toggle -->
             <button class="navbar-toggle" onclick="toggleMobileMenu()" aria-label="Menu">
-                <span class="navbar-toggle-icon">☰</span>
+                <span class="navbar-toggle-icon" aria-hidden="true"><i class="fa-solid fa-bars"></i></span>
             </button>
             
             <!-- Navigation Links -->

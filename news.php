@@ -40,7 +40,12 @@ require_once 'includes/header.php';
 <!-- Hero Section -->
 <section class="news-hero">
     <div class="container">
-        <h1 class="hero-title">📰 Notícias e Atualizações</h1>
+        <div class="hero-header">
+            <h1 class="hero-title">
+                <i class="fa-solid fa-newspaper"></i>
+                Notícias e Atualizações
+            </h1>
+        </div>
         <p class="hero-subtitle">Fique por dentro das últimas novidades do mundo gamedev</p>
         
         <!-- Search Bar -->
@@ -222,7 +227,7 @@ require_once 'includes/header.php';
     <div class="container">
         <div class="newsletter-box">
             <div class="newsletter-content">
-                <h3>📬 Não perca nenhuma novidade!</h3>
+                <h3><i class="fa-solid fa-envelope-open-text"></i> N�o perca nenhuma novidade!</h3>
                 <p>Receba as últimas notícias e atualizações diretamente no seu email</p>
             </div>
             <form class="newsletter-form-inline" onsubmit="subscribeNewsletter(event)">
@@ -245,3 +250,4 @@ $additionalJS = ['js/news.js'];
 // Incluir footer
 require_once 'includes/footer.php';
 ?>
+

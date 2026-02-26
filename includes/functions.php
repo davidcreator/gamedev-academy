@@ -461,6 +461,35 @@ if (!function_exists('getAvatar')) {
     }
 }
 
+if (!function_exists('getNewsImage')) {
+    function getNewsImage(?string $image = null): string {
+        // URL externa já pronta
+        if (!empty($image) && filter_var($image, FILTER_VALIDATE_URL)) {
+            return $image;
+        }
+
+        // Caminhos locais preferenciais
+        $image = ltrim($image ?? '', '/');
+        $candidates = [
+            ['url' => defined('UPLOADS_URL') ? UPLOADS_URL . 'news/' . $image : url('uploads/news/' . $image),
+             'path' => defined('ROOT_PATH') ? ROOT_PATH . 'uploads/news/' . $image : null],
+            ['url' => defined('UPLOADS_URL') ? UPLOADS_URL . $image : url('uploads/' . $image),
+             'path' => defined('ROOT_PATH') ? ROOT_PATH . 'uploads/' . $image : null],
+            ['url' => defined('ASSETS_URL') ? ASSETS_URL . 'images/' . $image : asset('images/' . $image),
+             'path' => defined('ROOT_PATH') ? ROOT_PATH . 'assets/images/' . $image : null],
+        ];
+
+        foreach ($candidates as $c) {
+            if (!empty($image) && $c['path'] && file_exists($c['path'])) {
+                return $c['url'];
+            }
+        }
+
+        // Placeholder padrão
+        return asset('images/default.png');
+    }
+}
+
 // ====================================================================
 // FUNÇÕES DE CURSO
 // ====================================================================
@@ -511,7 +540,7 @@ if (!function_exists('truncate')) {
             return '';
         }
         if (mb_strlen($text) <= $length) {
-            return $text;
+            return '';
         }
         return mb_substr($text, 0, $length) . $suffix;
     }
@@ -527,6 +556,19 @@ if (!function_exists('limitWords')) {
             return $text;
         }
         return implode(' ', array_slice($words, 0, $limit)) . $suffix;
+    }
+}
+
+if (!function_exists('limitText')) {
+    function limitText(?string $text, int $limit = 120, string $suffix = '...'): string {
+        if (empty($text)) {
+            return '';
+        }
+        $clean = strip_tags($text);
+        if (mb_strlen($clean) <= $limit) {
+            return $clean;
+        }
+        return mb_substr($clean, 0, $limit) . $suffix;
     }
 }
 

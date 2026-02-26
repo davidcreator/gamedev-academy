@@ -24,7 +24,7 @@ if (!isset($totalCourses) && class_exists('Course')) {
                     <!-- About Section -->
                     <div class="footer-section">
                         <div class="footer-brand">
-                            <span class="logo-icon">🎮</span>
+                            <span class="logo-icon" aria-hidden="true"><i class="fa-solid fa-gamepad"></i></span>
                             <h3>GameDev Academy</h3>
                         </div>
                         <p class="footer-description">
@@ -135,9 +135,9 @@ if (!isset($totalCourses) && class_exists('Course')) {
                         © <?= date('Y') ?> GameDev Academy. Todos os direitos reservados.
                     </p>
                     <div class="footer-badges">
-                        <span class="badge-item">🔒 SSL Seguro</span>
-                        <span class="badge-item">💳 Pagamento Seguro</span>
-                        <span class="badge-item">📱 Mobile Friendly</span>
+                        <span class="badge-item"><i class="fa-solid fa-lock"></i> SSL Seguro</span>
+                        <span class="badge-item"><i class="fa-solid fa-credit-card"></i> Pagamento Seguro</span>
+                        <span class="badge-item"><i class="fa-solid fa-mobile-screen-button"></i> Mobile Friendly</span>
                     </div>
                 </div>
             </div>
