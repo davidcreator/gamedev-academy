@@ -1,7 +1,6 @@
 <?php
 $pageTitle = 'Criar Nova Lição';
 include '../includes/header.php';
-require_once '../../includes/editorjs-loader.php';
 
 $db = Database::getInstance();
 $moduleId = intval($_GET['module_id'] ?? 0);
@@ -10,16 +9,16 @@ $courseId = intval($_GET['course_id'] ?? 0);
 // Validar módulo
 if ($moduleId <= 0) {
     flash('error', 'Módulo inválido.');
-    redirect(url('admin/modules/list.php?course_id=' . $courseId));
+    redirect(url('admin/modules/modules.php?course_id=' . $courseId));
 }
 
 // Buscar informações do módulo e curso
-$module = $db->fetch("SELECT * FROM modules WHERE id = ?", [$moduleId]);
+$module = $db->fetch("SELECT * FROM course_modules WHERE id = ?", [$moduleId]);
 $course = $courseId > 0 ? $db->fetch("SELECT * FROM courses WHERE id = ?", [$courseId]) : null;
 
 if (!$module) {
     flash('error', 'Módulo não encontrado.');
-    redirect(url('admin/modules/list.php'));
+    redirect(url('admin/modules/modules.php?course_id=' . $courseId));
 }
 
 // Processar formulário
@@ -35,17 +34,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Preparar dados
     $data = [
         'module_id' => $moduleId,
+        'course_id' => $courseId,
         'title' => $title,
-        'summary' => trim($_POST['summary'] ?? ''),
+        'slug' => slugify($title),
         'content_type' => $_POST['content_type'] ?? 'text',
         'content' => $_POST['content'] ?? '',
+        'summary' => trim($_POST['summary'] ?? ''),
         'video_url' => trim($_POST['video_url'] ?? ''),
         'video_provider' => $_POST['video_provider'] ?? 'youtube',
-        'duration_minutes' => intval($_POST['duration_minutes'] ?? 0),
+        'video_duration' => intval($_POST['duration_minutes'] ?? 0),
+        'attachment_url' => trim($_POST['attachment_url'] ?? ''),
         'is_published' => isset($_POST['is_published']) ? 1 : 0,
         'is_free_preview' => isset($_POST['is_free_preview']) ? 1 : 0,
-        'attachment_url' => trim($_POST['attachment_url'] ?? ''),
-        'order_position' => 0, // Será definido automaticamente
+        'sort_order' => 0, // Será definido automaticamente
     ];
     
     // Validar URL de vídeo se fornecida
@@ -55,15 +56,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     // Definir ordem automaticamente (última posição)
     $lastLesson = $db->fetch(
-        "SELECT MAX(order_position) as max_order FROM lessons WHERE module_id = ?",
+        "SELECT MAX(sort_order) as max_order FROM course_lessons WHERE module_id = ?",
         [$moduleId]
     );
-    $data['order_position'] = ($lastLesson['max_order'] ?? 0) + 1;
+    $data['sort_order'] = ($lastLesson['max_order'] ?? 0) + 1;
     
     if (empty($errors)) {
-        $lessonId = $db->insert('lessons', $data);
+        $lessonId = $db->insert('course_lessons', $data);
         flash('success', 'Lição criada com sucesso!');
-        redirect(url('admin/lessons/list.php?module_id=' . $moduleId . '&course_id=' . $courseId));
+        redirect(url('admin/lessons/lessons-list.php?module_id=' . $moduleId . '&course_id=' . $courseId));
     } else {
         foreach ($errors as $error) {
             flash('error', $error);
@@ -71,169 +72,161 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-showFlashMessages();
+// Renderizar estilos do EditorJS
 EditorJSLoader::renderStyles();
 ?>
 
-<!-- Breadcrumb -->
-<nav aria-label="breadcrumb" class="mb-3">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="<?= url('admin/dashboard.php') ?>">Dashboard</a></li>
-        <?php if ($course): ?>
-            <li class="breadcrumb-item"><a href="<?= url('admin/courses.php') ?>">Cursos</a></li>
-            <li class="breadcrumb-item"><a href="<?= url('admin/modules/list.php?course_id=' . $courseId) ?>"><?= escape($course['title']) ?></a></li>
-        <?php endif; ?>
-        <li class="breadcrumb-item"><a href="<?= url('admin/lessons/list.php?module_id=' . $moduleId . '&course_id=' . $courseId) ?>">Lições</a></li>
-        <li class="breadcrumb-item active">Nova Lição</li>
-    </ol>
-</nav>
+<?= showFlashMessages() ?>
 
-<!-- Navegação -->
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <a href="<?= url('admin/lessons/list.php?module_id=' . $moduleId . '&course_id=' . $courseId) ?>" class="btn btn-secondary">
-        ← Voltar para Lições
-    </a>
-</div>
-
-<!-- Formulário de Criação -->
-<div class="card p-4" style="max-width: 1200px; margin: 0 auto;">
-    <div class="mb-4">
-        <h2>Criar Nova Lição</h2>
-        <p class="text-muted">Preencha os dados da nova lição</p>
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="<?= url('admin/dashboard.php') ?>">Dashboard</a></li>
+                <?php if ($course): ?>
+                    <li class="breadcrumb-item"><a href="<?= url('admin/courses/courses.php') ?>">Cursos</a></li>
+                    <li class="breadcrumb-item"><a href="<?= url('admin/modules/modules.php?course_id=' . $courseId) ?>"><?= escape($course['title']) ?></a></li>
+                <?php endif; ?>
+                <li class="breadcrumb-item"><a href="<?= url('admin/lessons/lessons-list.php?module_id=' . $moduleId . '&course_id=' . $courseId) ?>">Lições</a></li>
+                <li class="breadcrumb-item active">Nova Lição</li>
+            </ol>
+        </nav>
+        <div class="d-flex gap-2">
+            <a href="<?= url('admin/lessons/lessons-list.php?module_id=' . $moduleId . '&course_id=' . $courseId) ?>" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Voltar
+            </a>
+        </div>
     </div>
 
     <form method="POST" id="lessonForm">
-        <!-- Seção: Informações Básicas -->
-        <div class="mb-4">
-            <h5 class="mb-3">Informações Básicas</h5>
-            <div class="row">                
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Título da Lição *</label>
-                    <input type="text" name="title" class="form-control" required placeholder="Ex: Introdução ao Unity">
-                </div>
-                <div class="col-md-3 mb-3">
-                    <label class="form-label">Tipo de Conteúdo</label>
-                    <select name="content_type" class="form-control">
-                        <?php 
-                        $types = [
-                            'text' => 'Texto',
-                            'video' => 'Vídeo',
-                            'quiz' => 'Quiz',
-                            'exercise' => 'Exercício',
-                            'project' => 'Projeto',
-                            'live' => 'Live',
-                            'download' => 'Download'
-                        ];
-                        foreach ($types as $k => $v): 
-                        ?>
-                            <option value="<?= $k ?>"><?= $v ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <label class="form-label">Duração (minutos)</label>
-                    <input type="number" name="duration_minutes" class="form-control" value="0" min="0" placeholder="0">
-                </div>
-            </div>
-            <div class="mb-3">
-                <label class="form-label">Resumo</label>
-                <input type="text" name="summary" class="form-control" placeholder="Breve descrição da lição">
-            </div>
-        </div>
+        <div class="row">
+            <!-- Coluna Principal -->
+            <div class="col-lg-8">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0 fw-bold text-primary"><i class="fas fa-file-alt me-2"></i>Conteúdo da Lição</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Título da Lição <span class="text-danger">*</span></label>
+                            <input type="text" name="title" class="form-control form-control-lg border-2" required placeholder="Ex: Introdução ao Unity">
+                        </div>
 
-        <hr class="my-4">
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Resumo da Lição</label>
+                            <textarea name="summary" class="form-control" rows="2" placeholder="Uma breve descrição do que será aprendido..."></textarea>
+                        </div>
 
-        <!-- Seção: Conteúdo -->
-        <div class="mb-4">
-            <h5 class="mb-3">Conteúdo da Lição</h5>
-            
-            <div class="mb-3">
-                <label for="content" class="form-label">Texto do Conteúdo</label>
-                <!-- Container do Editor.js com toolbar fixa -->
-                <div id="editorjs"></div>
-                <!-- Textarea original (oculto, recebe o JSON) -->
-                <textarea class="form-control d-none" id="content" name="content" rows="15"></textarea>
-                <small class="form-text text-muted">
-                    Use a barra de ferramentas acima para adicionar diferentes tipos de conteúdo.
-                </small>
-            </div>
-        </div>
-
-        <hr class="my-4">
-
-        <!-- Seção: Recursos Multimídia -->
-        <div class="mb-4">
-            <h5 class="mb-3">Recursos Multimídia</h5>
-            
-            <div class="row">
-                <div class="col-md-7 mb-3">
-                    <label class="form-label">URL do Vídeo</label>
-                    <input type="text" name="video_url" class="form-control" placeholder="https://youtube.com/watch?v=...">
-                    <small class="form-text text-muted">Cole o link do vídeo do YouTube, Vimeo, etc.</small>
+                        <div class="mb-0">
+                            <label class="form-label fw-bold">Corpo da Lição</label>
+                            <div id="editorjs" class="border rounded bg-light" style="min-height: 400px;"></div>
+                            <textarea name="content" id="content" class="d-none"></textarea>
+                        </div>
+                    </div>
                 </div>
-                <div class="col-md-5 mb-3">
-                    <label class="form-label">Provedor de Vídeo</label>
-                    <select name="video_provider" class="form-control">
-                        <?php 
-                        $providers = [
-                            'youtube' => 'YouTube',
-                            'vimeo' => 'Vimeo',
-                            'cloudflare' => 'Cloudflare',
-                            'bunny' => 'Bunny',
-                            'self' => 'Próprio'
-                        ];
-                        foreach ($providers as $k => $v): 
-                        ?>
-                            <option value="<?= $k ?>"><?= $v ?></option>
-                        <?php endforeach; ?>
-                    </select>
+
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0 fw-bold text-primary"><i class="fas fa-video me-2"></i>Vídeo e Anexos</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row">
+                            <div class="col-md-8 mb-3">
+                                <label class="form-label fw-bold">URL do Vídeo</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light"><i class="fas fa-link"></i></span>
+                                    <input type="text" name="video_url" class="form-control" placeholder="https://youtube.com/watch?v=...">
+                                </div>
+                                <small class="text-muted">YouTube, Vimeo, Cloudflare, etc.</small>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label fw-bold">Provedor</label>
+                                <select name="video_provider" class="form-select border-2">
+                                    <option value="youtube">YouTube</option>
+                                    <option value="vimeo">Vimeo</option>
+                                    <option value="cloudflare">Cloudflare</option>
+                                    <option value="bunny">Bunny</option>
+                                    <option value="self">Próprio</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-0">
+                            <label class="form-label fw-bold">Materiais Complementares (URL)</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light"><i class="fas fa-paperclip"></i></span>
+                                <input type="text" name="attachment_url" class="form-control" placeholder="GitHub, Drive, ZIP...">
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="mb-3">
-                <label class="form-label">Repositório de Código ou Materiais Complementares</label>
-                <input type="text" name="attachment_url" class="form-control" placeholder="https://github.com/usuario/repositorio">
-                <small class="form-text text-muted">Link para GitHub, arquivos ZIP, ou outros recursos adicionais</small>
+            <!-- Barra Lateral -->
+            <div class="col-lg-4">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0 fw-bold text-primary"><i class="fas fa-cog me-2"></i>Configurações</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="mb-4">
+                            <label class="form-label fw-bold d-block">Visibilidade</label>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" name="is_published" id="is_published" checked>
+                                <label class="form-check-label" for="is_published">Publicada</label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="is_free_preview" id="is_free_preview">
+                                <label class="form-check-label" for="is_free_preview">Prévia Gratuita</label>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Tipo de Conteúdo</label>
+                            <select name="content_type" class="form-select border-2">
+                                <option value="text">Texto</option>
+                                <option value="video">Vídeo</option>
+                                <option value="quiz">Quiz</option>
+                                <option value="exercise">Exercício</option>
+                                <option value="project">Projeto</option>
+                                <option value="download">Download</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Duração Estimada (min)</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light"><i class="fas fa-clock"></i></span>
+                                <input type="number" name="duration_minutes" class="form-control border-2" value="10" min="0">
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary w-100 btn-lg fw-bold shadow-sm">
+                                <i class="fas fa-save me-2"></i> Criar Lição
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm bg-light border-0">
+                    <div class="card-body p-3">
+                        <div class="d-flex align-items-center text-muted small">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <span>O conteúdo será salvo automaticamente no formato EditorJS.</span>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-
-        <hr class="my-4">
-
-        <!-- Seção: Configurações de Publicação -->
-        <div class="mb-4">
-            <h5 class="mb-3">Configurações de Publicação</h5>
-            <div class="d-flex gap-4 mt-2">
-                <label class="d-flex align-items-center gap-2">
-                    <input type="checkbox" name="is_published" checked>
-                    <span>Publicado</span>
-                </label>
-                <label class="d-flex align-items-center gap-2">
-                    <input type="checkbox" name="is_free_preview">
-                    <span>Prévia Gratuita</span>
-                </label>
-            </div>
-            <small class="form-text text-muted">
-                Marque "Publicado" para tornar a lição visível. "Prévia Gratuita" permite acesso sem assinatura.
-            </small>
-        </div>
-
-        <!-- Botões de Ação -->
-        <div class="d-flex justify-content-end gap-3">
-            <a href="<?= url('admin/lessons.php?module_id=' . $moduleId . '&course_id=' . $courseId) ?>" class="btn btn-secondary">
-                Cancelar
-            </a>
-            <button type="submit" class="btn btn-primary">
-                <i class="fas fa-save"></i> Criar Lição
-            </button>
         </div>
     </form>
 </div>
 
 <?php
-// Render Editor.js scripts
+// Carregar Scripts do EditorJS
 EditorJSLoader::renderScripts();
-
-// Initialize Editor.js (sem conteúdo inicial)
 EditorJSLoader::init('', 'editorjs', 'content');
 ?>
 

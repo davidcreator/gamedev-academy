@@ -8,6 +8,7 @@ require_once __DIR__ . '/../../classes/Auth.php';
 require_once __DIR__ . '/../../classes/Course.php';
 require_once __DIR__ . '/../../classes/News.php';
 require_once __DIR__ . '/../../includes/functions.php';
+require_once __DIR__ . '/../../includes/editorjs-loader.php';
 
 $auth = new Auth();
 $auth->requireAdmin();

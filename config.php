@@ -2,7 +2,7 @@
 /**
  * Arquivo de configuração do sistema
  * Gerado automaticamente pelo instalador
- * Data: 2026-02-17 17:40:12
+ * Data: 2026-02-26 01:23:10
  */
 
 // Configurações do Banco de Dados
@@ -21,7 +21,7 @@ define('SITE_EMAIL', 'contato@davidalmeida.xyz');
 define('TIMEZONE', 'UTC');
 
 // Configurações de Segurança
-define('SECURITY_SALT', '0ed20dc76a8157d10bd3cc10b833fe49881b033c47395cbc8d760f88a57872f3');
+define('SECURITY_SALT', 'ed84523edad0f0cf2c83c803d582a294ba502d71394e2b6ebe0cfd6f695e0409');
 define('SESSION_NAME', 'gamedev_session');
 define('COOKIE_SECURE', false);
 define('COOKIE_HTTPONLY', true);
@@ -42,7 +42,7 @@ define('CACHE_TIME', 3600); // 1 hora
 
 // Versão do Sistema
 define('SYSTEM_VERSION', '2.0.0');
-define('INSTALL_DATE', '2026-02-17 17:40:12');
+define('INSTALL_DATE', '2026-02-26 01:23:10');
 
 // Prevenir acesso direto
 if (!defined('ROOT_PATH')) {

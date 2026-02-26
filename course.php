@@ -95,7 +95,7 @@ $modules = $courseModel->getModules($course['id']);
                     
                     <div class="course-meta">
                         <span>👨‍🏫 <?= escape($course['instructor_name'] ?? 'Instrutor') ?></span>
-                        <span>⏱️ <?= $course['estimated_hours'] ?>h</span>
+                        <span>⏱️ <?= $course['duration_hours'] ?>h</span>
                         <span>⚡ <?= $course['xp_reward'] ?> XP</span>
                         <span>👥 <?= $course['total_students'] ?> alunos</span>
                     </div>
@@ -117,7 +117,7 @@ $modules = $courseModel->getModules($course['id']);
                     <tbody>
                         <?php foreach ($modules as $m): ?>
                         <tr>
-                            <td><?= intval($m['order_index']) ?></td>
+                            <td><?= intval($m['sort_order']) ?></td>
                             <td><?= escape($m['title']) ?></td>
                             <td><?= intval($m['total_lessons'] ?? 0) ?></td>
                             <td><?= intval($m['xp_reward']) ?></td>

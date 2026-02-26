@@ -22,7 +22,7 @@ if ($id <= 0) {
 }
 
 // Buscar notícia
-$news = $db->fetch("SELECT * FROM news WHERE id = ?", [$id]);
+$news = $db->fetch("SELECT * FROM blog_posts WHERE id = ?", [$id]);
 
 if (!$news) {
     flash('error', 'Notícia não encontrada.');
@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     // Excluir notícia
-    $deleted = $db->delete('news', 'id = ?', [$id]);
+    $deleted = $db->delete('blog_posts', 'id = ?', [$id]);
     
     if ($deleted) {
         flash('success', 'Notícia excluída com sucesso!');

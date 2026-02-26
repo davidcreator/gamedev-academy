@@ -8,7 +8,7 @@ $id = intval($_GET['id'] ?? 0);
 $moduleId = intval($_GET['module_id'] ?? 0);
 $courseId = intval($_GET['course_id'] ?? 0);
 
-$lesson = $db->fetch("SELECT * FROM lessons WHERE id = ?", [$id]);
+$lesson = $db->fetch("SELECT * FROM course_lessons WHERE id = ?", [$id]);
 if (!$lesson) {
     flash('error', 'Lição não encontrada.');
     redirect(url('admin/lessons.php?module_id=' . $moduleId . '&course_id=' . $courseId));
@@ -22,17 +22,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'content' => $_POST['content'] ?? '',
         'video_url' => trim($_POST['video_url'] ?? ''),
         'video_provider' => $_POST['video_provider'] ?? 'youtube',
-        'duration_minutes' => intval($_POST['duration_minutes'] ?? 0),
+        'video_duration' => intval($_POST['duration_minutes'] ?? 0),
         'is_published' => isset($_POST['is_published']) ? 1 : 0,
         'is_free_preview' => isset($_POST['is_free_preview']) ? 1 : 0,
-        'attachment_url' => trim($_POST['attachment_url'] ?? ''),
     ];
     if (!$data['title']) {
         flash('error', 'Informe o título.');
     } else {
-        $db->update('lessons', $data, 'id = :id', ['id' => $id]);
+        $db->update('course_lessons', $data, 'id = :id', ['id' => $id]);
         flash('success', 'Lição atualizada!');
-        $lesson = $db->fetch("SELECT * FROM lessons WHERE id = ?", [$id]);
+        $lesson = $db->fetch("SELECT * FROM course_lessons WHERE id = ?", [$id]);
     }
 }
 ?>
@@ -79,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="col-md-6 mb-3">
                     <label class="form-label">Duração Estimada</label>
                     <div class="d-flex align-center gap-2">
-                        <input type="number" name="duration_minutes" class="form-control" value="<?= intval($lesson['duration_minutes'] ?? 0) ?>" placeholder="0">
+                        <input type="number" name="duration_minutes" class="form-control" value="<?= intval($lesson['video_duration'] ?? 0) ?>" placeholder="0">
                         <span>minutos</span>
                     </div>
                 </div>

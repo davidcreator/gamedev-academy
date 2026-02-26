@@ -63,8 +63,8 @@ $completedCourses = array_filter($userCourses, fn($c) => $c['completed_at'] !== 
                 </div>
                 
                 <div class="course-meta">
-                    <span>📅 <?= formatDate($course['started_at']) ?></span>
-                    <span>🕐 <?= timeAgo($course['last_accessed']) ?></span>
+                    <span>📅 <?= formatDate($course['started_at'] ?? '') ?></span>
+                    <span>🕐 <?= timeAgo($course['last_accessed_at'] ?? '') ?></span>
                 </div>
                 
                 <a href="<?= url('learn.php?course=' . $course['slug']) ?>" class="btn btn-primary btn-sm w-100 mt-3">

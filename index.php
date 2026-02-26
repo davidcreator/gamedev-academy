@@ -201,7 +201,7 @@ $totalCourses = $courseModel->count();
                         <p class="course-description"><?= escape(truncate($course['description'], 100)) ?></p>
                         <div class="course-meta">
                             <span>📚 <?= $course['total_modules'] ?? 0 ?> módulos</span>
-                            <span>⏱️ <?= $course['estimated_hours'] ?>h</span>
+                            <span>⏱️ <?= $course['duration_hours'] ?>h</span>
                             <span class="course-xp">⚡ <?= $course['xp_reward'] ?> XP</span>
                         </div>
                     </div>

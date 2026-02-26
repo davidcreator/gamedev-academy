@@ -10,13 +10,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'create') {
         $data = [
             'name' => trim($_POST['name'] ?? ''),
+            'slug' => slugify($_POST['name'] ?? ''),
             'description' => trim($_POST['description'] ?? ''),
             'icon' => trim($_POST['icon'] ?? ''),
             'xp_reward' => intval($_POST['xp_reward'] ?? 0),
             'coin_reward' => intval($_POST['coin_reward'] ?? 0),
             'requirement_type' => $_POST['requirement_type'] ?? 'lessons_completed',
             'requirement_value' => intval($_POST['requirement_value'] ?? 1),
-            'is_secret' => isset($_POST['is_secret']) ? 1 : 0,
+            'is_hidden' => isset($_POST['is_secret']) ? 1 : 0,
         ];
         if ($data['name']) {
             $db->insert('achievements', $data);
@@ -38,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'coin_reward' => intval($_POST['coin_reward'] ?? 0),
                 'requirement_type' => $_POST['requirement_type'] ?? 'lessons_completed',
                 'requirement_value' => intval($_POST['requirement_value'] ?? 1),
-                'is_secret' => isset($_POST['is_secret']) ? 1 : 0,
+                'is_hidden' => isset($_POST['is_secret']) ? 1 : 0,
             ];
             $db->update('achievements', $data, 'id = :id', ['id' => $id]);
             flash('success', 'Conquista atualizada!');

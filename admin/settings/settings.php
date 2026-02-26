@@ -20,32 +20,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     redirect(url('admin/settings/settings.php'));
 }
 
-$categories = $db->fetchAll("SELECT DISTINCT category FROM settings ORDER BY category ASC");
+$categories = $db->fetchAll("SELECT DISTINCT setting_group FROM settings ORDER BY setting_group ASC");
 $settingsByCategory = [];
 foreach ($categories as $cat) {
-    $c = $cat['category'];
-    $settingsByCategory[$c] = $db->fetchAll("SELECT * FROM settings WHERE category = ? ORDER BY order_index ASC, setting_key ASC", [$c]);
+    $c = $cat['setting_group'];
+    $settingsByCategory[$c] = $db->fetchAll("SELECT * FROM settings WHERE setting_group = ? ORDER BY id ASC, setting_key ASC", [$c]);
 }
 ?>
 
 <?= showFlashMessages() ?>
 
 <div class="tabs">
-    <?php foreach ($settingsByCategory as $category => $items): ?>
-        <a class="tab" href="#<?= escape($category) ?>"><?= ucfirst($category) ?></a>
+    <?php foreach ($settingsByCategory as $group => $items): ?>
+        <a class="tab" href="#<?= escape($group) ?>"><?= ucfirst($group) ?></a>
     <?php endforeach; ?>
 </div>
 
-<?php foreach ($settingsByCategory as $category => $items): ?>
-<section id="<?= escape($category) ?>" class="card mt-4">
+<?php foreach ($settingsByCategory as $group => $items): ?>
+<section id="<?= escape($group) ?>" class="card mt-4">
     <div class="card-body">
-        <h3 class="card-title"><?= ucfirst($category) ?></h3>
+        <h3 class="card-title"><?= ucfirst($group) ?></h3>
         <form method="POST">
             <div class="settings-grid">
                 <?php foreach ($items as $s): ?>
                 <div class="setting-item">
                     <label class="setting-label">
-                        <?= escape($s['label'] ?? $s['setting_key']) ?>
+                        <?= escape($s['setting_label'] ?? $s['setting_key']) ?>
                         <?php if (!empty($s['description'])): ?>
                             <div class="text-muted"><?= escape($s['description']) ?></div>
                         <?php endif; ?>

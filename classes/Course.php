@@ -35,8 +35,8 @@ class Course {
         
         return $this->db->fetchAll(
             "SELECT c.*, cat.name as category_name, u.full_name as instructor_name,
-             (SELECT COUNT(*) FROM modules WHERE course_id = c.id) as total_modules,
-             (SELECT COUNT(*) FROM lessons l JOIN modules m ON l.module_id = m.id WHERE m.course_id = c.id) as total_lessons
+             (SELECT COUNT(*) FROM course_modules WHERE course_id = c.id) as total_modules,
+             (SELECT COUNT(*) FROM course_lessons l JOIN course_modules m ON l.module_id = m.id WHERE m.course_id = c.id) as total_lessons
              FROM courses c 
              LEFT JOIN categories cat ON c.category_id = cat.id 
              LEFT JOIN users u ON c.instructor_id = u.id 
@@ -78,17 +78,17 @@ class Course {
     public function getModules(int $courseId): array {
         return $this->db->fetchAll(
             "SELECT m.*, 
-             (SELECT COUNT(*) FROM lessons WHERE module_id = m.id) as total_lessons
-             FROM modules m 
+             (SELECT COUNT(*) FROM course_lessons WHERE module_id = m.id) as total_lessons
+             FROM course_modules m 
              WHERE m.course_id = ? 
-             ORDER BY m.order_index",
+             ORDER BY m.sort_order",
             [$courseId]
         );
     }
     
     public function getLessons(int $moduleId): array {
         return $this->db->fetchAll(
-            "SELECT * FROM lessons WHERE module_id = ? ORDER BY order_index",
+            "SELECT * FROM course_lessons WHERE module_id = ? ORDER BY sort_order",
             [$moduleId]
         );
     }
@@ -126,13 +126,13 @@ class Course {
     
     public function getUserCourses(int $userId): array {
         return $this->db->fetchAll(
-            "SELECT c.*, e.progress_percentage, e.started_at, e.completed_at,
+            "SELECT c.*, e.progress_percent as progress_percentage, e.enrolled_at as started_at, e.completed_at, e.last_accessed_at,
              cat.name as category_name
              FROM enrollments e 
              JOIN courses c ON e.course_id = c.id 
              LEFT JOIN categories cat ON c.category_id = cat.id
              WHERE e.user_id = ? 
-             ORDER BY e.last_accessed DESC",
+             ORDER BY e.last_accessed_at DESC",
             [$userId]
         );
     }

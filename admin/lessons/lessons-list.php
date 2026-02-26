@@ -20,7 +20,7 @@ if ($courseId > 0) {
 }
 
 if ($moduleId > 0) {
-    $module = $db->fetch("SELECT * FROM modules WHERE id = ?", [$moduleId]);
+    $module = $db->fetch("SELECT * FROM course_modules WHERE id = ?", [$moduleId]);
 }
 
 // Construir query
@@ -50,7 +50,7 @@ if ($contentType !== 'all') {
 }
 
 if ($search) {
-    $where[] = "(l.title LIKE ? OR l.summary LIKE ?)";
+    $where[] = "(l.title LIKE ? OR l.content LIKE ?)";
     $params[] = "%{$search}%";
     $params[] = "%{$search}%";
 }
@@ -62,21 +62,21 @@ $query = "SELECT l.*,
           m.title as module_title,
           c.title as course_title,
           c.id as course_id
-          FROM lessons l 
-          LEFT JOIN modules m ON l.module_id = m.id
+          FROM course_lessons l 
+          LEFT JOIN course_modules m ON l.module_id = m.id
           LEFT JOIN courses c ON m.course_id = c.id
           {$whereClause}
-          ORDER BY l.order_position ASC, l.created_at DESC";
+          ORDER BY l.sort_order ASC, l.created_at DESC";
 
 $lessons = $db->fetchAll($query, $params);
 
 // Estatísticas
 $statsWhere = $moduleId > 0 ? "WHERE module_id = {$moduleId}" : "";
 $stats = [
-    'total' => $db->fetch("SELECT COUNT(*) as count FROM lessons {$statsWhere}")['count'],
-    'published' => $db->fetch("SELECT COUNT(*) as count FROM lessons {$statsWhere} " . ($moduleId > 0 ? 'AND' : 'WHERE') . " is_published = 1")['count'],
-    'draft' => $db->fetch("SELECT COUNT(*) as count FROM lessons {$statsWhere} " . ($moduleId > 0 ? 'AND' : 'WHERE') . " is_published = 0")['count'],
-    'free' => $db->fetch("SELECT COUNT(*) as count FROM lessons {$statsWhere} " . ($moduleId > 0 ? 'AND' : 'WHERE') . " is_free_preview = 1")['count'],
+    'total' => $db->fetch("SELECT COUNT(*) as count FROM course_lessons {$statsWhere}")['count'],
+    'published' => $db->fetch("SELECT COUNT(*) as count FROM course_lessons {$statsWhere} " . ($moduleId > 0 ? 'AND' : 'WHERE') . " is_published = 1")['count'],
+    'draft' => $db->fetch("SELECT COUNT(*) as count FROM course_lessons {$statsWhere} " . ($moduleId > 0 ? 'AND' : 'WHERE') . " is_published = 0")['count'],
+    'free' => $db->fetch("SELECT COUNT(*) as count FROM course_lessons {$statsWhere} " . ($moduleId > 0 ? 'AND' : 'WHERE') . " is_free_preview = 1")['count'],
 ];
 
 showFlashMessages();
@@ -88,7 +88,7 @@ showFlashMessages();
         <li class="breadcrumb-item"><a href="<?= url('admin/dashboard.php') ?>">Dashboard</a></li>
         <?php if ($course): ?>
             <li class="breadcrumb-item"><a href="<?= url('admin/courses.php') ?>">Cursos</a></li>
-            <li class="breadcrumb-item"><a href="<?= url('admin/modules/list.php?course_id=' . $courseId) ?>"><?= escape($course['title']) ?></a></li>
+            <li class="breadcrumb-item"><a href="<?= url('admin/modules/modules.php?course_id=' . $courseId) ?>"><?= escape($course['title']) ?></a></li>
         <?php endif; ?>
         <?php if ($module): ?>
             <li class="breadcrumb-item active"><?= escape($module['title']) ?></li>
@@ -120,7 +120,7 @@ showFlashMessages();
                 </button>
                 <div class="dropdown-menu">
                     <h6 class="dropdown-header">Selecione um módulo primeiro</h6>
-                    <a class="dropdown-item" href="<?= url('admin/modules/list.php') ?>">
+                    <a class="dropdown-item" href="<?= url('admin/modules/modules.php?course_id=' . ($courseId ?: '')) ?>">
                         <i class="fas fa-folder"></i> Ver Módulos
                     </a>
                 </div>
@@ -250,7 +250,7 @@ showFlashMessages();
                     </a>
                 <?php else: ?>
                     <p class="text-muted">Selecione um módulo para gerenciar suas lições</p>
-                    <a href="<?= url('admin/modules/list.php') ?>" class="btn btn-primary">
+                    <a href="<?= url('admin/modules/modules.php?course_id=' . ($courseId ?: '')) ?>" class="btn btn-primary">
                         <i class="fas fa-folder"></i> Ver Módulos
                     </a>
                 <?php endif; ?>

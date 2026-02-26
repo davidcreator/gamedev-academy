@@ -87,14 +87,14 @@ require_once 'includes/header.php';
                 <article class="featured-card <?= $index === 0 ? 'featured-main' : '' ?>">
                     <a href="news-detail.php?id=<?= $news['slug'] ?? $news['id'] ?>">
                         <div class="featured-image">
-                            <img src="<?= getNewsImage($news['image']) ?>" 
+                            <img src="<?= getNewsImage($news['featured_image'] ?? '') ?>" 
                                  alt="<?= htmlspecialchars($news['title']) ?>">
                             <span class="featured-badge">Destaque</span>
                         </div>
                         <div class="featured-content">
                             <div class="featured-meta">
-                                <span class="category-tag"><?= $categories[$news['category']] ?? 'Geral' ?></span>
-                                <span class="date"><?= formatDate($news['published_at']) ?></span>
+                                <span class="category-tag"><?= $categories[$news['category_id'] ?? ''] ?? 'Geral' ?></span>
+                                <span class="date"><?= formatDate($news['published_at'] ?? '') ?></span>
                             </div>
                             <h3 class="featured-title"><?= htmlspecialchars($news['title']) ?></h3>
                             <p class="featured-excerpt">

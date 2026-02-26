@@ -12,8 +12,9 @@ $id = intval($_GET['id'] ?? 0);
 $moduleId = intval($_GET['module_id'] ?? 0);
 $courseId = intval($_GET['course_id'] ?? 0);
 
-$module = $db->fetch("SELECT * FROM modules WHERE id = ?", [$moduleId]);
-$course = $courseModel->find($courseId);
+$module = $db->fetch("SELECT * FROM course_modules WHERE id = ?", [$moduleId]);
+$course = $courseId > 0 ? $db->fetch("SELECT * FROM courses WHERE id = ?", [$courseId]) : null;
+
 if (!$module || !$course) {
     flash('error', 'Módulo ou curso não encontrado.');
     redirect(url('admin/courses/courses.php'));
@@ -25,21 +26,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'create') {
         $data = [
             'module_id' => $moduleId,
+            'course_id' => $courseId,
             'title' => trim($_POST['title'] ?? ''),
+            'slug' => slugify($_POST['title'] ?? ''),
             'content_type' => $_POST['content_type'] ?? 'text',
-            'order_index' => intval($_POST['order_index'] ?? 0),
+            'sort_order' => intval($_POST['order_index'] ?? 0),
             'xp_reward' => intval($_POST['xp_reward'] ?? 10),
             'coin_reward' => intval($_POST['coin_reward'] ?? 1),
             'is_published' => isset($_POST['is_published']) ? 1 : 0,
             'is_free_preview' => isset($_POST['is_free_preview']) ? 1 : 0,
             'video_url' => trim($_POST['video_url'] ?? ''),
             'video_provider' => $_POST['video_provider'] ?? 'youtube',
-            'duration_minutes' => intval($_POST['duration_minutes'] ?? 0),
+            'video_duration' => intval($_POST['duration_minutes'] ?? 0),
         ];
         if (!$data['title']) {
             flash('error', 'Informe o título da lição.');
         } else {
-            $db->insert('lessons', $data);
+            $db->insert('course_lessons', $data);
             flash('success', 'Lição criada com sucesso!');
         }
         redirect(url('admin/lessons/lessons.php?module_id=' . $moduleId . '&course_id=' . $courseId));
@@ -51,16 +54,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $data = [
                 'title' => trim($_POST['title'] ?? ''),
                 'content_type' => $_POST['content_type'] ?? 'text',
-                'order_index' => intval($_POST['order_index'] ?? 0),
+                'sort_order' => intval($_POST['order_index'] ?? 0),
                 'xp_reward' => intval($_POST['xp_reward'] ?? 10),
                 'coin_reward' => intval($_POST['coin_reward'] ?? 1),
                 'is_published' => isset($_POST['is_published']) ? 1 : 0,
                 'is_free_preview' => isset($_POST['is_free_preview']) ? 1 : 0,
                 'video_url' => trim($_POST['video_url'] ?? ''),
                 'video_provider' => $_POST['video_provider'] ?? 'youtube',
-                'duration_minutes' => intval($_POST['duration_minutes'] ?? 0),
+                'video_duration' => intval($_POST['duration_minutes'] ?? 0),
             ];
-            $db->update('lessons', $data, 'id = :id', ['id' => $id]);
+            $db->update('course_lessons', $data, 'id = :id', ['id' => $id]);
             flash('success', 'Lição atualizada!');
         }
         redirect(url('admin/lessons/lessons.php?module_id=' . $moduleId . '&course_id=' . $courseId));
@@ -69,19 +72,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'delete') {
         $id = intval($_POST['id'] ?? 0);
         if ($id) {
-            $db->delete('lessons', 'id = :id', ['id' => $id]);
+            $db->delete('course_lessons', 'id = :id', ['id' => $id]);
             flash('success', 'Lição removida!');
         }
         redirect(url('admin/lessons/lessons.php?module_id=' . $moduleId . '&course_id=' . $courseId));
     }
 }
 
-$lessons = $courseModel->getLessons($moduleId);
-
-// Buscar todas as aulas
+// Buscar todas as aulas do módulo
 try {
-    $stmt = $pdo->query("SELECT * FROM lessons ORDER BY id DESC");
-    $lessons = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $stmt = $db->query("SELECT * FROM course_lessons WHERE module_id = ? ORDER BY sort_order ASC", [$moduleId]);
+    $lessons = $stmt->fetchAll();
     $total = count($lessons);
 } catch(PDOException $e) {
     die("Erro ao buscar aulas: " . $e->getMessage());

@@ -19,12 +19,12 @@ if ($status !== 'all') {
 }
 
 if ($category !== 'all') {
-    $where[] = "category = ?";
+    $where[] = "category_id = ?";
     $params[] = $category;
 }
 
 if ($search) {
-    $where[] = "(title LIKE ? OR excerpt LIKE ?)";
+    $where[] = "(title LIKE ? OR content LIKE ?)";
     $params[] = "%{$search}%";
     $params[] = "%{$search}%";
 }
@@ -37,8 +37,8 @@ $perPage = 15;
 $offset = ($page - 1) * $perPage;
 
 // Buscar notícias
-$query = "SELECT n.*, u.name as author_name 
-          FROM news n 
+$query = "SELECT n.*, u.full_name as author_name 
+          FROM blog_posts n 
           LEFT JOIN users u ON n.author_id = u.id 
           {$whereClause}
           ORDER BY n.created_at DESC 
@@ -47,16 +47,16 @@ $query = "SELECT n.*, u.name as author_name
 $news = $db->fetchAll($query, $params);
 
 // Contar total
-$countQuery = "SELECT COUNT(*) as total FROM news {$whereClause}";
+$countQuery = "SELECT COUNT(*) as total FROM blog_posts {$whereClause}";
 $total = $db->fetch($countQuery, $params)['total'] ?? 0;
 $totalPages = ceil($total / $perPage);
 
 // Estatísticas
 $stats = [
-    'total' => $db->fetch("SELECT COUNT(*) as count FROM news")['count'],
-    'published' => $db->fetch("SELECT COUNT(*) as count FROM news WHERE status = 'published'")['count'],
-    'draft' => $db->fetch("SELECT COUNT(*) as count FROM news WHERE status = 'draft'")['count'],
-    'scheduled' => $db->fetch("SELECT COUNT(*) as count FROM news WHERE status = 'scheduled'")['count'],
+    'total' => $db->fetch("SELECT COUNT(*) as count FROM blog_posts")['count'],
+    'published' => $db->fetch("SELECT COUNT(*) as count FROM blog_posts WHERE status = 'published'")['count'],
+    'draft' => $db->fetch("SELECT COUNT(*) as count FROM blog_posts WHERE status = 'draft'")['count'],
+    'archived' => $db->fetch("SELECT COUNT(*) as count FROM blog_posts WHERE status = 'archived'")['count'],
 ];
 
 showFlashMessages();
@@ -126,11 +126,11 @@ showFlashMessages();
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <p class="text-muted mb-1">Agendadas</p>
-                        <h3 class="mb-0 text-info"><?= number_format($stats['scheduled']) ?></h3>
+                        <p class="text-muted mb-1">Arquivadas</p>
+                        <h3 class="mb-0 text-info"><?= number_format($stats['archived']) ?></h3>
                     </div>
                     <div class="text-info">
-                        <i class="fas fa-clock fa-2x"></i>
+                        <i class="fas fa-archive fa-2x"></i>
                     </div>
                 </div>
             </div>
@@ -152,7 +152,6 @@ showFlashMessages();
                     <option value="all" <?= $status === 'all' ? 'selected' : '' ?>>Todos</option>
                     <option value="published" <?= $status === 'published' ? 'selected' : '' ?>>Publicadas</option>
                     <option value="draft" <?= $status === 'draft' ? 'selected' : '' ?>>Rascunhos</option>
-                    <option value="scheduled" <?= $status === 'scheduled' ? 'selected' : '' ?>>Agendadas</option>
                     <option value="archived" <?= $status === 'archived' ? 'selected' : '' ?>>Arquivadas</option>
                 </select>
             </div>

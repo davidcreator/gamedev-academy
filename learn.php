@@ -40,31 +40,31 @@ if (!$courseModel->isEnrolled($user['id'], $course['id'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'complete_lesson') {
     $lid = intval($_POST['lesson_id'] ?? 0);
     if ($lid > 0) {
-        $lesson = $db->fetch("SELECT * FROM lessons WHERE id = ?", [$lid]);
+        $lesson = $db->fetch("SELECT * FROM course_lessons WHERE id = ?", [$lid]);
         if ($lesson) {
             // Inserir/Atualizar progresso
             $existing = $db->fetch("SELECT id FROM lesson_progress WHERE user_id = ? AND lesson_id = ?", [$user['id'], $lid]);
             if ($existing) {
-                $db->query("UPDATE lesson_progress SET is_completed = 1, progress_percentage = 100, time_spent = time_spent WHERE id = ?", [$existing['id']]);
+                $db->query("UPDATE lesson_progress SET is_completed = 1, progress_percent = 100 WHERE id = ?", [$existing['id']]);
             } else {
                 $db->insert('lesson_progress', [
                     'user_id' => $user['id'],
                     'lesson_id' => $lid,
                     'is_completed' => 1,
-                    'progress_percentage' => 100,
-                    'time_spent' => 0
+                    'progress_percent' => 100,
+                    'watch_time' => 0
                 ]);
             }
             
             // Atualizar matrícula
             $enrollment = $db->fetch("SELECT * FROM enrollments WHERE user_id = ? AND course_id = ?", [$user['id'], $course['id']]);
             if ($enrollment) {
-                $totalLessons = $db->fetch("SELECT COUNT(*) as total FROM lessons l JOIN modules m ON l.module_id = m.id WHERE m.course_id = ?", [$course['id']])['total'];
-                $completedLessons = $db->fetch("SELECT COUNT(*) as total FROM lesson_progress lp JOIN lessons l ON lp.lesson_id = l.id JOIN modules m ON l.module_id = m.id WHERE lp.user_id = ? AND lp.is_completed = 1 AND m.course_id = ?", [$user['id'], $course['id']])['total'];
+                $totalLessons = $db->fetch("SELECT COUNT(*) as total FROM course_lessons l JOIN course_modules m ON l.module_id = m.id WHERE m.course_id = ?", [$course['id']])['total'];
+                $completedLessons = $db->fetch("SELECT COUNT(*) as total FROM lesson_progress lp JOIN course_lessons l ON lp.lesson_id = l.id JOIN course_modules m ON l.module_id = m.id WHERE lp.user_id = ? AND lp.is_completed = 1 AND m.course_id = ?", [$user['id'], $course['id']])['total'];
                 $progress = $totalLessons > 0 ? min(100, round(($completedLessons / $totalLessons) * 100, 2)) : 0;
                 
-                $db->query("UPDATE enrollments SET completed_lessons = ?, total_lessons = ?, progress_percentage = ?, current_lesson_id = ?, last_accessed = NOW() WHERE id = ?", [
-                    $completedLessons, $totalLessons, $progress, $lid, $enrollment['id']
+                $db->query("UPDATE enrollments SET lessons_completed = ?, progress_percent = ?, last_lesson_id = ?, last_accessed_at = NOW() WHERE id = ?", [
+                    $completedLessons, $progress, $lid, $enrollment['id']
                 ]);
                 
                 // Recompensas
@@ -98,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'submi
     $lid = intval($_POST['lesson_id'] ?? 0);
     $answers = $_POST['answers'] ?? [];
     if ($lid > 0) {
-        $lesson = $db->fetch("SELECT * FROM lessons WHERE id = ?", [$lid]);
+        $lesson = $db->fetch("SELECT * FROM course_lessons WHERE id = ?", [$lid]);
         if ($lesson && $lesson['content_type'] === 'quiz' && !empty($lesson['content'])) {
             $quiz = json_decode($lesson['content'], true);
             $correct = 0;
@@ -116,14 +116,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'submi
             // Atualiza progresso e recompensa simples com base no acerto
             $existing = $db->fetch("SELECT id FROM lesson_progress WHERE user_id = ? AND lesson_id = ?", [$user['id'], $lid]);
             if ($existing) {
-                $db->query("UPDATE lesson_progress SET is_completed = 1, progress_percentage = 100, time_spent = time_spent, score = ?, max_score = ? WHERE id = ?", [$correct, $total, $existing['id']]);
+                $db->query("UPDATE lesson_progress SET is_completed = 1, progress_percent = 100, watch_time = watch_time, score = ?, max_score = ? WHERE id = ?", [$correct, $total, $existing['id']]);
             } else {
                 $db->insert('lesson_progress', [
                     'user_id' => $user['id'],
                     'lesson_id' => $lid,
                     'is_completed' => 1,
-                    'progress_percentage' => 100,
-                    'time_spent' => 0,
+                    'progress_percent' => 100,
+                    'watch_time' => 0,
                     'score' => $correct,
                     'max_score' => $total
                 ]);
@@ -137,11 +137,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'submi
             // Atualiza matrícula
             $enrollment = $db->fetch("SELECT * FROM enrollments WHERE user_id = ? AND course_id = ?", [$user['id'], $course['id']]);
             if ($enrollment) {
-                $totalLessons = $db->fetch("SELECT COUNT(*) as total FROM lessons l JOIN modules m ON l.module_id = m.id WHERE m.course_id = ?", [$course['id']])['total'];
-                $completedLessons = $db->fetch("SELECT COUNT(*) as total FROM lesson_progress lp JOIN lessons l ON lp.lesson_id = l.id JOIN modules m ON l.module_id = m.id WHERE lp.user_id = ? AND lp.is_completed = 1 AND m.course_id = ?", [$user['id'], $course['id']])['total'];
+                $totalLessons = $db->fetch("SELECT COUNT(*) as total FROM course_lessons l JOIN course_modules m ON l.module_id = m.id WHERE m.course_id = ?", [$course['id']])['total'];
+                $completedLessons = $db->fetch("SELECT COUNT(*) as total FROM lesson_progress lp JOIN course_lessons l ON lp.lesson_id = l.id JOIN course_modules m ON l.module_id = m.id WHERE lp.user_id = ? AND lp.is_completed = 1 AND m.course_id = ?", [$user['id'], $course['id']])['total'];
                 $progress = $totalLessons > 0 ? min(100, round(($completedLessons / $totalLessons) * 100, 2)) : 0;
-                $db->query("UPDATE enrollments SET completed_lessons = ?, total_lessons = ?, progress_percentage = ?, current_lesson_id = ?, last_accessed = NOW() WHERE id = ?", [
-                    $completedLessons, $totalLessons, $progress, $lid, $enrollment['id']
+                $db->query("UPDATE enrollments SET lessons_completed = ?, progress_percent = ?, last_lesson_id = ?, last_accessed_at = NOW() WHERE id = ?", [
+                    $completedLessons, $progress, $lid, $enrollment['id']
                 ]);
                 if ($progress >= 100 && !$enrollment['completed_at']) {
                     $courseXp = intval($course['xp_reward'] ?? 0);
@@ -161,11 +161,11 @@ $modules = $courseModel->getModules($course['id']);
 if ($lessonId <= 0) {
     // Selecionar primeira lição disponível
     foreach ($modules as $m) {
-        $firstLesson = $db->fetch("SELECT id FROM lessons WHERE module_id = ? AND is_published = 1 ORDER BY order_index LIMIT 1", [$m['id']]);
+        $firstLesson = $db->fetch("SELECT id FROM course_lessons WHERE module_id = ? AND is_published = 1 ORDER BY sort_order LIMIT 1", [$m['id']]);
         if ($firstLesson) { $lessonId = $firstLesson['id']; break; }
     }
 }
-$currentLesson = $lessonId ? $db->fetch("SELECT * FROM lessons WHERE id = ?", [$lessonId]) : null;
+$currentLesson = $lessonId ? $db->fetch("SELECT * FROM course_lessons WHERE id = ?", [$lessonId]) : null;
 
 ?>
 <!DOCTYPE html>

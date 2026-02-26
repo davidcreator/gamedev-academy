@@ -1,138 +1,175 @@
 -- ================================================================
+-- GAMEDEV ACADEMY - SCHEMA COMPLETO UNIFICADO CORRIGIDO
+-- Versão: 5.0.0
+-- Total de tabelas: ~100
+-- Correções v4.0:
+--   - 20 tabelas adicionadas (faltavam no schema anterior)
+--   - 6 nomes de tabela corrigidos (modules→course_modules, etc.)
+--   - AUTO_INCREMENT corrigido para refletir nomes reais
+--   - FKs atualizadas após renomeações
+-- Correções v5.0 (merge com schema-old v2.0):
+--   - 19 tabelas do schema legado reintegradas e adaptadas ao padrão v4
+--   - Dados iniciais (seed) adicionados: levels, achievements, categories,
+--     badges, settings, usuários admin e demo
 -- ================================================================
---
---   GAMEDEV ACADEMY - SCHEMA COMPLETO DO BANCO DE DADOS
---   
---   Versão: 2.0.0
---   Data: 2025
---   Projeto: https://github.com/davidcreator/gamedev-academy
---   
---   INSTRUÇÕES:
---   1. Faça backup antes de executar em produção
---   2. Execute este arquivo completo de uma vez
---   3. A ordem das tabelas respeita as dependências de FK
---   4. Todos os DROP são protegidos com IF EXISTS
---   5. FK_CHECKS desabilitado apenas durante a criação
---
---   TOTAL DE TABELAS: 54
---
--- ================================================================
--- ================================================================
-
-
--- ================================================================
--- CONFIGURAÇÃO INICIAL DE SEGURANÇA
--- ================================================================
-
--- Garante que o script não quebre por configurações do servidor
-SET @OLD_FOREIGN_KEY_CHECKS = @@FOREIGN_KEY_CHECKS;
-SET @OLD_SQL_MODE = @@SQL_MODE;
-SET @OLD_UNIQUE_CHECKS = @@UNIQUE_CHECKS;
-SET @OLD_CHARACTER_SET_CLIENT = @@CHARACTER_SET_CLIENT;
-SET @OLD_CHARACTER_SET_RESULTS = @@CHARACTER_SET_RESULTS;
-SET @OLD_COLLATION_CONNECTION = @@COLLATION_CONNECTION;
-SET @OLD_SQL_NOTES = @@SQL_NOTES;
 
 SET FOREIGN_KEY_CHECKS = 0;
-SET UNIQUE_CHECKS = 0;
 SET SQL_MODE = 'STRICT_TRANS_TABLES,NO_ZERO_DATE,NO_ZERO_IN_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
 SET NAMES utf8mb4;
-SET CHARACTER SET utf8mb4;
-SET SQL_NOTES = 0;
 SET TIME_ZONE = '+00:00';
 
-
 -- ================================================================
--- CRIAÇÃO DO BANCO (IGNORADA SE JÁ EXISTIR)
--- ================================================================
-
-CREATE DATABASE IF NOT EXISTS `gamedev_academy`
-    DEFAULT CHARACTER SET utf8mb4
-    DEFAULT COLLATE utf8mb4_unicode_ci;
-
-USE `gamedev_academy`;
-
-
--- ================================================================
--- ================================================================
---
---   NÍVEL 0 - TABELAS SEM DEPENDÊNCIAS (14 tabelas)
---
---   Estas tabelas não possuem Foreign Keys apontando para
---   outras tabelas do sistema. São a base de tudo.
---
--- ================================================================
+-- NÍVEL 0 - TABELAS SEM DEPENDÊNCIAS
 -- ================================================================
 
-
--- ----------------------------------------------------------------
--- TABELA 01/54: users
--- Descrição: Usuários do sistema (alunos, instrutores, admins)
--- Dependências: Nenhuma
--- Referenciada por: Praticamente todas as tabelas
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `users`;
 CREATE TABLE `users` (
-    `id`                      INT UNSIGNED       NOT NULL AUTO_INCREMENT,
-    `name`                    VARCHAR(100)       NOT NULL                          COMMENT 'Nome completo',
-    `username`                VARCHAR(50)        NOT NULL                          COMMENT 'Apelido/username único',
-    `email`                   VARCHAR(150)       NOT NULL                          COMMENT 'Email único para login',
-    `password`                VARCHAR(255)       NOT NULL                          COMMENT 'Hash bcrypt da senha',
-    `role`                    ENUM('student','instructor','admin','super_admin') 
-                                                 NOT NULL DEFAULT 'student'        COMMENT 'Papel do usuário no sistema',
-    `avatar`                  VARCHAR(500)       DEFAULT NULL                      COMMENT 'URL da foto de perfil',
-    `bio`                     TEXT               DEFAULT NULL                      COMMENT 'Biografia/descrição',
-    `phone`                   VARCHAR(20)        DEFAULT NULL                      COMMENT 'Telefone com DDD',
-    `website`                 VARCHAR(255)       DEFAULT NULL                      COMMENT 'Site pessoal/portfólio',
-    `social_github`           VARCHAR(255)       DEFAULT NULL                      COMMENT 'Perfil GitHub',
-    `social_linkedin`         VARCHAR(255)       DEFAULT NULL                      COMMENT 'Perfil LinkedIn',
-    `social_twitter`          VARCHAR(255)       DEFAULT NULL                      COMMENT 'Perfil Twitter/X',
-    `social_youtube`          VARCHAR(255)       DEFAULT NULL                      COMMENT 'Canal YouTube',
-    `specialization`          VARCHAR(255)       DEFAULT NULL                      COMMENT 'Área de especialização (instrutores)',
-    `total_points`            INT UNSIGNED       NOT NULL DEFAULT 0                COMMENT 'Cache de pontos totais da gamificação',
-    `email_verified_at`       TIMESTAMP          NULL DEFAULT NULL                 COMMENT 'Data de verificação do email',
-    `email_verification_token` VARCHAR(100)      DEFAULT NULL                      COMMENT 'Token para verificar email',
-    `password_reset_token`    VARCHAR(100)       DEFAULT NULL                      COMMENT 'Token para redefinir senha',
-    `password_reset_expires`  TIMESTAMP          NULL DEFAULT NULL                 COMMENT 'Expiração do token de reset',
-    `two_factor_secret`       VARCHAR(255)       DEFAULT NULL                      COMMENT 'Segredo 2FA (TOTP)',
-    `two_factor_enabled`      TINYINT(1)         NOT NULL DEFAULT 0               COMMENT '2FA ativado?',
-    `last_login_at`           TIMESTAMP          NULL DEFAULT NULL                 COMMENT 'Último login',
-    `last_login_ip`           VARCHAR(45)        DEFAULT NULL                      COMMENT 'IP do último login (suporta IPv6)',
-    `is_active`               TINYINT(1)         NOT NULL DEFAULT 1               COMMENT 'Conta ativa?',
-    `preferences`             JSON               DEFAULT NULL                      COMMENT 'Preferências do usuário em JSON',
-    `created_at`              TIMESTAMP          NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at`              TIMESTAMP          NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `id`                        INT UNSIGNED       NOT NULL AUTO_INCREMENT,
+    `name`                      VARCHAR(100)       NOT NULL                          COMMENT 'Nome de exibição',
+    `full_name`                 VARCHAR(200)       DEFAULT NULL                      COMMENT 'Nome completo',
+    `first_name`                VARCHAR(100)       DEFAULT NULL                      COMMENT 'Primeiro nome',
+    `last_name`                 VARCHAR(100)       DEFAULT NULL                      COMMENT 'Sobrenome',
+    `username`                  VARCHAR(50)        NOT NULL                          COMMENT 'Username único',
+    `email`                     VARCHAR(150)       NOT NULL                          COMMENT 'Email único para login',
+    `password`                  VARCHAR(255)       NOT NULL                          COMMENT 'Hash bcrypt da senha',
+    `role`                      ENUM('student','instructor','admin','super_admin')
+                                                   NOT NULL DEFAULT 'student'        COMMENT 'Papel do usuário',
+    `avatar`                    VARCHAR(500)       DEFAULT NULL                      COMMENT 'URL da foto de perfil',
+    `bio`                       TEXT               DEFAULT NULL                      COMMENT 'Biografia',
+    `phone`                     VARCHAR(20)        DEFAULT NULL                      COMMENT 'Telefone com DDD',
+    `website`                   VARCHAR(255)       DEFAULT NULL                      COMMENT 'Site pessoal',
+    `social_github`             VARCHAR(255)       DEFAULT NULL,
+    `social_linkedin`           VARCHAR(255)       DEFAULT NULL,
+    `social_twitter`            VARCHAR(255)       DEFAULT NULL,
+    `social_youtube`            VARCHAR(255)       DEFAULT NULL,
+    `specialization`            VARCHAR(255)       DEFAULT NULL                      COMMENT 'Área de especialização',
+    `total_points`              INT UNSIGNED       NOT NULL DEFAULT 0                COMMENT 'Cache pontos gamificação',
+    `xp_total`                  INT UNSIGNED       NOT NULL DEFAULT 0                COMMENT 'XP total do usuário',
+    `coins`                     INT UNSIGNED       NOT NULL DEFAULT 0                COMMENT 'Moedas do usuário',
+    `level`                     INT UNSIGNED       NOT NULL DEFAULT 1                COMMENT 'Nível atual do usuário',
+    `streak_days`               INT UNSIGNED       NOT NULL DEFAULT 0                COMMENT 'Dias seguidos de atividade',
+    `last_activity`             DATE               DEFAULT NULL                      COMMENT 'Data da última atividade',
+    `email_verified_at`         TIMESTAMP          NULL DEFAULT NULL,
+    `email_verification_token`  VARCHAR(100)       DEFAULT NULL,
+    `password_reset_token`      VARCHAR(100)       DEFAULT NULL,
+    `password_reset_expires`    TIMESTAMP          NULL DEFAULT NULL,
+    `two_factor_secret`         VARCHAR(255)       DEFAULT NULL,
+    `two_factor_enabled`        TINYINT(1)         NOT NULL DEFAULT 0,
+    `last_login_at`             TIMESTAMP          NULL DEFAULT NULL,
+    `last_login_ip`             VARCHAR(45)        DEFAULT NULL,
+    `is_active`                 TINYINT(1)         NOT NULL DEFAULT 1,
+    `status`                    ENUM('active','inactive','banned','pending')
+                                                   NOT NULL DEFAULT 'active'        COMMENT 'Status do usuário',
+    `preferences`               JSON               DEFAULT NULL,
+    `created_at`                TIMESTAMP          NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`                TIMESTAMP          NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_users_email` (`email`),
     UNIQUE KEY `uk_users_username` (`username`),
     KEY `idx_users_role` (`role`),
     KEY `idx_users_active` (`is_active`),
+    KEY `idx_users_status` (`status`),
     KEY `idx_users_created` (`created_at`),
     KEY `idx_users_points` (`total_points` DESC)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Tabela principal de usuários do sistema';
+  COMMENT='Usuários do sistema';
 
 
--- ----------------------------------------------------------------
--- TABELA 02/54: categories
--- Descrição: Categorias de cursos (suporta hierarquia pai/filho)
--- Dependências: Self-reference (parent_id)
--- Referenciada por: courses, course_categories, blog_posts
--- ----------------------------------------------------------------
+-- ================================================================
+-- CORREÇÃO: user_profiles, user_settings, user_social_links
+-- (referenciadas no AUTO_INCREMENT mas faltavam no schema)
+-- ================================================================
+
+DROP TABLE IF EXISTS `user_profiles`;
+CREATE TABLE `user_profiles` (
+    `id`                INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    `user_id`           INT UNSIGNED     NOT NULL,
+    `birth_date`        DATE             DEFAULT NULL,
+    `gender`            ENUM('male','female','non_binary','prefer_not_to_say') DEFAULT NULL,
+    `country_code`      CHAR(2)          DEFAULT NULL                    COMMENT 'ISO 3166-1 alpha-2',
+    `state`             VARCHAR(100)     DEFAULT NULL,
+    `city`              VARCHAR(100)     DEFAULT NULL,
+    `timezone`          VARCHAR(50)      DEFAULT 'America/Sao_Paulo',
+    `language`          VARCHAR(10)      DEFAULT 'pt-BR',
+    `experience_level`  ENUM('beginner','intermediate','advanced','professional') DEFAULT 'beginner',
+    `years_experience`  TINYINT UNSIGNED DEFAULT NULL,
+    `headline`          VARCHAR(255)     DEFAULT NULL                    COMMENT 'Tagline do perfil',
+    `portfolio_url`     VARCHAR(500)     DEFAULT NULL,
+    `cover_image`       VARCHAR(500)     DEFAULT NULL,
+    `is_public`         TINYINT(1)       NOT NULL DEFAULT 1              COMMENT 'Perfil público?',
+    `show_email`        TINYINT(1)       NOT NULL DEFAULT 0,
+    `show_phone`        TINYINT(1)       NOT NULL DEFAULT 0,
+    `updated_at`        TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_profile_user` (`user_id`),
+    CONSTRAINT `fk_profiles_user` FOREIGN KEY (`user_id`)
+        REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Perfil estendido dos usuários';
+
+
+DROP TABLE IF EXISTS `user_settings`;
+CREATE TABLE `user_settings` (
+    `id`                        INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+    `user_id`                   INT UNSIGNED    NOT NULL,
+    `email_new_message`         TINYINT(1)      NOT NULL DEFAULT 1,
+    `email_course_updates`      TINYINT(1)      NOT NULL DEFAULT 1,
+    `email_promotions`          TINYINT(1)      NOT NULL DEFAULT 0,
+    `email_newsletter`          TINYINT(1)      NOT NULL DEFAULT 0,
+    `notify_new_reply`          TINYINT(1)      NOT NULL DEFAULT 1,
+    `notify_achievement`        TINYINT(1)      NOT NULL DEFAULT 1,
+    `notify_enrollment`         TINYINT(1)      NOT NULL DEFAULT 1,
+    `theme`                     ENUM('light','dark','system') NOT NULL DEFAULT 'dark',
+    `sidebar_collapsed`         TINYINT(1)      NOT NULL DEFAULT 0,
+    `video_quality`             ENUM('auto','1080p','720p','480p','360p') NOT NULL DEFAULT 'auto',
+    `video_speed`               DECIMAL(3,1)    NOT NULL DEFAULT 1.0,
+    `autoplay`                  TINYINT(1)      NOT NULL DEFAULT 1,
+    `subtitles_enabled`         TINYINT(1)      NOT NULL DEFAULT 0,
+    `updated_at`                TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_settings_user` (`user_id`),
+    CONSTRAINT `fk_usersettings_user` FOREIGN KEY (`user_id`)
+        REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Configurações e preferências individuais por usuário';
+
+
+DROP TABLE IF EXISTS `user_social_links`;
+CREATE TABLE `user_social_links` (
+    `id`          INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    `user_id`     INT UNSIGNED     NOT NULL,
+    `platform`    ENUM('github','linkedin','twitter','youtube','twitch','discord','instagram','facebook','tiktok','website','other')
+                                   NOT NULL,
+    `url`         VARCHAR(500)     NOT NULL,
+    `label`       VARCHAR(100)     DEFAULT NULL                          COMMENT 'Texto exibido',
+    `sort_order`  INT              NOT NULL DEFAULT 0,
+    `created_at`  TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_social_user_platform` (`user_id`, `platform`),
+    CONSTRAINT `fk_sociallinks_user` FOREIGN KEY (`user_id`)
+        REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Links sociais detalhados por usuário';
+
+
 DROP TABLE IF EXISTS `categories`;
 CREATE TABLE `categories` (
     `id`            INT UNSIGNED     NOT NULL AUTO_INCREMENT,
-    `name`          VARCHAR(100)     NOT NULL                          COMMENT 'Nome da categoria',
-    `slug`          VARCHAR(120)     NOT NULL                          COMMENT 'URL amigável',
-    `description`   TEXT             DEFAULT NULL                      COMMENT 'Descrição da categoria',
-    `icon`          VARCHAR(100)     DEFAULT NULL                      COMMENT 'Classe CSS do ícone (ex: fas fa-cube)',
-    `image`         VARCHAR(500)     DEFAULT NULL                      COMMENT 'Imagem de capa da categoria',
-    `color`         VARCHAR(7)       DEFAULT '#6366f1'                 COMMENT 'Cor hexadecimal',
-    `parent_id`     INT UNSIGNED     DEFAULT NULL                      COMMENT 'Categoria pai (NULL = raiz)',
-    `sort_order`    INT              NOT NULL DEFAULT 0                COMMENT 'Ordem de exibição',
-    `is_active`     TINYINT(1)       NOT NULL DEFAULT 1               COMMENT 'Categoria visível?',
-    `course_count`  INT UNSIGNED     NOT NULL DEFAULT 0               COMMENT 'Cache: total de cursos nesta categoria',
+    `name`          VARCHAR(100)     NOT NULL,
+    `slug`          VARCHAR(120)     NOT NULL,
+    `description`   TEXT             DEFAULT NULL,
+    `icon`          VARCHAR(100)     DEFAULT NULL,
+    `image`         VARCHAR(500)     DEFAULT NULL,
+    `color`         VARCHAR(7)       DEFAULT '#6366f1',
+    `parent_id`     INT UNSIGNED     DEFAULT NULL,
+    `sort_order`    INT              NOT NULL DEFAULT 0,
+    `is_active`     TINYINT(1)       NOT NULL DEFAULT 1,
+    `status`        ENUM('active','inactive') NOT NULL DEFAULT 'active',
+    `course_count`  INT UNSIGNED     NOT NULL DEFAULT 0,
     `created_at`    TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`    TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
@@ -140,204 +177,186 @@ CREATE TABLE `categories` (
     UNIQUE KEY `uk_categories_slug` (`slug`),
     KEY `idx_categories_parent` (`parent_id`),
     KEY `idx_categories_active_order` (`is_active`, `sort_order`),
+    KEY `idx_categories_status` (`status`),
     CONSTRAINT `fk_categories_parent` FOREIGN KEY (`parent_id`)
         REFERENCES `categories` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Categorias hierárquicas para organização de cursos';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ----------------------------------------------------------------
--- TABELA 03/54: tags
--- Descrição: Tags/etiquetas para cursos e conteúdo
--- Dependências: Nenhuma
--- Referenciada por: course_tags, blog_post_tags
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `tags`;
 CREATE TABLE `tags` (
     `id`          INT UNSIGNED    NOT NULL AUTO_INCREMENT,
-    `name`        VARCHAR(50)     NOT NULL                    COMMENT 'Nome da tag',
-    `slug`        VARCHAR(60)     NOT NULL                    COMMENT 'URL amigável',
-    `usage_count` INT UNSIGNED    NOT NULL DEFAULT 0          COMMENT 'Cache: vezes que a tag foi usada',
+    `name`        VARCHAR(50)     NOT NULL,
+    `slug`        VARCHAR(60)     NOT NULL,
+    `usage_count` INT UNSIGNED    NOT NULL DEFAULT 0,
     `created_at`  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_tags_slug` (`slug`),
     KEY `idx_tags_usage` (`usage_count` DESC)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Tags para classificação de conteúdo';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ----------------------------------------------------------------
--- TABELA 04/54: settings
--- Descrição: Configurações dinâmicas do sistema
--- Dependências: Nenhuma
--- Referenciada por: Nenhuma (lida via código)
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `settings`;
 CREATE TABLE `settings` (
     `id`              INT UNSIGNED     NOT NULL AUTO_INCREMENT,
-    `setting_key`     VARCHAR(100)     NOT NULL                    COMMENT 'Chave única da configuração',
-    `setting_value`   LONGTEXT         DEFAULT NULL                COMMENT 'Valor da configuração',
+    `setting_key`     VARCHAR(100)     NOT NULL,
+    `setting_label`   VARCHAR(100)     DEFAULT NULL                    COMMENT 'Label para exibição',
+    `setting_value`   LONGTEXT         DEFAULT NULL,
     `setting_type`    ENUM('string','number','boolean','json','html','text')
-                                       NOT NULL DEFAULT 'string'   COMMENT 'Tipo do valor para validação',
-    `setting_group`   VARCHAR(50)      NOT NULL DEFAULT 'general'  COMMENT 'Grupo: general, payment, email, features, seo, social',
-    `description`     VARCHAR(255)     DEFAULT NULL                COMMENT 'Descrição para o painel admin',
-    `is_public`       TINYINT(1)       NOT NULL DEFAULT 0          COMMENT 'Visível na API pública?',
+                                       NOT NULL DEFAULT 'string',
+    `setting_group`   VARCHAR(50)      NOT NULL DEFAULT 'general',
+    `description`     VARCHAR(255)     DEFAULT NULL,
+    `is_public`       TINYINT(1)       NOT NULL DEFAULT 0,
     `updated_at`      TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_settings_key` (`setting_key`),
     KEY `idx_settings_group` (`setting_group`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Configurações dinâmicas do sistema (key-value store)';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ----------------------------------------------------------------
--- TABELA 05/54: pages
--- Descrição: Páginas estáticas do site (Sobre, Termos, etc.)
--- Dependências: Nenhuma
--- Referenciada por: Nenhuma
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `pages`;
 CREATE TABLE `pages` (
     `id`               INT UNSIGNED     NOT NULL AUTO_INCREMENT,
-    `title`            VARCHAR(255)     NOT NULL                    COMMENT 'Título da página',
-    `slug`             VARCHAR(280)     NOT NULL                    COMMENT 'URL amigável',
-    `content`          LONGTEXT         NOT NULL                    COMMENT 'Conteúdo HTML da página',
-    `meta_title`       VARCHAR(255)     DEFAULT NULL                COMMENT 'Title tag para SEO',
-    `meta_description` VARCHAR(500)     DEFAULT NULL                COMMENT 'Meta description para SEO',
-    `template`         VARCHAR(50)      DEFAULT 'default'           COMMENT 'Template de layout a usar',
-    `sort_order`       INT              NOT NULL DEFAULT 0          COMMENT 'Ordem no menu',
-    `show_in_menu`     TINYINT(1)       NOT NULL DEFAULT 0          COMMENT 'Exibir no menu principal?',
-    `show_in_footer`   TINYINT(1)       NOT NULL DEFAULT 0          COMMENT 'Exibir no rodapé?',
-    `is_published`     TINYINT(1)       NOT NULL DEFAULT 1          COMMENT 'Página publicada?',
+    `title`            VARCHAR(255)     NOT NULL,
+    `slug`             VARCHAR(280)     NOT NULL,
+    `content`          LONGTEXT         NOT NULL,
+    `author_id`        INT UNSIGNED     DEFAULT NULL,
+    `meta_title`       VARCHAR(255)     DEFAULT NULL,
+    `meta_description` VARCHAR(500)     DEFAULT NULL,
+    `template`         VARCHAR(50)      DEFAULT 'default',
+    `sort_order`       INT              NOT NULL DEFAULT 0,
+    `show_in_menu`     TINYINT(1)       NOT NULL DEFAULT 0,
+    `show_in_footer`   TINYINT(1)       NOT NULL DEFAULT 0,
+    `is_published`     TINYINT(1)       NOT NULL DEFAULT 1,
+    `status`           ENUM('published','draft','archived') NOT NULL DEFAULT 'published',
     `created_at`       TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`       TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_pages_slug` (`slug`),
     KEY `idx_pages_published` (`is_published`),
+    KEY `idx_pages_status` (`status`),
     KEY `idx_pages_menu` (`show_in_menu`, `sort_order`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Páginas estáticas do site (CMS básico)';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ----------------------------------------------------------------
--- TABELA 06/54: badges
--- Descrição: Conquistas/medalhas do sistema de gamificação
--- Dependências: Nenhuma
--- Referenciada por: user_badges
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `badges`;
 CREATE TABLE `badges` (
     `id`              INT UNSIGNED     NOT NULL AUTO_INCREMENT,
-    `name`            VARCHAR(100)     NOT NULL                    COMMENT 'Nome da conquista',
-    `slug`            VARCHAR(120)     NOT NULL                    COMMENT 'Identificador único',
-    `description`     TEXT             DEFAULT NULL                COMMENT 'Como conquistar',
-    `icon`            VARCHAR(500)     NOT NULL                    COMMENT 'Emoji ou URL do ícone',
+    `name`            VARCHAR(100)     NOT NULL,
+    `slug`            VARCHAR(120)     NOT NULL,
+    `description`     TEXT             DEFAULT NULL,
+    `icon`            VARCHAR(500)     NOT NULL,
     `category`        ENUM('course','engagement','achievement','special','community')
-                                       NOT NULL DEFAULT 'achievement' COMMENT 'Tipo da conquista',
-    `criteria_type`   VARCHAR(50)      NOT NULL                    COMMENT 'Tipo: courses_completed, lessons_completed, streak_days, etc',
-    `criteria_value`  INT UNSIGNED     NOT NULL DEFAULT 1          COMMENT 'Valor necessário para conquistar',
-    `points_reward`   INT UNSIGNED     NOT NULL DEFAULT 0          COMMENT 'Pontos ganhos ao conquistar',
+                                       NOT NULL DEFAULT 'achievement',
+    `criteria_type`   VARCHAR(50)      NOT NULL,
+    `criteria_value`  INT UNSIGNED     NOT NULL DEFAULT 1,
+    `points_reward`   INT UNSIGNED     NOT NULL DEFAULT 0,
     `rarity`          ENUM('common','uncommon','rare','epic','legendary')
-                                       NOT NULL DEFAULT 'common'   COMMENT 'Raridade visual',
+                                       NOT NULL DEFAULT 'common',
     `sort_order`      INT              NOT NULL DEFAULT 0,
     `is_active`       TINYINT(1)       NOT NULL DEFAULT 1,
     `created_at`      TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_badges_slug` (`slug`),
-    KEY `idx_badges_category` (`category`),
-    KEY `idx_badges_criteria` (`criteria_type`)
+    KEY `idx_badges_category` (`category`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ================================================================
+-- CORREÇÃO: achievements e user_achievements
+-- (referenciadas no AUTO_INCREMENT mas faltavam no schema)
+-- ================================================================
+
+DROP TABLE IF EXISTS `achievements`;
+CREATE TABLE `achievements` (
+    `id`              INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    `name`            VARCHAR(100)     NOT NULL,
+    `slug`            VARCHAR(120)     NOT NULL,
+    `description`     TEXT             DEFAULT NULL,
+    `icon`            VARCHAR(500)     DEFAULT NULL,
+    `type`            ENUM('course','lesson','quiz','streak','social','special','milestone')
+                                       NOT NULL DEFAULT 'milestone',
+    `requirement_type` VARCHAR(50)      NOT NULL                          COMMENT 'Ex: lessons_completed, courses_completed, streak, xp_earned',
+    `requirement_value` INT UNSIGNED     NOT NULL DEFAULT 1                COMMENT 'Valor necessário para desbloquear',
+    `criteria_type`   VARCHAR(50)      DEFAULT NULL                      COMMENT 'Alias para requirement_type',
+    `criteria_value`  INT UNSIGNED     DEFAULT 1                         COMMENT 'Alias para requirement_value',
+    `xp_reward`       INT UNSIGNED     NOT NULL DEFAULT 0,
+    `coin_reward`     INT UNSIGNED     NOT NULL DEFAULT 0,
+    `points_reward`   INT UNSIGNED     DEFAULT 0                         COMMENT 'Alias para xp_reward',
+    `badge_id`        INT UNSIGNED     DEFAULT NULL                      COMMENT 'Badge associado ao achievement',
+    `is_hidden`       TINYINT(1)       NOT NULL DEFAULT 0                COMMENT 'Achievement secreto',
+    `sort_order`      INT              NOT NULL DEFAULT 0,
+    `is_active`       TINYINT(1)       NOT NULL DEFAULT 1,
+    `created_at`      TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_achievements_slug` (`slug`),
+    KEY `idx_achievements_type` (`type`),
+    CONSTRAINT `fk_achievements_badge` FOREIGN KEY (`badge_id`)
+        REFERENCES `badges` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Conquistas do sistema de gamificação';
+  COMMENT='Conquistas da plataforma de gamificação';
 
 
--- ----------------------------------------------------------------
--- TABELA 07/54: certificate_templates
--- Descrição: Templates visuais para certificados
--- Dependências: Nenhuma
--- Referenciada por: certificates
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `certificate_templates`;
 CREATE TABLE `certificate_templates` (
     `id`                INT UNSIGNED     NOT NULL AUTO_INCREMENT,
-    `name`              VARCHAR(100)     NOT NULL                    COMMENT 'Nome do template',
-    `html_template`     LONGTEXT         NOT NULL                    COMMENT 'HTML do certificado com placeholders',
-    `css_styles`        LONGTEXT         DEFAULT NULL                COMMENT 'CSS customizado',
-    `background_image`  VARCHAR(500)     DEFAULT NULL                COMMENT 'Imagem de fundo',
+    `name`              VARCHAR(100)     NOT NULL,
+    `html_template`     LONGTEXT         NOT NULL,
+    `css_styles`        LONGTEXT         DEFAULT NULL,
+    `background_image`  VARCHAR(500)     DEFAULT NULL,
     `orientation`       ENUM('landscape','portrait') NOT NULL DEFAULT 'landscape',
     `paper_size`        ENUM('a4','letter','custom') NOT NULL DEFAULT 'a4',
-    `is_default`        TINYINT(1)       NOT NULL DEFAULT 0          COMMENT 'Template padrão?',
+    `is_default`        TINYINT(1)       NOT NULL DEFAULT 0,
     `is_active`         TINYINT(1)       NOT NULL DEFAULT 1,
     `created_at`        TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`        TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Templates visuais para geração de certificados em PDF';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ----------------------------------------------------------------
--- TABELA 08/54: email_templates
--- Descrição: Templates de emails transacionais
--- Dependências: Nenhuma
--- Referenciada por: Nenhuma (usado via código)
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `email_templates`;
 CREATE TABLE `email_templates` (
     `id`           INT UNSIGNED     NOT NULL AUTO_INCREMENT,
-    `name`         VARCHAR(100)     NOT NULL                    COMMENT 'Identificador: welcome, password_reset, etc',
-    `subject`      VARCHAR(255)     NOT NULL                    COMMENT 'Assunto do email com placeholders',
-    `body_html`    LONGTEXT         NOT NULL                    COMMENT 'Corpo HTML com placeholders',
-    `body_text`    LONGTEXT         DEFAULT NULL                COMMENT 'Versão texto puro (fallback)',
-    `variables`    JSON             DEFAULT NULL                COMMENT 'Lista de variáveis disponíveis',
+    `name`         VARCHAR(100)     NOT NULL,
+    `subject`      VARCHAR(255)     NOT NULL,
+    `body_html`    LONGTEXT         NOT NULL,
+    `body_text`    LONGTEXT         DEFAULT NULL,
+    `variables`    JSON             DEFAULT NULL,
     `is_active`    TINYINT(1)       NOT NULL DEFAULT 1,
     `created_at`   TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`   TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_email_templates_name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Templates de emails transacionais do sistema';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ----------------------------------------------------------------
--- TABELA 09/54: email_log
--- Descrição: Log de todos os emails enviados
--- Dependências: Nenhuma
--- Referenciada por: Nenhuma
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `email_log`;
 CREATE TABLE `email_log` (
     `id`             INT UNSIGNED     NOT NULL AUTO_INCREMENT,
     `to_email`       VARCHAR(150)     NOT NULL,
     `to_name`        VARCHAR(100)     DEFAULT NULL,
     `subject`        VARCHAR(255)     NOT NULL,
-    `template`       VARCHAR(50)      DEFAULT NULL                COMMENT 'Template usado',
-    `body_preview`   VARCHAR(500)     DEFAULT NULL                COMMENT 'Primeiros caracteres do corpo',
-    `status`         ENUM('queued','sent','failed','bounced')
-                                      NOT NULL DEFAULT 'queued',
+    `template`       VARCHAR(50)      DEFAULT NULL,
+    `body_preview`   VARCHAR(500)     DEFAULT NULL,
+    `status`         ENUM('queued','sent','failed','bounced') NOT NULL DEFAULT 'queued',
     `error_message`  TEXT             DEFAULT NULL,
-    `attempts`       TINYINT UNSIGNED NOT NULL DEFAULT 0          COMMENT 'Tentativas de envio',
+    `attempts`       TINYINT UNSIGNED NOT NULL DEFAULT 0,
     `sent_at`        TIMESTAMP        NULL DEFAULT NULL,
     `created_at`     TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`id`),
     KEY `idx_emaillog_status` (`status`),
-    KEY `idx_emaillog_created` (`created_at`),
-    KEY `idx_emaillog_to` (`to_email`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Registro de todos os emails enviados pelo sistema';
+    KEY `idx_emaillog_created` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ----------------------------------------------------------------
--- TABELA 10/54: faq_categories
--- Descrição: Categorias para perguntas frequentes
--- Dependências: Nenhuma
--- Referenciada por: faqs
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `faq_categories`;
 CREATE TABLE `faq_categories` (
     `id`          INT UNSIGNED    NOT NULL AUTO_INCREMENT,
@@ -350,16 +369,9 @@ CREATE TABLE `faq_categories` (
 
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_faqcat_slug` (`slug`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Categorias para organização das FAQs';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ----------------------------------------------------------------
--- TABELA 11/54: faqs
--- Descrição: Perguntas frequentes
--- Dependências: faq_categories
--- Referenciada por: Nenhuma
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `faqs`;
 CREATE TABLE `faqs` (
     `id`           INT UNSIGNED    NOT NULL AUTO_INCREMENT,
@@ -369,115 +381,110 @@ CREATE TABLE `faqs` (
     `sort_order`   INT             NOT NULL DEFAULT 0,
     `is_published` TINYINT(1)      NOT NULL DEFAULT 1,
     `view_count`   INT UNSIGNED    NOT NULL DEFAULT 0,
-    `helpful_yes`  INT UNSIGNED    NOT NULL DEFAULT 0          COMMENT 'Votos "útil"',
-    `helpful_no`   INT UNSIGNED    NOT NULL DEFAULT 0          COMMENT 'Votos "não útil"',
+    `helpful_yes`  INT UNSIGNED    NOT NULL DEFAULT 0,
+    `helpful_no`   INT UNSIGNED    NOT NULL DEFAULT 0,
     `created_at`   TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`   TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`id`),
     KEY `idx_faqs_category` (`category_id`),
-    KEY `idx_faqs_published` (`is_published`, `sort_order`),
     CONSTRAINT `fk_faqs_category` FOREIGN KEY (`category_id`)
         REFERENCES `faq_categories` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Perguntas frequentes com sistema de votos';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ----------------------------------------------------------------
--- TABELA 12/54: announcements
--- Descrição: Anúncios globais do sistema
--- Dependências: Nenhuma
--- Referenciada por: Nenhuma
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `announcements`;
 CREATE TABLE `announcements` (
     `id`              INT UNSIGNED     NOT NULL AUTO_INCREMENT,
     `title`           VARCHAR(255)     NOT NULL,
     `content`         LONGTEXT         NOT NULL,
-    `type`            ENUM('info','warning','success','danger','promotion')
-                                       NOT NULL DEFAULT 'info',
-    `target_audience` ENUM('all','students','instructors','admins')
-                                       NOT NULL DEFAULT 'all'       COMMENT 'Para quem exibir',
-    `display_type`    ENUM('banner','modal','notification')
-                                       NOT NULL DEFAULT 'banner',
-    `action_url`      VARCHAR(500)     DEFAULT NULL                 COMMENT 'Link do botão de ação',
-    `action_text`     VARCHAR(100)     DEFAULT NULL                 COMMENT 'Texto do botão',
+    `type`            ENUM('info','warning','success','danger','promotion') NOT NULL DEFAULT 'info',
+    `target_audience` ENUM('all','students','instructors','admins') NOT NULL DEFAULT 'all',
+    `display_type`    ENUM('banner','modal','notification') NOT NULL DEFAULT 'banner',
+    `action_url`      VARCHAR(500)     DEFAULT NULL,
+    `action_text`     VARCHAR(100)     DEFAULT NULL,
     `starts_at`       TIMESTAMP        NULL DEFAULT NULL,
     `ends_at`         TIMESTAMP        NULL DEFAULT NULL,
     `is_active`       TINYINT(1)       NOT NULL DEFAULT 1,
     `created_at`      TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`id`),
-    KEY `idx_announcements_active` (`is_active`, `starts_at`, `ends_at`),
-    KEY `idx_announcements_target` (`target_audience`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Anúncios e banners globais do sistema';
+    KEY `idx_announcements_active` (`is_active`, `starts_at`, `ends_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ----------------------------------------------------------------
--- TABELA 13/54: countries
--- Descrição: Lista de países (para perfis e pagamentos)
--- Dependências: Nenhuma
--- Referenciada por: Nenhuma (auxiliar)
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `countries`;
 CREATE TABLE `countries` (
     `id`          INT UNSIGNED    NOT NULL AUTO_INCREMENT,
     `name`        VARCHAR(100)    NOT NULL,
-    `code`        CHAR(2)         NOT NULL                    COMMENT 'Código ISO 3166-1 alpha-2',
-    `phone_code`  VARCHAR(5)      DEFAULT NULL                COMMENT 'Código telefônico (+55)',
-    `currency`    VARCHAR(3)      DEFAULT NULL                COMMENT 'Código da moeda (BRL)',
+    `code`        CHAR(2)         NOT NULL,
+    `phone_code`  VARCHAR(5)      DEFAULT NULL,
+    `currency`    VARCHAR(3)      DEFAULT NULL,
     `is_active`   TINYINT(1)      NOT NULL DEFAULT 1,
 
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_countries_code` (`code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Países para formulários e localização';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ----------------------------------------------------------------
--- TABELA 14/54: languages
--- Descrição: Idiomas suportados para cursos
--- Dependências: Nenhuma
--- Referenciada por: courses (campo language)
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `languages`;
 CREATE TABLE `languages` (
-    `id`         INT UNSIGNED    NOT NULL AUTO_INCREMENT,
-    `name`       VARCHAR(50)     NOT NULL                    COMMENT 'Nome do idioma',
-    `code`       VARCHAR(10)     NOT NULL                    COMMENT 'Código: pt-BR, en-US, es',
-    `native_name` VARCHAR(50)   DEFAULT NULL                 COMMENT 'Nome no idioma nativo',
-    `is_active`  TINYINT(1)      NOT NULL DEFAULT 1,
+    `id`          INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+    `name`        VARCHAR(50)     NOT NULL,
+    `code`        VARCHAR(10)     NOT NULL,
+    `native_name` VARCHAR(50)     DEFAULT NULL,
+    `is_active`   TINYINT(1)      NOT NULL DEFAULT 1,
 
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_languages_code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ================================================================
+-- CORREÇÃO: subscription_plans e subscriptions
+-- (referenciadas no AUTO_INCREMENT mas faltavam no schema)
+-- ================================================================
+
+DROP TABLE IF EXISTS `subscription_plans`;
+CREATE TABLE `subscription_plans` (
+    `id`                    INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    `name`                  VARCHAR(100)     NOT NULL,
+    `slug`                  VARCHAR(120)     NOT NULL,
+    `description`           TEXT             DEFAULT NULL,
+    `price_monthly`         DECIMAL(10,2)    NOT NULL DEFAULT 0.00,
+    `price_annual`          DECIMAL(10,2)    DEFAULT NULL,
+    `currency`              VARCHAR(3)       NOT NULL DEFAULT 'BRL',
+    `trial_days`            INT UNSIGNED     NOT NULL DEFAULT 0,
+    `max_courses`           INT UNSIGNED     DEFAULT NULL                COMMENT 'NULL = ilimitado',
+    `has_certificates`      TINYINT(1)       NOT NULL DEFAULT 1,
+    `has_downloads`         TINYINT(1)       NOT NULL DEFAULT 0,
+    `has_offline_access`    TINYINT(1)       NOT NULL DEFAULT 0,
+    `has_mentorship`        TINYINT(1)       NOT NULL DEFAULT 0,
+    `features`              JSON             DEFAULT NULL                COMMENT 'Lista de features',
+    `sort_order`            INT              NOT NULL DEFAULT 0,
+    `is_popular`            TINYINT(1)       NOT NULL DEFAULT 0,
+    `is_active`             TINYINT(1)       NOT NULL DEFAULT 1,
+    `created_at`            TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`            TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_plans_slug` (`slug`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Idiomas disponíveis para cursos';
+  COMMENT='Planos de assinatura da plataforma';
 
 
 -- ================================================================
--- ================================================================
---
---   NÍVEL 1 - DEPENDEM APENAS DO NÍVEL 0 (11 tabelas)
---
--- ================================================================
+-- NÍVEL 1 - DEPENDEM DO NÍVEL 0
 -- ================================================================
 
-
--- ----------------------------------------------------------------
--- TABELA 15/54: user_sessions
--- Descrição: Sessões ativas dos usuários
--- Dependências: users
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `user_sessions`;
 CREATE TABLE `user_sessions` (
     `id`             INT UNSIGNED     NOT NULL AUTO_INCREMENT,
     `user_id`        INT UNSIGNED     NOT NULL,
-    `session_token`  VARCHAR(255)     NOT NULL                    COMMENT 'Token único da sessão',
-    `ip_address`     VARCHAR(45)      DEFAULT NULL                COMMENT 'Suporta IPv6',
+    `session_token`  VARCHAR(255)     NOT NULL,
+    `ip_address`     VARCHAR(45)      DEFAULT NULL,
     `user_agent`     TEXT             DEFAULT NULL,
-    `device_type`    ENUM('desktop','mobile','tablet','unknown')
-                                      NOT NULL DEFAULT 'unknown',
+    `device_type`    ENUM('desktop','mobile','tablet','unknown') NOT NULL DEFAULT 'unknown',
     `last_activity`  TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `expires_at`     TIMESTAMP        NOT NULL,
     `created_at`     TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -485,40 +492,27 @@ CREATE TABLE `user_sessions` (
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_session_token` (`session_token`),
     KEY `idx_sessions_user` (`user_id`),
-    KEY `idx_sessions_expires` (`expires_at`),
     CONSTRAINT `fk_sessions_user` FOREIGN KEY (`user_id`)
         REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Controle de sessões ativas para segurança';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ----------------------------------------------------------------
--- TABELA 16/54: user_streaks
--- Descrição: Sequência de dias de estudo (gamificação)
--- Dependências: users
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `user_streaks`;
 CREATE TABLE `user_streaks` (
     `id`                 INT UNSIGNED    NOT NULL AUTO_INCREMENT,
     `user_id`            INT UNSIGNED    NOT NULL,
-    `current_streak`     INT UNSIGNED    NOT NULL DEFAULT 0       COMMENT 'Dias consecutivos atual',
-    `longest_streak`     INT UNSIGNED    NOT NULL DEFAULT 0       COMMENT 'Recorde de dias consecutivos',
-    `last_activity_date` DATE            DEFAULT NULL              COMMENT 'Última data de atividade',
+    `current_streak`     INT UNSIGNED    NOT NULL DEFAULT 0,
+    `longest_streak`     INT UNSIGNED    NOT NULL DEFAULT 0,
+    `last_activity_date` DATE            DEFAULT NULL,
     `updated_at`         TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_streak_user` (`user_id`),
     CONSTRAINT `fk_streaks_user` FOREIGN KEY (`user_id`)
         REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Controle de streak (sequência de dias) para gamificação';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ----------------------------------------------------------------
--- TABELA 17/54: user_badges
--- Descrição: Conquistas desbloqueadas por cada usuário
--- Dependências: users, badges
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `user_badges`;
 CREATE TABLE `user_badges` (
     `id`         INT UNSIGNED    NOT NULL AUTO_INCREMENT,
@@ -529,47 +523,57 @@ CREATE TABLE `user_badges` (
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_user_badge` (`user_id`, `badge_id`),
     KEY `idx_userbadges_badge` (`badge_id`),
-    KEY `idx_userbadges_earned` (`earned_at`),
     CONSTRAINT `fk_userbadges_user` FOREIGN KEY (`user_id`)
         REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT `fk_userbadges_badge` FOREIGN KEY (`badge_id`)
         REFERENCES `badges` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+DROP TABLE IF EXISTS `user_achievements`;
+CREATE TABLE `user_achievements` (
+    `id`             INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+    `user_id`        INT UNSIGNED    NOT NULL,
+    `achievement_id` INT UNSIGNED    NOT NULL,
+    `progress`       INT UNSIGNED    NOT NULL DEFAULT 0               COMMENT 'Progresso atual (ex: 3 de 5 cursos)',
+    `is_completed`   TINYINT(1)      NOT NULL DEFAULT 0,
+    `unlocked_at`    TIMESTAMP       NULL DEFAULT NULL,
+    `earned_at`      TIMESTAMP       NULL DEFAULT NULL                COMMENT 'Alias para unlocked_at',
+    `created_at`     TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`     TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_user_achievement` (`user_id`, `achievement_id`),
+    KEY `idx_userachiev_achievement` (`achievement_id`),
+    CONSTRAINT `fk_userachiev_user` FOREIGN KEY (`user_id`)
+        REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_userachiev_achievement` FOREIGN KEY (`achievement_id`)
+        REFERENCES `achievements` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Relacionamento N:N entre usuários e conquistas obtidas';
+  COMMENT='Conquistas desbloqueadas por cada usuário';
 
 
--- ----------------------------------------------------------------
--- TABELA 18/54: user_points
--- Descrição: Histórico de pontos ganhos (gamificação)
--- Dependências: users
--- ----------------------------------------------------------------
-DROP TABLE IF EXISTS `user_points`;
-CREATE TABLE `user_points` (
+-- CORREÇÃO: renomeado de user_points para points
+DROP TABLE IF EXISTS `points`;
+CREATE TABLE `points` (
     `id`              INT UNSIGNED     NOT NULL AUTO_INCREMENT,
     `user_id`         INT UNSIGNED     NOT NULL,
-    `points`          INT              NOT NULL                    COMMENT 'Pontos ganhos (positivo) ou perdidos (negativo)',
-    `action`          VARCHAR(50)      NOT NULL                    COMMENT 'Ação: lesson_complete, quiz_pass, course_complete, daily_login, review_posted',
-    `reference_type`  VARCHAR(50)      DEFAULT NULL                COMMENT 'Tipo da entidade: course, lesson, quiz',
-    `reference_id`    INT UNSIGNED     DEFAULT NULL                COMMENT 'ID da entidade relacionada',
-    `description`     VARCHAR(255)     DEFAULT NULL                COMMENT 'Descrição legível',
+    `points`          INT              NOT NULL,
+    `action`          VARCHAR(50)      NOT NULL,
+    `reference_type`  VARCHAR(50)      DEFAULT NULL,
+    `reference_id`    INT UNSIGNED     DEFAULT NULL,
+    `description`     VARCHAR(255)     DEFAULT NULL,
     `created_at`      TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`id`),
     KEY `idx_points_user` (`user_id`),
     KEY `idx_points_action` (`action`),
-    KEY `idx_points_created` (`created_at`),
-    KEY `idx_points_ref` (`reference_type`, `reference_id`),
     CONSTRAINT `fk_points_user` FOREIGN KEY (`user_id`)
         REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Registro detalhado de todos os pontos ganhos/perdidos';
+  COMMENT='Histórico de pontos de gamificação';
 
 
--- ----------------------------------------------------------------
--- TABELA 19/54: leaderboard
--- Descrição: Ranking de usuários (semanal, mensal, geral)
--- Dependências: users
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `leaderboard`;
 CREATE TABLE `leaderboard` (
     `id`                INT UNSIGNED     NOT NULL AUTO_INCREMENT,
@@ -577,61 +581,70 @@ CREATE TABLE `leaderboard` (
     `total_points`      INT UNSIGNED     NOT NULL DEFAULT 0,
     `courses_completed` INT UNSIGNED     NOT NULL DEFAULT 0,
     `badges_earned`     INT UNSIGNED     NOT NULL DEFAULT 0,
-    `rank_position`     INT UNSIGNED     DEFAULT NULL              COMMENT 'Posição calculada no ranking',
-    `period`            ENUM('weekly','monthly','all_time')
-                                         NOT NULL DEFAULT 'all_time',
-    `period_start`      DATE             DEFAULT NULL              COMMENT 'Início do período (NULL para all_time)',
+    `rank_position`     INT UNSIGNED     DEFAULT NULL,
+    `period`            ENUM('weekly','monthly','all_time') NOT NULL DEFAULT 'all_time',
+    `period_start`      DATE             DEFAULT NULL,
     `updated_at`        TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_leaderboard` (`user_id`, `period`, `period_start`),
-    KEY `idx_leaderboard_rank` (`period`, `rank_position`),
-    KEY `idx_leaderboard_points` (`period`, `total_points` DESC),
     CONSTRAINT `fk_leaderboard_user` FOREIGN KEY (`user_id`)
         REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Rankings periódicos para competição entre alunos';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ----------------------------------------------------------------
--- TABELA 20/54: notifications
--- Descrição: Notificações in-app para usuários
--- Dependências: users
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `notifications`;
 CREATE TABLE `notifications` (
     `id`          INT UNSIGNED     NOT NULL AUTO_INCREMENT,
     `user_id`     INT UNSIGNED     NOT NULL,
-    `type`        VARCHAR(50)      NOT NULL                    COMMENT 'Tipo: enrollment, achievement, announcement, reply, system',
+    `type`        VARCHAR(50)      NOT NULL,
     `title`       VARCHAR(255)     NOT NULL,
     `message`     TEXT             NOT NULL,
-    `icon`        VARCHAR(100)     DEFAULT NULL                COMMENT 'Classe CSS ou emoji do ícone',
-    `action_url`  VARCHAR(500)     DEFAULT NULL                COMMENT 'Link ao clicar na notificação',
-    `data`        JSON             DEFAULT NULL                COMMENT 'Dados extras em JSON',
+    `icon`        VARCHAR(100)     DEFAULT NULL,
+    `action_url`  VARCHAR(500)     DEFAULT NULL,
+    `link`        VARCHAR(500)     DEFAULT NULL                COMMENT 'Alias para action_url',
+    `data`        JSON             DEFAULT NULL,
     `is_read`     TINYINT(1)       NOT NULL DEFAULT 0,
     `read_at`     TIMESTAMP        NULL DEFAULT NULL,
     `created_at`  TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`id`),
     KEY `idx_notif_user_read` (`user_id`, `is_read`, `created_at` DESC),
-    KEY `idx_notif_type` (`type`),
-    KEY `idx_notif_created` (`created_at`),
     CONSTRAINT `fk_notifications_user` FOREIGN KEY (`user_id`)
         REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ================================================================
+-- CORREÇÃO: user_notifications
+-- (referenciada no AUTO_INCREMENT mas faltava no schema)
+-- ================================================================
+
+DROP TABLE IF EXISTS `user_notifications`;
+CREATE TABLE `user_notifications` (
+    `id`              INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+    `user_id`         INT UNSIGNED    NOT NULL,
+    `notification_id` INT UNSIGNED    NOT NULL                      COMMENT 'Referência para a notificação global',
+    `is_read`         TINYINT(1)      NOT NULL DEFAULT 0,
+    `read_at`         TIMESTAMP       NULL DEFAULT NULL,
+    `created_at`      TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_usernotif` (`user_id`, `notification_id`),
+    KEY `idx_usernotif_read` (`user_id`, `is_read`),
+    CONSTRAINT `fk_usernotif_user` FOREIGN KEY (`user_id`)
+        REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_usernotif_notification` FOREIGN KEY (`notification_id`)
+        REFERENCES `notifications` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Notificações in-app com suporte a dados estruturados';
+  COMMENT='Tabela de associação de notificações broadcast por usuário';
 
 
--- ----------------------------------------------------------------
--- TABELA 21/54: notification_preferences
--- Descrição: Preferências de notificação por tipo
--- Dependências: users
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `notification_preferences`;
 CREATE TABLE `notification_preferences` (
     `id`                  INT UNSIGNED    NOT NULL AUTO_INCREMENT,
     `user_id`             INT UNSIGNED    NOT NULL,
-    `notification_type`   VARCHAR(50)     NOT NULL                    COMMENT 'Tipo da notificação',
+    `notification_type`   VARCHAR(50)     NOT NULL,
     `email_enabled`       TINYINT(1)      NOT NULL DEFAULT 1,
     `push_enabled`        TINYINT(1)      NOT NULL DEFAULT 1,
     `in_app_enabled`      TINYINT(1)      NOT NULL DEFAULT 1,
@@ -640,63 +653,50 @@ CREATE TABLE `notification_preferences` (
     UNIQUE KEY `uk_notifpref` (`user_id`, `notification_type`),
     CONSTRAINT `fk_notifpref_user` FOREIGN KEY (`user_id`)
         REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Controle granular de quais notificações o usuário quer receber';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ----------------------------------------------------------------
--- TABELA 22/54: media
--- Descrição: Gerenciamento de arquivos enviados
--- Dependências: users
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `media`;
 CREATE TABLE `media` (
     `id`                INT UNSIGNED     NOT NULL AUTO_INCREMENT,
-    `user_id`           INT UNSIGNED     DEFAULT NULL              COMMENT 'Quem fez upload',
-    `filename`          VARCHAR(255)     NOT NULL                  COMMENT 'Nome do arquivo no servidor',
-    `original_filename` VARCHAR(255)     NOT NULL                  COMMENT 'Nome original do arquivo',
-    `file_path`         VARCHAR(500)     NOT NULL                  COMMENT 'Caminho relativo no servidor',
-    `file_url`          VARCHAR(500)     NOT NULL                  COMMENT 'URL pública de acesso',
-    `mime_type`         VARCHAR(100)     NOT NULL                  COMMENT 'Tipo MIME: image/png, video/mp4',
-    `file_size`         BIGINT UNSIGNED  NOT NULL                  COMMENT 'Tamanho em bytes',
-    `dimensions`        VARCHAR(20)      DEFAULT NULL              COMMENT 'Dimensões para imagens: 1920x1080',
-    `alt_text`          VARCHAR(255)     DEFAULT NULL              COMMENT 'Texto alternativo para acessibilidade',
-    `folder`            VARCHAR(100)     DEFAULT 'general'         COMMENT 'Pasta lógica de organização',
-    `disk`              VARCHAR(20)      DEFAULT 'local'           COMMENT 'Disco: local, s3, bunny',
+    `user_id`           INT UNSIGNED     DEFAULT NULL,
+    `filename`          VARCHAR(255)     NOT NULL,
+    `original_filename` VARCHAR(255)     NOT NULL,
+    `title`             VARCHAR(255)     DEFAULT NULL,
+    `description`       TEXT             DEFAULT NULL,
+    `file_path`         VARCHAR(500)     NOT NULL,
+    `file_url`          VARCHAR(500)     NOT NULL,
+    `mime_type`         VARCHAR(100)     NOT NULL,
+    `file_size`         BIGINT UNSIGNED  NOT NULL,
+    `dimensions`        VARCHAR(20)      DEFAULT NULL,
+    `alt_text`          VARCHAR(255)     DEFAULT NULL,
+    `folder`            VARCHAR(100)     DEFAULT 'general',
+    `disk`              VARCHAR(20)      DEFAULT 'local',
     `created_at`        TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`id`),
     KEY `idx_media_user` (`user_id`),
     KEY `idx_media_folder` (`folder`),
-    KEY `idx_media_mime` (`mime_type`),
-    KEY `idx_media_created` (`created_at`),
     CONSTRAINT `fk_media_user` FOREIGN KEY (`user_id`)
         REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Biblioteca de mídia centralizada do sistema';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ----------------------------------------------------------------
--- TABELA 23/54: coupons
--- Descrição: Cupons de desconto
--- Dependências: users (created_by)
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `coupons`;
 CREATE TABLE `coupons` (
     `id`                 INT UNSIGNED     NOT NULL AUTO_INCREMENT,
-    `code`               VARCHAR(50)      NOT NULL                    COMMENT 'Código do cupom (ex: GAMEDEV2025)',
-    `description`        VARCHAR(255)     DEFAULT NULL                COMMENT 'Descrição interna',
-    `discount_type`      ENUM('percentage','fixed')
-                                          NOT NULL DEFAULT 'percentage',
-    `discount_value`     DECIMAL(10,2)    NOT NULL                    COMMENT 'Valor: 10.00 = 10% ou R$10',
-    `min_purchase`       DECIMAL(10,2)    DEFAULT NULL                COMMENT 'Valor mínimo de compra',
-    `max_discount`       DECIMAL(10,2)    DEFAULT NULL                COMMENT 'Teto do desconto para percentual',
-    `max_uses`           INT UNSIGNED     DEFAULT NULL                COMMENT 'Limite total de usos (NULL = ilimitado)',
-    `max_uses_per_user`  INT UNSIGNED     NOT NULL DEFAULT 1          COMMENT 'Limite por usuário',
-    `used_count`         INT UNSIGNED     NOT NULL DEFAULT 0          COMMENT 'Cache: total de usos',
-    `applicable_courses` JSON             DEFAULT NULL                COMMENT 'Array de course_ids (NULL = todos)',
-    `starts_at`          TIMESTAMP        NULL DEFAULT NULL           COMMENT 'Início da validade',
-    `expires_at`         TIMESTAMP        NULL DEFAULT NULL           COMMENT 'Fim da validade',
+    `code`               VARCHAR(50)      NOT NULL,
+    `description`        VARCHAR(255)     DEFAULT NULL,
+    `discount_type`      ENUM('percentage','fixed') NOT NULL DEFAULT 'percentage',
+    `discount_value`     DECIMAL(10,2)    NOT NULL,
+    `min_purchase`       DECIMAL(10,2)    DEFAULT NULL,
+    `max_discount`       DECIMAL(10,2)    DEFAULT NULL,
+    `max_uses`           INT UNSIGNED     DEFAULT NULL,
+    `max_uses_per_user`  INT UNSIGNED     NOT NULL DEFAULT 1,
+    `used_count`         INT UNSIGNED     NOT NULL DEFAULT 0,
+    `applicable_courses` JSON             DEFAULT NULL,
+    `starts_at`          TIMESTAMP        NULL DEFAULT NULL,
+    `expires_at`         TIMESTAMP        NULL DEFAULT NULL,
     `is_active`          TINYINT(1)       NOT NULL DEFAULT 1,
     `created_by`         INT UNSIGNED     DEFAULT NULL,
     `created_at`         TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -704,59 +704,93 @@ CREATE TABLE `coupons` (
 
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_coupon_code` (`code`),
-    KEY `idx_coupons_active_dates` (`is_active`, `starts_at`, `expires_at`),
     CONSTRAINT `fk_coupons_creator` FOREIGN KEY (`created_by`)
         REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+DROP TABLE IF EXISTS `subscriptions`;
+CREATE TABLE `subscriptions` (
+    `id`                    INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    `user_id`               INT UNSIGNED     NOT NULL,
+    `plan_id`               INT UNSIGNED     NOT NULL,
+    `status`                ENUM('trialing','active','past_due','cancelled','expired','paused')
+                                             NOT NULL DEFAULT 'active',
+    `billing_cycle`         ENUM('monthly','annual') NOT NULL DEFAULT 'monthly',
+    `amount`                DECIMAL(10,2)    NOT NULL,
+    `currency`              VARCHAR(3)       NOT NULL DEFAULT 'BRL',
+    `gateway`               VARCHAR(50)      DEFAULT NULL,
+    `gateway_subscription_id` VARCHAR(255)   DEFAULT NULL,
+    `trial_ends_at`         TIMESTAMP        NULL DEFAULT NULL,
+    `current_period_start`  TIMESTAMP        NULL DEFAULT NULL,
+    `current_period_end`    TIMESTAMP        NULL DEFAULT NULL,
+    `cancelled_at`          TIMESTAMP        NULL DEFAULT NULL,
+    `cancel_reason`         VARCHAR(255)     DEFAULT NULL,
+    `started_at`            TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `created_at`            TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`            TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    KEY `idx_subscriptions_user` (`user_id`),
+    KEY `idx_subscriptions_status` (`status`),
+    CONSTRAINT `fk_subscriptions_user` FOREIGN KEY (`user_id`)
+        REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_subscriptions_plan` FOREIGN KEY (`plan_id`)
+        REFERENCES `subscription_plans` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Cupons de desconto com regras flexíveis';
+  COMMENT='Assinaturas ativas dos usuários';
 
 
--- ----------------------------------------------------------------
--- TABELA 24/54: courses
--- Descrição: Cursos da plataforma (tabela central)
--- Dependências: users (instructor_id), categories (category_id)
--- Referenciada por: Muitas tabelas
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `courses`;
 CREATE TABLE `courses` (
     `id`                INT UNSIGNED     NOT NULL AUTO_INCREMENT,
-    `title`             VARCHAR(255)     NOT NULL                    COMMENT 'Título do curso',
-    `slug`              VARCHAR(280)     NOT NULL                    COMMENT 'URL amigável única',
-    `subtitle`          VARCHAR(300)     DEFAULT NULL                COMMENT 'Subtítulo/chamada curta',
-    `description`       LONGTEXT         DEFAULT NULL                COMMENT 'Descrição completa em HTML/Markdown',
-    `short_description` VARCHAR(500)     DEFAULT NULL                COMMENT 'Resumo para cards e listagens',
-    `thumbnail`         VARCHAR(500)     DEFAULT NULL                COMMENT 'URL da imagem de capa',
-    `preview_video`     VARCHAR(500)     DEFAULT NULL                COMMENT 'URL do vídeo de apresentação',
-    `instructor_id`     INT UNSIGNED     NOT NULL                    COMMENT 'Professor responsável',
-    `category_id`       INT UNSIGNED     DEFAULT NULL                COMMENT 'Categoria principal',
-    `level`             ENUM('beginner','intermediate','advanced','all_levels')
-                                         NOT NULL DEFAULT 'beginner' COMMENT 'Nível de dificuldade',
-    `language`          VARCHAR(10)      NOT NULL DEFAULT 'pt-BR'    COMMENT 'Idioma principal do curso',
-    `price`             DECIMAL(10,2)    NOT NULL DEFAULT 0.00       COMMENT 'Preço atual',
-    `original_price`    DECIMAL(10,2)    DEFAULT NULL                COMMENT 'Preço original (para mostrar desconto)',
+    `title`             VARCHAR(255)     NOT NULL,
+    `slug`              VARCHAR(280)     NOT NULL,
+    `subtitle`          VARCHAR(300)     DEFAULT NULL,
+    `description`       LONGTEXT         DEFAULT NULL,
+    `short_description` VARCHAR(500)     DEFAULT NULL,
+    `thumbnail`         VARCHAR(500)     DEFAULT NULL,
+    `image`             VARCHAR(500)     DEFAULT NULL,
+    `cover_image`       VARCHAR(500)     DEFAULT NULL                    COMMENT 'Alias para thumbnail',
+    `preview_video`     VARCHAR(500)     DEFAULT NULL,
+    `instructor_id`     INT UNSIGNED     NOT NULL,
+    `category_id`       INT UNSIGNED     DEFAULT NULL,
+    `level`             ENUM('beginner','intermediate','advanced','expert','all_levels')
+                                         NOT NULL DEFAULT 'beginner',
+    `language`          VARCHAR(10)      NOT NULL DEFAULT 'pt-BR',
+    `price`             DECIMAL(10,2)    NOT NULL DEFAULT 0.00,
+    `original_price`    DECIMAL(10,2)    DEFAULT NULL,
     `currency`          VARCHAR(3)       NOT NULL DEFAULT 'BRL',
-    `duration_hours`    DECIMAL(6,1)     NOT NULL DEFAULT 0.0        COMMENT 'Duração total estimada em horas',
-    `total_lessons`     INT UNSIGNED     NOT NULL DEFAULT 0          COMMENT 'Cache: total de aulas',
-    `total_modules`     INT UNSIGNED     NOT NULL DEFAULT 0          COMMENT 'Cache: total de módulos',
-    `requirements`      JSON             DEFAULT NULL                COMMENT 'Pré-requisitos em array JSON',
-    `what_you_learn`    JSON             DEFAULT NULL                COMMENT 'O que vai aprender (array)',
-    `target_audience`   JSON             DEFAULT NULL                COMMENT 'Para quem é o curso (array)',
-    `resources`         JSON             DEFAULT NULL                COMMENT 'Recursos necessários (array)',
+    `duration_hours`    DECIMAL(6,1)     NOT NULL DEFAULT 0.0,
+    `xp_reward`         INT UNSIGNED     NOT NULL DEFAULT 100,
+    `coin_reward`       INT UNSIGNED     NOT NULL DEFAULT 10,
+    `total_lessons`     INT UNSIGNED     NOT NULL DEFAULT 0,
+    `total_modules`     INT UNSIGNED     NOT NULL DEFAULT 0,
+    `requirements`      JSON             DEFAULT NULL,
+    `what_you_learn`    JSON             DEFAULT NULL,
+    `target_audience`   JSON             DEFAULT NULL,
+    `resources`         JSON             DEFAULT NULL,
     `game_engine`       ENUM('unity','unreal','godot','gamemaker','construct','phaser','pygame','love2d','custom','none')
-                                         DEFAULT NULL                COMMENT 'Engine de jogos abordada',
-    `programming_lang`  VARCHAR(50)      DEFAULT NULL                COMMENT 'Linguagem principal: C#, C++, GDScript, etc',
+                                         DEFAULT NULL,
+    `programming_lang`  VARCHAR(50)      DEFAULT NULL,
     `status`            ENUM('draft','pending_review','published','archived','suspended')
-                                         NOT NULL DEFAULT 'draft'    COMMENT 'Status de publicação',
-    `is_featured`       TINYINT(1)       NOT NULL DEFAULT 0          COMMENT 'Curso em destaque?',
-    `is_free`           TINYINT(1)       NOT NULL DEFAULT 0          COMMENT 'Curso gratuito?',
-    `is_bestseller`     TINYINT(1)       NOT NULL DEFAULT 0          COMMENT 'Marcado como bestseller?',
-    `is_new`            TINYINT(1)       NOT NULL DEFAULT 0          COMMENT 'Marcado como novo?',
-    `enrollment_count`  INT UNSIGNED     NOT NULL DEFAULT 0          COMMENT 'Cache: total de matrículas',
-    `rating_average`    DECIMAL(3,2)     NOT NULL DEFAULT 0.00       COMMENT 'Cache: média de avaliações',
-    `rating_count`      INT UNSIGNED     NOT NULL DEFAULT 0          COMMENT 'Cache: total de avaliações',
-    `completion_rate`   DECIMAL(5,2)     NOT NULL DEFAULT 0.00       COMMENT 'Cache: taxa de conclusão %',
-    `meta_title`        VARCHAR(255)     DEFAULT NULL                COMMENT 'SEO: title tag',
-    `meta_description`  VARCHAR(500)     DEFAULT NULL                COMMENT 'SEO: meta description',
+                                         NOT NULL DEFAULT 'draft',
+    `is_published`      TINYINT(1)       NOT NULL DEFAULT 0             COMMENT 'Cache: publicado?',
+    `is_active`         TINYINT(1)       NOT NULL DEFAULT 1,
+    `is_featured`       TINYINT(1)       NOT NULL DEFAULT 0,
+    `is_free`           TINYINT(1)       NOT NULL DEFAULT 0,
+    `is_bestseller`     TINYINT(1)       NOT NULL DEFAULT 0,
+    `is_new`            TINYINT(1)       NOT NULL DEFAULT 0,
+    `enrollment_count`  INT UNSIGNED     NOT NULL DEFAULT 0,
+    `total_students`    INT UNSIGNED     NOT NULL DEFAULT 0             COMMENT 'Cache: alias enrollment_count',
+    `rating_average`    DECIMAL(3,2)     NOT NULL DEFAULT 0.00,
+    `average_rating`    DECIMAL(3,2)     NOT NULL DEFAULT 0.00          COMMENT 'Cache: alias rating_average',
+    `rating_count`      INT UNSIGNED     NOT NULL DEFAULT 0,
+    `total_reviews`     INT UNSIGNED     NOT NULL DEFAULT 0             COMMENT 'Cache: alias rating_count',
+    `completion_rate`   DECIMAL(5,2)     NOT NULL DEFAULT 0.00,
+    `view_count`        INT UNSIGNED     NOT NULL DEFAULT 0,
+    `meta_title`        VARCHAR(255)     DEFAULT NULL,
+    `meta_description`  VARCHAR(500)     DEFAULT NULL,
     `published_at`      TIMESTAMP        NULL DEFAULT NULL,
     `created_at`        TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`        TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -766,45 +800,40 @@ CREATE TABLE `courses` (
     KEY `idx_courses_instructor` (`instructor_id`),
     KEY `idx_courses_category` (`category_id`),
     KEY `idx_courses_status` (`status`),
+    KEY `idx_courses_published` (`is_published`),
     KEY `idx_courses_featured` (`is_featured`, `status`),
     KEY `idx_courses_level` (`level`),
     KEY `idx_courses_engine` (`game_engine`),
     KEY `idx_courses_price` (`price`),
-    KEY `idx_courses_free` (`is_free`, `status`),
+    KEY `idx_courses_free` (`is_free`),
     KEY `idx_courses_rating` (`rating_average` DESC),
     KEY `idx_courses_enrollment` (`enrollment_count` DESC),
-    KEY `idx_courses_published` (`published_at` DESC),
-    KEY `idx_courses_created` (`created_at`),
+    KEY `idx_courses_students` (`total_students` DESC),
     FULLTEXT KEY `ft_courses_search` (`title`, `description`, `short_description`),
     CONSTRAINT `fk_courses_instructor` FOREIGN KEY (`instructor_id`)
         REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT `fk_courses_category` FOREIGN KEY (`category_id`)
         REFERENCES `categories` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Tabela central de cursos da plataforma';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ----------------------------------------------------------------
--- TABELA 25/54: blog_posts
--- Descrição: Artigos do blog
--- Dependências: users (author_id), categories
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `blog_posts`;
 CREATE TABLE `blog_posts` (
     `id`               INT UNSIGNED     NOT NULL AUTO_INCREMENT,
     `title`            VARCHAR(255)     NOT NULL,
     `slug`             VARCHAR(280)     NOT NULL,
-    `excerpt`          VARCHAR(500)     DEFAULT NULL                COMMENT 'Resumo do artigo',
+    `excerpt`          VARCHAR(500)     DEFAULT NULL,
     `content`          LONGTEXT         NOT NULL,
     `featured_image`   VARCHAR(500)     DEFAULT NULL,
+    `image`            VARCHAR(500)     DEFAULT NULL                    COMMENT 'Alias para featured_image',
+    `cover_image`      VARCHAR(500)     DEFAULT NULL                    COMMENT 'Alias para featured_image',
     `author_id`        INT UNSIGNED     NOT NULL,
     `category_id`      INT UNSIGNED     DEFAULT NULL,
-    `status`           ENUM('draft','published','archived')
-                                        NOT NULL DEFAULT 'draft',
+    `status`           ENUM('draft','published','archived') NOT NULL DEFAULT 'draft',
     `is_featured`      TINYINT(1)       NOT NULL DEFAULT 0,
     `allow_comments`   TINYINT(1)       NOT NULL DEFAULT 1,
     `view_count`       INT UNSIGNED     NOT NULL DEFAULT 0,
-    `reading_time`     INT UNSIGNED     DEFAULT NULL               COMMENT 'Tempo de leitura em minutos',
+    `reading_time`     INT UNSIGNED     DEFAULT NULL,
     `meta_title`       VARCHAR(255)     DEFAULT NULL,
     `meta_description` VARCHAR(500)     DEFAULT NULL,
     `published_at`     TIMESTAMP        NULL DEFAULT NULL,
@@ -814,105 +843,106 @@ CREATE TABLE `blog_posts` (
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_blogposts_slug` (`slug`),
     KEY `idx_blogposts_author` (`author_id`),
-    KEY `idx_blogposts_category` (`category_id`),
     KEY `idx_blogposts_status` (`status`, `published_at` DESC),
-    KEY `idx_blogposts_featured` (`is_featured`),
     FULLTEXT KEY `ft_blogposts_search` (`title`, `content`),
     CONSTRAINT `fk_blogposts_author` FOREIGN KEY (`author_id`)
         REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT `fk_blogposts_category` FOREIGN KEY (`category_id`)
         REFERENCES `categories` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Artigos do blog da plataforma';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 -- ================================================================
--- ================================================================
---
---   NÍVEL 2 - DEPENDEM DOS NÍVEIS 0 E 1 (13 tabelas)
---
--- ================================================================
+-- NÍVEL 2 - DEPENDEM DOS NÍVEIS 0 E 1
 -- ================================================================
 
-
--- ----------------------------------------------------------------
--- TABELA 26/54: course_tags
--- Descrição: Relacionamento N:N entre cursos e tags
--- Dependências: courses, tags
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `course_tags`;
 CREATE TABLE `course_tags` (
     `course_id`  INT UNSIGNED    NOT NULL,
     `tag_id`     INT UNSIGNED    NOT NULL,
-
     PRIMARY KEY (`course_id`, `tag_id`),
-    KEY `idx_coursetags_tag` (`tag_id`),
     CONSTRAINT `fk_coursetags_course` FOREIGN KEY (`course_id`)
         REFERENCES `courses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT `fk_coursetags_tag` FOREIGN KEY (`tag_id`)
         REFERENCES `tags` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Relacionamento N:N entre cursos e tags';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ----------------------------------------------------------------
--- TABELA 27/54: course_categories
--- Descrição: Relacionamento N:N entre cursos e categorias adicionais
--- Dependências: courses, categories
--- Nota: courses.category_id = categoria principal, esta tabela = categorias secundárias
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `course_categories`;
 CREATE TABLE `course_categories` (
     `course_id`    INT UNSIGNED    NOT NULL,
     `category_id`  INT UNSIGNED    NOT NULL,
-
     PRIMARY KEY (`course_id`, `category_id`),
-    KEY `idx_coursecat_category` (`category_id`),
     CONSTRAINT `fk_coursecat_course` FOREIGN KEY (`course_id`)
         REFERENCES `courses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT `fk_coursecat_category` FOREIGN KEY (`category_id`)
         REFERENCES `categories` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Categorias secundárias de um curso (a principal fica em courses.category_id)';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ----------------------------------------------------------------
--- TABELA 28/54: blog_post_tags
--- Descrição: Relacionamento N:N entre posts e tags
--- Dependências: blog_posts, tags
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `blog_post_tags`;
 CREATE TABLE `blog_post_tags` (
     `post_id`  INT UNSIGNED    NOT NULL,
     `tag_id`   INT UNSIGNED    NOT NULL,
-
     PRIMARY KEY (`post_id`, `tag_id`),
-    KEY `idx_blogposttags_tag` (`tag_id`),
     CONSTRAINT `fk_blogposttags_post` FOREIGN KEY (`post_id`)
         REFERENCES `blog_posts` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT `fk_blogposttags_tag` FOREIGN KEY (`tag_id`)
         REFERENCES `tags` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ================================================================
+-- CORREÇÃO: course_requirements e course_objectives
+-- (referenciadas no AUTO_INCREMENT mas faltavam no schema)
+-- ================================================================
+
+DROP TABLE IF EXISTS `course_requirements`;
+CREATE TABLE `course_requirements` (
+    `id`          INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+    `course_id`   INT UNSIGNED    NOT NULL,
+    `description` VARCHAR(500)    NOT NULL                            COMMENT 'Pré-requisito do curso',
+    `sort_order`  INT             NOT NULL DEFAULT 0,
+    `created_at`  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    KEY `idx_requirements_course` (`course_id`),
+    CONSTRAINT `fk_requirements_course` FOREIGN KEY (`course_id`)
+        REFERENCES `courses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Tags dos artigos do blog';
+  COMMENT='Pré-requisitos listados por curso';
 
 
--- ----------------------------------------------------------------
--- TABELA 29/54: modules
--- Descrição: Módulos/seções de um curso
--- Dependências: courses
--- Referenciada por: lessons
--- ----------------------------------------------------------------
-DROP TABLE IF EXISTS `modules`;
-CREATE TABLE `modules` (
+DROP TABLE IF EXISTS `course_objectives`;
+CREATE TABLE `course_objectives` (
+    `id`          INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+    `course_id`   INT UNSIGNED    NOT NULL,
+    `description` VARCHAR(500)    NOT NULL                            COMMENT 'O que você vai aprender',
+    `sort_order`  INT             NOT NULL DEFAULT 0,
+    `created_at`  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    KEY `idx_objectives_course` (`course_id`),
+    CONSTRAINT `fk_objectives_course` FOREIGN KEY (`course_id`)
+        REFERENCES `courses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Objetivos de aprendizado por curso';
+
+
+-- CORREÇÃO: renomeado de modules para course_modules
+DROP TABLE IF EXISTS `course_modules`;
+CREATE TABLE `course_modules` (
     `id`               INT UNSIGNED     NOT NULL AUTO_INCREMENT,
     `course_id`        INT UNSIGNED     NOT NULL,
-    `title`            VARCHAR(255)     NOT NULL                    COMMENT 'Título do módulo',
+    `title`            VARCHAR(255)     NOT NULL,
     `description`      TEXT             DEFAULT NULL,
-    `sort_order`       INT              NOT NULL DEFAULT 0          COMMENT 'Ordem dentro do curso',
-    `is_free_preview`  TINYINT(1)       NOT NULL DEFAULT 0          COMMENT 'Disponível como prévia gratuita?',
+    `sort_order`       INT              NOT NULL DEFAULT 0,
+    `is_free_preview`  TINYINT(1)       NOT NULL DEFAULT 0,
     `is_published`     TINYINT(1)       NOT NULL DEFAULT 1,
-    `duration_minutes` INT UNSIGNED     NOT NULL DEFAULT 0          COMMENT 'Cache: duração total em minutos',
-    `lesson_count`     INT UNSIGNED     NOT NULL DEFAULT 0          COMMENT 'Cache: total de aulas',
+    `duration_minutes` INT UNSIGNED     NOT NULL DEFAULT 0,
+    `xp_reward`        INT UNSIGNED     NOT NULL DEFAULT 50,
+    `unlock_after_module` INT UNSIGNED  DEFAULT NULL,
+    `lesson_count`     INT UNSIGNED     NOT NULL DEFAULT 0,
     `created_at`       TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`       TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
@@ -920,91 +950,71 @@ CREATE TABLE `modules` (
     KEY `idx_modules_course_order` (`course_id`, `sort_order`),
     CONSTRAINT `fk_modules_course` FOREIGN KEY (`course_id`)
         REFERENCES `courses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Módulos/seções que organizam as aulas de um curso';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ----------------------------------------------------------------
--- TABELA 30/54: enrollments
--- Descrição: Matrículas dos alunos nos cursos
--- Dependências: users, courses
--- Referenciada por: Usada em muitas queries
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `enrollments`;
 CREATE TABLE `enrollments` (
-    `id`               INT UNSIGNED     NOT NULL AUTO_INCREMENT,
-    `user_id`          INT UNSIGNED     NOT NULL,
-    `course_id`        INT UNSIGNED     NOT NULL,
-    `status`           ENUM('active','completed','cancelled','expired','refunded','paused')
-                                        NOT NULL DEFAULT 'active',
-    `progress_percent` DECIMAL(5,2)     NOT NULL DEFAULT 0.00       COMMENT 'Progresso geral do curso 0-100',
-    `lessons_completed` INT UNSIGNED    NOT NULL DEFAULT 0          COMMENT 'Cache: aulas concluídas',
-    `last_lesson_id`   INT UNSIGNED     DEFAULT NULL                COMMENT 'Última aula acessada',
-    `last_accessed_at` TIMESTAMP        NULL DEFAULT NULL            COMMENT 'Último acesso ao curso',
-    `enrolled_at`      TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `completed_at`     TIMESTAMP        NULL DEFAULT NULL,
-    `expires_at`       TIMESTAMP        NULL DEFAULT NULL            COMMENT 'Expiração do acesso (NULL = vitalício)',
-    `payment_id`       INT UNSIGNED     DEFAULT NULL                COMMENT 'Pagamento que gerou esta matrícula',
-    `source`           VARCHAR(50)      DEFAULT 'direct'            COMMENT 'Origem: direct, coupon, gift, admin',
-    `created_at`       TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at`       TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `id`                INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    `user_id`           INT UNSIGNED     NOT NULL,
+    `course_id`         INT UNSIGNED     NOT NULL,
+    `status`            ENUM('active','completed','cancelled','expired','refunded','paused')
+                                         NOT NULL DEFAULT 'active',
+    `progress_percent`  DECIMAL(5,2)     NOT NULL DEFAULT 0.00,
+    `lessons_completed` INT UNSIGNED     NOT NULL DEFAULT 0,
+    `last_lesson_id`    INT UNSIGNED     DEFAULT NULL,
+    `last_accessed_at`  TIMESTAMP        NULL DEFAULT NULL,
+    `enrolled_at`       TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `completed_at`      TIMESTAMP        NULL DEFAULT NULL,
+    `expires_at`        TIMESTAMP        NULL DEFAULT NULL,
+    `payment_id`        INT UNSIGNED     DEFAULT NULL,
+    `certificate_issued` TINYINT(1)      NOT NULL DEFAULT 0,
+    `source`            VARCHAR(50)      DEFAULT 'direct',
+    `created_at`        TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`        TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_enrollment` (`user_id`, `course_id`),
     KEY `idx_enrollments_course` (`course_id`),
     KEY `idx_enrollments_status` (`status`),
     KEY `idx_enrollments_enrolled` (`enrolled_at`),
-    KEY `idx_enrollments_progress` (`progress_percent`),
-    KEY `idx_enrollments_created` (`created_at`),
     CONSTRAINT `fk_enrollments_user` FOREIGN KEY (`user_id`)
         REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT `fk_enrollments_course` FOREIGN KEY (`course_id`)
         REFERENCES `courses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Matrículas vinculando alunos a cursos com controle de progresso';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ----------------------------------------------------------------
--- TABELA 31/54: reviews
--- Descrição: Avaliações dos alunos sobre os cursos
--- Dependências: users, courses
--- ----------------------------------------------------------------
-DROP TABLE IF EXISTS `reviews`;
-CREATE TABLE `reviews` (
+-- CORREÇÃO: renomeado de reviews para course_reviews
+DROP TABLE IF EXISTS `course_reviews`;
+CREATE TABLE `course_reviews` (
     `id`                    INT UNSIGNED     NOT NULL AUTO_INCREMENT,
     `user_id`               INT UNSIGNED     NOT NULL,
     `course_id`             INT UNSIGNED     NOT NULL,
-    `rating`                TINYINT UNSIGNED NOT NULL                 COMMENT 'Nota de 1 a 5 estrelas',
-    `title`                 VARCHAR(255)     DEFAULT NULL             COMMENT 'Título da avaliação',
-    `comment`               TEXT             DEFAULT NULL             COMMENT 'Texto da avaliação',
-    `is_approved`           TINYINT(1)       NOT NULL DEFAULT 0       COMMENT 'Aprovada pela moderação?',
-    `instructor_reply`      TEXT             DEFAULT NULL             COMMENT 'Resposta do instrutor',
+    `rating`                TINYINT UNSIGNED NOT NULL,
+    `title`                 VARCHAR(255)     DEFAULT NULL,
+    `comment`               TEXT             DEFAULT NULL,
+    `is_approved`           TINYINT(1)       NOT NULL DEFAULT 0,
+    `status`                ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+    `instructor_reply`      TEXT             DEFAULT NULL,
     `instructor_reply_at`   TIMESTAMP        NULL DEFAULT NULL,
-    `helpful_count`         INT UNSIGNED     NOT NULL DEFAULT 0       COMMENT 'Votos de "útil"',
-    `reported_count`        INT UNSIGNED     NOT NULL DEFAULT 0       COMMENT 'Denúncias recebidas',
+    `helpful_count`         INT UNSIGNED     NOT NULL DEFAULT 0,
+    `reported_count`        INT UNSIGNED     NOT NULL DEFAULT 0,
     `created_at`            TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`            TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_review` (`user_id`, `course_id`),
     KEY `idx_reviews_course` (`course_id`),
-    KEY `idx_reviews_rating` (`rating`),
     KEY `idx_reviews_approved` (`is_approved`),
-    KEY `idx_reviews_created` (`created_at`),
+    KEY `idx_reviews_status` (`status`),
     CONSTRAINT `fk_reviews_user` FOREIGN KEY (`user_id`)
         REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT `fk_reviews_course` FOREIGN KEY (`course_id`)
-        REFERENCES `courses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT `chk_reviews_rating` CHECK (`rating` BETWEEN 1 AND 5)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Avaliações dos alunos com moderação e resposta do instrutor';
+        REFERENCES `courses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ----------------------------------------------------------------
--- TABELA 32/54: wishlists
--- Descrição: Lista de desejos dos alunos
--- Dependências: users, courses
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `wishlists`;
 CREATE TABLE `wishlists` (
     `id`          INT UNSIGNED    NOT NULL AUTO_INCREMENT,
@@ -1014,72 +1024,57 @@ CREATE TABLE `wishlists` (
 
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_wishlist` (`user_id`, `course_id`),
-    KEY `idx_wishlist_course` (`course_id`),
     CONSTRAINT `fk_wishlist_user` FOREIGN KEY (`user_id`)
         REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT `fk_wishlist_course` FOREIGN KEY (`course_id`)
         REFERENCES `courses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Cursos salvos na lista de desejos do aluno';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ----------------------------------------------------------------
--- TABELA 33/54: certificates
--- Descrição: Certificados emitidos para alunos
--- Dependências: users, courses, certificate_templates
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `certificates`;
 CREATE TABLE `certificates` (
     `id`                INT UNSIGNED     NOT NULL AUTO_INCREMENT,
     `user_id`           INT UNSIGNED     NOT NULL,
     `course_id`         INT UNSIGNED     NOT NULL,
     `template_id`       INT UNSIGNED     DEFAULT NULL,
-    `certificate_code`  VARCHAR(50)      NOT NULL                    COMMENT 'Código único para verificação pública',
-    `certificate_url`   VARCHAR(500)     DEFAULT NULL                COMMENT 'URL do PDF gerado',
-    `final_grade`       DECIMAL(5,2)     DEFAULT NULL                COMMENT 'Nota final do aluno',
-    `total_hours`       DECIMAL(6,1)     DEFAULT NULL                COMMENT 'Horas totais do curso na emissão',
-    `metadata`          JSON             DEFAULT NULL                COMMENT 'Dados extras para o template',
+    `certificate_code`  VARCHAR(50)      NOT NULL,
+    `certificate_url`   VARCHAR(500)     DEFAULT NULL,
+    `final_grade`       DECIMAL(5,2)     DEFAULT NULL,
+    `total_hours`       DECIMAL(6,1)     DEFAULT NULL,
+    `metadata`          JSON             DEFAULT NULL,
     `issued_at`         TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_certificate` (`user_id`, `course_id`),
     UNIQUE KEY `uk_certificate_code` (`certificate_code`),
-    KEY `idx_certificates_course` (`course_id`),
-    KEY `idx_certificates_issued` (`issued_at`),
     CONSTRAINT `fk_certificates_user` FOREIGN KEY (`user_id`)
         REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT `fk_certificates_course` FOREIGN KEY (`course_id`)
         REFERENCES `courses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT `fk_certificates_template` FOREIGN KEY (`template_id`)
         REFERENCES `certificate_templates` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Certificados de conclusão com código de verificação';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ----------------------------------------------------------------
--- TABELA 34/54: payments
--- Descrição: Registro de pagamentos
--- Dependências: users, courses, coupons
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `payments`;
 CREATE TABLE `payments` (
     `id`                      INT UNSIGNED     NOT NULL AUTO_INCREMENT,
     `user_id`                 INT UNSIGNED     NOT NULL,
     `course_id`               INT UNSIGNED     DEFAULT NULL,
-    `coupon_id`               INT UNSIGNED     DEFAULT NULL           COMMENT 'Cupom aplicado',
-    `amount`                  DECIMAL(10,2)    NOT NULL               COMMENT 'Valor cobrado',
-    `original_amount`         DECIMAL(10,2)    DEFAULT NULL           COMMENT 'Valor antes do desconto',
-    `discount_amount`         DECIMAL(10,2)    NOT NULL DEFAULT 0.00  COMMENT 'Valor do desconto',
+    `coupon_id`               INT UNSIGNED     DEFAULT NULL,
+    `amount`                  DECIMAL(10,2)    NOT NULL,
+    `original_amount`         DECIMAL(10,2)    DEFAULT NULL,
+    `discount_amount`         DECIMAL(10,2)    NOT NULL DEFAULT 0.00,
     `currency`                VARCHAR(3)       NOT NULL DEFAULT 'BRL',
     `payment_method`          ENUM('credit_card','debit_card','pix','boleto','paypal','stripe','free','coupon','admin')
                                                NOT NULL,
-    `payment_gateway`         VARCHAR(50)      DEFAULT NULL           COMMENT 'Gateway: stripe, mercadopago, pagseguro',
-    `gateway_transaction_id`  VARCHAR(255)     DEFAULT NULL           COMMENT 'ID da transação no gateway',
-    `gateway_response`        JSON             DEFAULT NULL           COMMENT 'Resposta completa do gateway',
+    `payment_gateway`         VARCHAR(50)      DEFAULT NULL,
+    `gateway_transaction_id`  VARCHAR(255)     DEFAULT NULL,
+    `gateway_response`        JSON             DEFAULT NULL,
     `status`                  ENUM('pending','processing','completed','failed','cancelled','refunded','disputed','chargeback')
                                                NOT NULL DEFAULT 'pending',
-    `invoice_number`          VARCHAR(50)      DEFAULT NULL           COMMENT 'Número da nota/fatura',
-    `receipt_url`             VARCHAR(500)     DEFAULT NULL           COMMENT 'URL do comprovante',
+    `invoice_number`          VARCHAR(50)      DEFAULT NULL,
+    `receipt_url`             VARCHAR(500)     DEFAULT NULL,
     `refund_reason`           TEXT             DEFAULT NULL,
     `refunded_amount`         DECIMAL(10,2)    DEFAULT NULL,
     `refunded_at`             TIMESTAMP        NULL DEFAULT NULL,
@@ -1089,66 +1084,146 @@ CREATE TABLE `payments` (
 
     PRIMARY KEY (`id`),
     KEY `idx_payments_user` (`user_id`),
-    KEY `idx_payments_course` (`course_id`),
     KEY `idx_payments_status` (`status`),
-    KEY `idx_payments_method` (`payment_method`),
-    KEY `idx_payments_gateway_tx` (`gateway_transaction_id`),
-    KEY `idx_payments_created` (`created_at`),
-    KEY `idx_payments_paid` (`paid_at`),
     CONSTRAINT `fk_payments_user` FOREIGN KEY (`user_id`)
         REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT `fk_payments_course` FOREIGN KEY (`course_id`)
         REFERENCES `courses` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT `fk_payments_coupon` FOREIGN KEY (`coupon_id`)
         REFERENCES `coupons` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ================================================================
+-- CORREÇÃO: carts, cart_items, orders, order_items
+-- (referenciadas no AUTO_INCREMENT mas faltavam no schema)
+-- ================================================================
+
+DROP TABLE IF EXISTS `carts`;
+CREATE TABLE `carts` (
+    `id`          INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+    `user_id`     INT UNSIGNED    NOT NULL,
+    `coupon_id`   INT UNSIGNED    DEFAULT NULL,
+    `subtotal`    DECIMAL(10,2)   NOT NULL DEFAULT 0.00,
+    `discount`    DECIMAL(10,2)   NOT NULL DEFAULT 0.00,
+    `total`       DECIMAL(10,2)   NOT NULL DEFAULT 0.00,
+    `created_at`  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_cart_user` (`user_id`),
+    CONSTRAINT `fk_carts_user` FOREIGN KEY (`user_id`)
+        REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_carts_coupon` FOREIGN KEY (`coupon_id`)
+        REFERENCES `coupons` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Registro completo de pagamentos e transações financeiras';
+  COMMENT='Carrinho de compras por usuário';
 
 
--- ----------------------------------------------------------------
--- TABELA 35/54: coupon_uses
--- Descrição: Registro de uso de cupons
--- Dependências: coupons, users, payments
--- ----------------------------------------------------------------
-DROP TABLE IF EXISTS `coupon_uses`;
-CREATE TABLE `coupon_uses` (
+DROP TABLE IF EXISTS `cart_items`;
+CREATE TABLE `cart_items` (
+    `id`          INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+    `cart_id`     INT UNSIGNED    NOT NULL,
+    `course_id`   INT UNSIGNED    NOT NULL,
+    `price`       DECIMAL(10,2)   NOT NULL,
+    `added_at`    TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_cart_item` (`cart_id`, `course_id`),
+    CONSTRAINT `fk_cartitems_cart` FOREIGN KEY (`cart_id`)
+        REFERENCES `carts` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_cartitems_course` FOREIGN KEY (`course_id`)
+        REFERENCES `courses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Itens no carrinho de compras';
+
+
+DROP TABLE IF EXISTS `orders`;
+CREATE TABLE `orders` (
+    `id`              INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    `user_id`         INT UNSIGNED     NOT NULL,
+    `order_number`    VARCHAR(50)      NOT NULL,
+    `coupon_id`       INT UNSIGNED     DEFAULT NULL,
+    `subtotal`        DECIMAL(10,2)    NOT NULL,
+    `discount`        DECIMAL(10,2)    NOT NULL DEFAULT 0.00,
+    `tax`             DECIMAL(10,2)    NOT NULL DEFAULT 0.00,
+    `total`           DECIMAL(10,2)    NOT NULL,
+    `currency`        VARCHAR(3)       NOT NULL DEFAULT 'BRL',
+    `status`          ENUM('pending','processing','completed','cancelled','refunded')
+                                       NOT NULL DEFAULT 'pending',
+    `payment_method`  VARCHAR(50)      DEFAULT NULL,
+    `payment_id`      INT UNSIGNED     DEFAULT NULL,
+    `notes`           TEXT             DEFAULT NULL,
+    `completed_at`    TIMESTAMP        NULL DEFAULT NULL,
+    `created_at`      TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`      TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_order_number` (`order_number`),
+    KEY `idx_orders_user` (`user_id`),
+    KEY `idx_orders_status` (`status`),
+    CONSTRAINT `fk_orders_user` FOREIGN KEY (`user_id`)
+        REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT `fk_orders_coupon` FOREIGN KEY (`coupon_id`)
+        REFERENCES `coupons` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Pedidos de compra';
+
+
+DROP TABLE IF EXISTS `order_items`;
+CREATE TABLE `order_items` (
+    `id`          INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+    `order_id`    INT UNSIGNED    NOT NULL,
+    `course_id`   INT UNSIGNED    NOT NULL,
+    `title`       VARCHAR(255)    NOT NULL                            COMMENT 'Snapshot do título',
+    `price`       DECIMAL(10,2)   NOT NULL,
+    `discount`    DECIMAL(10,2)   NOT NULL DEFAULT 0.00,
+    `final_price` DECIMAL(10,2)   NOT NULL,
+    `created_at`  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    KEY `idx_orderitems_order` (`order_id`),
+    CONSTRAINT `fk_orderitems_order` FOREIGN KEY (`order_id`)
+        REFERENCES `orders` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_orderitems_course` FOREIGN KEY (`course_id`)
+        REFERENCES `courses` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Itens de cada pedido de compra';
+
+
+-- CORREÇÃO: renomeado de coupon_uses para coupon_usage
+DROP TABLE IF EXISTS `coupon_usage`;
+CREATE TABLE `coupon_usage` (
     `id`          INT UNSIGNED    NOT NULL AUTO_INCREMENT,
     `coupon_id`   INT UNSIGNED    NOT NULL,
     `user_id`     INT UNSIGNED    NOT NULL,
+    `order_id`    INT UNSIGNED    DEFAULT NULL,
     `payment_id`  INT UNSIGNED    DEFAULT NULL,
     `used_at`     TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`id`),
-    KEY `idx_couponuses_coupon` (`coupon_id`),
-    KEY `idx_couponuses_user` (`user_id`),
-    UNIQUE KEY `uk_coupon_user_payment` (`coupon_id`, `user_id`, `payment_id`),
-    CONSTRAINT `fk_couponuses_coupon` FOREIGN KEY (`coupon_id`)
+    KEY `idx_couponusage_coupon` (`coupon_id`),
+    KEY `idx_couponusage_user` (`user_id`),
+    CONSTRAINT `fk_couponusage_coupon` FOREIGN KEY (`coupon_id`)
         REFERENCES `coupons` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT `fk_couponuses_user` FOREIGN KEY (`user_id`)
-        REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT `fk_couponuses_payment` FOREIGN KEY (`payment_id`)
-        REFERENCES `payments` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+    CONSTRAINT `fk_couponusage_user` FOREIGN KEY (`user_id`)
+        REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Histórico de utilização de cupons de desconto';
+  COMMENT='Histórico de uso de cupons';
 
 
--- ----------------------------------------------------------------
--- TABELA 36/54: discussions
--- Descrição: Tópicos de discussão/fórum
--- Dependências: users, courses
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `discussions`;
 CREATE TABLE `discussions` (
     `id`            INT UNSIGNED     NOT NULL AUTO_INCREMENT,
-    `course_id`     INT UNSIGNED     DEFAULT NULL                  COMMENT 'Curso relacionado (NULL = fórum geral)',
-    `lesson_id`     INT UNSIGNED     DEFAULT NULL                  COMMENT 'Aula específica (preenchido depois)',
+    `course_id`     INT UNSIGNED     DEFAULT NULL,
+    `lesson_id`     INT UNSIGNED     DEFAULT NULL,
     `user_id`       INT UNSIGNED     NOT NULL,
     `title`         VARCHAR(255)     NOT NULL,
     `content`       LONGTEXT         NOT NULL,
-    `is_pinned`     TINYINT(1)       NOT NULL DEFAULT 0            COMMENT 'Fixado no topo?',
-    `is_resolved`   TINYINT(1)       NOT NULL DEFAULT 0            COMMENT 'Dúvida resolvida?',
-    `is_locked`     TINYINT(1)       NOT NULL DEFAULT 0            COMMENT 'Trancado para novas respostas?',
-    `reply_count`   INT UNSIGNED     NOT NULL DEFAULT 0            COMMENT 'Cache: total de respostas',
+    `is_pinned`     TINYINT(1)       NOT NULL DEFAULT 0,
+    `is_resolved`   TINYINT(1)       NOT NULL DEFAULT 0,
+    `is_locked`     TINYINT(1)       NOT NULL DEFAULT 0,
+    `reply_count`   INT UNSIGNED     NOT NULL DEFAULT 0,
     `view_count`    INT UNSIGNED     NOT NULL DEFAULT 0,
     `last_reply_at` TIMESTAMP        NULL DEFAULT NULL,
     `last_reply_by` INT UNSIGNED     DEFAULT NULL,
@@ -1157,41 +1232,33 @@ CREATE TABLE `discussions` (
 
     PRIMARY KEY (`id`),
     KEY `idx_discussions_course` (`course_id`),
-    KEY `idx_discussions_user` (`user_id`),
-    KEY `idx_discussions_pinned` (`is_pinned`, `last_reply_at` DESC),
-    KEY `idx_discussions_resolved` (`is_resolved`),
     FULLTEXT KEY `ft_discussions_search` (`title`, `content`),
     CONSTRAINT `fk_discussions_course` FOREIGN KEY (`course_id`)
         REFERENCES `courses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT `fk_discussions_user` FOREIGN KEY (`user_id`)
         REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Tópicos de discussão do fórum por curso ou geral';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ----------------------------------------------------------------
--- TABELA 37/54: support_tickets
--- Descrição: Tickets de suporte ao aluno
--- Dependências: users, courses
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `support_tickets`;
 CREATE TABLE `support_tickets` (
     `id`            INT UNSIGNED     NOT NULL AUTO_INCREMENT,
-    `ticket_number` VARCHAR(20)      NOT NULL                      COMMENT 'Número legível: TKT-20250001',
+    `ticket_number` VARCHAR(20)      NOT NULL,
     `user_id`       INT UNSIGNED     NOT NULL,
     `subject`       VARCHAR(255)     NOT NULL,
     `description`   LONGTEXT         NOT NULL,
     `category`      ENUM('technical','billing','content','account','bug_report','feature_request','other')
                                      NOT NULL DEFAULT 'other',
-    `priority`      ENUM('low','medium','high','urgent')
-                                     NOT NULL DEFAULT 'medium',
+    `priority`      ENUM('low','medium','high','urgent') NOT NULL DEFAULT 'medium',
     `status`        ENUM('open','in_progress','waiting_response','on_hold','resolved','closed')
                                      NOT NULL DEFAULT 'open',
-    `assigned_to`   INT UNSIGNED     DEFAULT NULL                  COMMENT 'Admin/suporte responsável',
-    `course_id`     INT UNSIGNED     DEFAULT NULL                  COMMENT 'Curso relacionado ao problema',
+    `assigned_to`   INT UNSIGNED     DEFAULT NULL,
+    `course_id`     INT UNSIGNED     DEFAULT NULL,
     `resolved_at`   TIMESTAMP        NULL DEFAULT NULL,
     `closed_at`     TIMESTAMP        NULL DEFAULT NULL,
-    `satisfaction`   TINYINT UNSIGNED DEFAULT NULL                  COMMENT 'Nota de satisfação 1-5',
+    `last_reply_at` TIMESTAMP        NULL DEFAULT NULL,
+    `last_reply_by` INT UNSIGNED     DEFAULT NULL,
+    `satisfaction`  TINYINT UNSIGNED DEFAULT NULL,
     `created_at`    TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`    TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
@@ -1199,40 +1266,27 @@ CREATE TABLE `support_tickets` (
     UNIQUE KEY `uk_ticket_number` (`ticket_number`),
     KEY `idx_tickets_user` (`user_id`),
     KEY `idx_tickets_status` (`status`),
-    KEY `idx_tickets_priority` (`priority`),
-    KEY `idx_tickets_assigned` (`assigned_to`),
-    KEY `idx_tickets_category` (`category`),
-    KEY `idx_tickets_created` (`created_at`),
     CONSTRAINT `fk_tickets_user` FOREIGN KEY (`user_id`)
         REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT `fk_tickets_assigned` FOREIGN KEY (`assigned_to`)
-        REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT `fk_tickets_course` FOREIGN KEY (`course_id`)
-        REFERENCES `courses` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Sistema de tickets de suporte com prioridades e categorias';
+        REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ----------------------------------------------------------------
--- TABELA 38/54: instructor_payouts
--- Descrição: Pagamentos para instrutores (comissões)
--- Dependências: users
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `instructor_payouts`;
 CREATE TABLE `instructor_payouts` (
     `id`              INT UNSIGNED     NOT NULL AUTO_INCREMENT,
     `instructor_id`   INT UNSIGNED     NOT NULL,
-    `amount`          DECIMAL(10,2)    NOT NULL                    COMMENT 'Valor do repasse',
+    `amount`          DECIMAL(10,2)    NOT NULL,
     `currency`        VARCHAR(3)       NOT NULL DEFAULT 'BRL',
-    `period_start`    DATE             NOT NULL                    COMMENT 'Início do período',
-    `period_end`      DATE             NOT NULL                    COMMENT 'Fim do período',
-    `total_sales`     INT UNSIGNED     NOT NULL DEFAULT 0          COMMENT 'Total de vendas no período',
-    `gross_amount`    DECIMAL(10,2)    NOT NULL                    COMMENT 'Valor bruto antes de taxas',
-    `platform_fee`    DECIMAL(10,2)    NOT NULL DEFAULT 0.00       COMMENT 'Taxa da plataforma',
-    `payment_method`  VARCHAR(50)      DEFAULT NULL                COMMENT 'Como foi pago: pix, transferência',
-    `payment_details` JSON             DEFAULT NULL                COMMENT 'Dados do pagamento',
-    `status`          ENUM('pending','processing','completed','failed','cancelled')
-                                       NOT NULL DEFAULT 'pending',
+    `period_start`    DATE             NOT NULL,
+    `period_end`      DATE             NOT NULL,
+    `total_sales`     INT UNSIGNED     NOT NULL DEFAULT 0,
+    `gross_amount`    DECIMAL(10,2)    NOT NULL,
+    `platform_fee`    DECIMAL(10,2)    NOT NULL DEFAULT 0.00,
+    `payment_method`  VARCHAR(50)      DEFAULT NULL,
+    `payment_details` JSON             DEFAULT NULL,
+    `status`          ENUM('pending','processing','completed','failed','cancelled') NOT NULL DEFAULT 'pending',
     `paid_at`         TIMESTAMP        NULL DEFAULT NULL,
     `notes`           TEXT             DEFAULT NULL,
     `created_at`      TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1240,83 +1294,143 @@ CREATE TABLE `instructor_payouts` (
 
     PRIMARY KEY (`id`),
     KEY `idx_payouts_instructor` (`instructor_id`),
-    KEY `idx_payouts_status` (`status`),
-    KEY `idx_payouts_period` (`period_start`, `period_end`),
     CONSTRAINT `fk_payouts_instructor` FOREIGN KEY (`instructor_id`)
         REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ================================================================
+-- CORREÇÃO: messages e message_participants
+-- (referenciadas no AUTO_INCREMENT mas faltavam no schema)
+-- ================================================================
+
+DROP TABLE IF EXISTS `messages`;
+CREATE TABLE `messages` (
+    `id`           INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    `sender_id`    INT UNSIGNED     NOT NULL,
+    `subject`      VARCHAR(255)     DEFAULT NULL,
+    `body`         TEXT             NOT NULL,
+    `thread_id`    INT UNSIGNED     DEFAULT NULL                      COMMENT 'Para mensagens em thread (NULL = primeira)',
+    `is_broadcast` TINYINT(1)       NOT NULL DEFAULT 0                COMMENT 'Mensagem para todos os alunos de um curso',
+    `course_id`    INT UNSIGNED     DEFAULT NULL                      COMMENT 'Contexto de curso (broadcasts)',
+    `created_at`   TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`   TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    KEY `idx_messages_sender` (`sender_id`),
+    KEY `idx_messages_thread` (`thread_id`),
+    CONSTRAINT `fk_messages_sender` FOREIGN KEY (`sender_id`)
+        REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_messages_course` FOREIGN KEY (`course_id`)
+        REFERENCES `courses` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Controle de repasses financeiros para instrutores';
+  COMMENT='Sistema de mensagens privadas';
+
+
+DROP TABLE IF EXISTS `message_participants`;
+CREATE TABLE `message_participants` (
+    `id`           INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+    `message_id`   INT UNSIGNED    NOT NULL,
+    `user_id`      INT UNSIGNED    NOT NULL,
+    `is_read`      TINYINT(1)      NOT NULL DEFAULT 0,
+    `read_at`      TIMESTAMP       NULL DEFAULT NULL,
+    `deleted_by_recipient` TINYINT(1) NOT NULL DEFAULT 0,
+    `created_at`   TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_msg_participant` (`message_id`, `user_id`),
+    KEY `idx_msgpart_user_read` (`user_id`, `is_read`),
+    CONSTRAINT `fk_msgpart_message` FOREIGN KEY (`message_id`)
+        REFERENCES `messages` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_msgpart_user` FOREIGN KEY (`user_id`)
+        REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Destinatários de mensagens privadas';
 
 
 -- ================================================================
--- ================================================================
---
---   NÍVEL 3 - DEPENDEM DOS NÍVEIS ANTERIORES (7 tabelas)
---
--- ================================================================
+-- NÍVEL 3+ - DEPENDEM DE COURSE_MODULES
 -- ================================================================
 
-
--- ----------------------------------------------------------------
--- TABELA 39/54: lessons
--- Descrição: Aulas individuais dentro dos módulos
--- Dependências: modules, courses
--- Referenciada por: lesson_progress, quizzes, assignments, student_notes, discussions
--- ----------------------------------------------------------------
-DROP TABLE IF EXISTS `lessons`;
-CREATE TABLE `lessons` (
+-- CORREÇÃO: renomeado de lessons para course_lessons
+DROP TABLE IF EXISTS `course_lessons`;
+CREATE TABLE `course_lessons` (
     `id`               INT UNSIGNED     NOT NULL AUTO_INCREMENT,
     `module_id`        INT UNSIGNED     NOT NULL,
-    `course_id`        INT UNSIGNED     NOT NULL                    COMMENT 'Denormalizado para queries rápidas',
+    `course_id`        INT UNSIGNED     NOT NULL,
     `title`            VARCHAR(255)     NOT NULL,
+    `summary`          VARCHAR(500)     DEFAULT NULL,
     `slug`             VARCHAR(280)     NOT NULL,
     `content_type`     ENUM('video','text','quiz','assignment','download','live','interactive')
                                         NOT NULL DEFAULT 'video',
-    `content`          LONGTEXT         DEFAULT NULL                COMMENT 'Conteúdo texto/HTML da aula',
+    `content`          LONGTEXT         DEFAULT NULL,
     `video_url`        VARCHAR(500)     DEFAULT NULL,
-    `video_provider`   ENUM('youtube','vimeo','bunny','wistia','self_hosted','other')
-                                        DEFAULT NULL,
-    `video_duration`   INT UNSIGNED     NOT NULL DEFAULT 0          COMMENT 'Duração em segundos',
-    `video_thumbnail`  VARCHAR(500)     DEFAULT NULL                COMMENT 'Thumbnail customizada do vídeo',
-    `attachments`      JSON             DEFAULT NULL                COMMENT 'Array: [{name, url, size, type}]',
-    `resources`        JSON             DEFAULT NULL                COMMENT 'Links de recursos extras',
+    `video_provider`   ENUM('youtube','vimeo','bunny','wistia','self_hosted','other') DEFAULT NULL,
+    `video_duration`   INT UNSIGNED     NOT NULL DEFAULT 0,
+    `video_thumbnail`  VARCHAR(500)     DEFAULT NULL,
+    `xp_reward`        INT UNSIGNED     NOT NULL DEFAULT 10,
+    `coin_reward`      INT UNSIGNED     NOT NULL DEFAULT 1,
+    `attachments`      JSON             DEFAULT NULL,
+    `resources`        JSON             DEFAULT NULL,
     `sort_order`       INT              NOT NULL DEFAULT 0,
-    `is_free_preview`  TINYINT(1)       NOT NULL DEFAULT 0          COMMENT 'Aula gratuita para preview?',
+    `is_free_preview`  TINYINT(1)       NOT NULL DEFAULT 0,
     `is_published`     TINYINT(1)       NOT NULL DEFAULT 1,
-    `is_mandatory`     TINYINT(1)       NOT NULL DEFAULT 1          COMMENT 'Obrigatória para conclusão?',
+    `is_mandatory`     TINYINT(1)       NOT NULL DEFAULT 1,
     `completion_rule`  ENUM('video_watched','content_read','quiz_passed','manual')
-                                        NOT NULL DEFAULT 'video_watched' COMMENT 'Como marcar como concluída',
+                                        NOT NULL DEFAULT 'video_watched',
     `created_at`       TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`       TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_lessons_slug_course` (`course_id`, `slug`),
     KEY `idx_lessons_module_order` (`module_id`, `sort_order`),
-    KEY `idx_lessons_course` (`course_id`),
-    KEY `idx_lessons_type` (`content_type`),
-    KEY `idx_lessons_published` (`is_published`),
-    KEY `idx_lessons_free` (`is_free_preview`),
     CONSTRAINT `fk_lessons_module` FOREIGN KEY (`module_id`)
-        REFERENCES `modules` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+        REFERENCES `course_modules` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT `fk_lessons_course` FOREIGN KEY (`course_id`)
         REFERENCES `courses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ================================================================
+-- CORREÇÃO: course_resources
+-- (referenciada no AUTO_INCREMENT mas faltava no schema)
+-- ================================================================
+
+DROP TABLE IF EXISTS `course_resources`;
+CREATE TABLE `course_resources` (
+    `id`          INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    `course_id`   INT UNSIGNED     NOT NULL,
+    `lesson_id`   INT UNSIGNED     DEFAULT NULL,
+    `title`       VARCHAR(255)     NOT NULL,
+    `description` VARCHAR(500)     DEFAULT NULL,
+    `file_url`    VARCHAR(500)     DEFAULT NULL,
+    `external_url` VARCHAR(500)    DEFAULT NULL,
+    `file_type`   ENUM('pdf','zip','doc','video','audio','image','code','link','other') NOT NULL DEFAULT 'other',
+    `file_size`   BIGINT UNSIGNED  DEFAULT NULL,
+    `is_free`     TINYINT(1)       NOT NULL DEFAULT 0                  COMMENT 'Disponível sem matrícula?',
+    `sort_order`  INT              NOT NULL DEFAULT 0,
+    `download_count` INT UNSIGNED  NOT NULL DEFAULT 0,
+    `created_at`  TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    KEY `idx_resources_course` (`course_id`),
+    KEY `idx_resources_lesson` (`lesson_id`),
+    CONSTRAINT `fk_resources_course` FOREIGN KEY (`course_id`)
+        REFERENCES `courses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_resources_lesson` FOREIGN KEY (`lesson_id`)
+        REFERENCES `course_lessons` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Aulas individuais com suporte a múltiplos tipos de conteúdo';
+  COMMENT='Arquivos e recursos extras dos cursos';
 
 
--- ----------------------------------------------------------------
--- TABELA 40/54: discussion_replies
--- Descrição: Respostas nos tópicos de discussão
--- Dependências: discussions, users
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `discussion_replies`;
 CREATE TABLE `discussion_replies` (
     `id`              INT UNSIGNED     NOT NULL AUTO_INCREMENT,
     `discussion_id`   INT UNSIGNED     NOT NULL,
     `user_id`         INT UNSIGNED     NOT NULL,
-    `parent_reply_id` INT UNSIGNED     DEFAULT NULL                COMMENT 'Resposta a outra resposta (thread)',
+    `parent_reply_id` INT UNSIGNED     DEFAULT NULL,
     `content`         LONGTEXT         NOT NULL,
-    `is_best_answer`  TINYINT(1)       NOT NULL DEFAULT 0          COMMENT 'Marcada como melhor resposta?',
+    `is_best_answer`  TINYINT(1)       NOT NULL DEFAULT 0,
     `upvote_count`    INT UNSIGNED     NOT NULL DEFAULT 0,
     `downvote_count`  INT UNSIGNED     NOT NULL DEFAULT 0,
     `is_edited`       TINYINT(1)       NOT NULL DEFAULT 0,
@@ -1326,32 +1440,23 @@ CREATE TABLE `discussion_replies` (
 
     PRIMARY KEY (`id`),
     KEY `idx_replies_discussion` (`discussion_id`),
-    KEY `idx_replies_user` (`user_id`),
-    KEY `idx_replies_parent` (`parent_reply_id`),
-    KEY `idx_replies_best` (`is_best_answer`),
     CONSTRAINT `fk_replies_discussion` FOREIGN KEY (`discussion_id`)
         REFERENCES `discussions` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT `fk_replies_user` FOREIGN KEY (`user_id`)
         REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT `fk_replies_parent` FOREIGN KEY (`parent_reply_id`)
         REFERENCES `discussion_replies` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Respostas nos tópicos com suporte a threads aninhadas';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ----------------------------------------------------------------
--- TABELA 41/54: ticket_messages
--- Descrição: Mensagens dentro de tickets de suporte
--- Dependências: support_tickets, users
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `ticket_messages`;
 CREATE TABLE `ticket_messages` (
     `id`               INT UNSIGNED     NOT NULL AUTO_INCREMENT,
     `ticket_id`        INT UNSIGNED     NOT NULL,
     `user_id`          INT UNSIGNED     NOT NULL,
     `message`          LONGTEXT         NOT NULL,
-    `attachments`      JSON             DEFAULT NULL               COMMENT 'Arquivos anexados',
-    `is_internal_note` TINYINT(1)       NOT NULL DEFAULT 0          COMMENT 'Nota interna (não visível ao aluno)',
+    `attachments`      JSON             DEFAULT NULL,
+    `is_internal_note` TINYINT(1)       NOT NULL DEFAULT 0,
     `created_at`       TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`id`),
@@ -1360,51 +1465,37 @@ CREATE TABLE `ticket_messages` (
         REFERENCES `support_tickets` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT `fk_ticketmsg_user` FOREIGN KEY (`user_id`)
         REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Mensagens trocadas dentro de tickets de suporte';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ----------------------------------------------------------------
--- TABELA 42/54: blog_comments
--- Descrição: Comentários nos artigos do blog
--- Dependências: blog_posts, users
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `blog_comments`;
 CREATE TABLE `blog_comments` (
     `id`              INT UNSIGNED     NOT NULL AUTO_INCREMENT,
     `post_id`         INT UNSIGNED     NOT NULL,
-    `user_id`         INT UNSIGNED     DEFAULT NULL                COMMENT 'NULL = comentário de visitante',
-    `parent_id`       INT UNSIGNED     DEFAULT NULL                COMMENT 'Resposta a outro comentário',
-    `author_name`     VARCHAR(100)     DEFAULT NULL                COMMENT 'Nome se não logado',
-    `author_email`    VARCHAR(150)     DEFAULT NULL                COMMENT 'Email se não logado',
+    `user_id`         INT UNSIGNED     DEFAULT NULL,
+    `parent_id`       INT UNSIGNED     DEFAULT NULL,
+    `author_name`     VARCHAR(100)     DEFAULT NULL,
+    `author_email`    VARCHAR(150)     DEFAULT NULL,
     `content`         TEXT             NOT NULL,
     `is_approved`     TINYINT(1)       NOT NULL DEFAULT 0,
     `created_at`      TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`id`),
     KEY `idx_blogcomments_post` (`post_id`, `is_approved`),
-    KEY `idx_blogcomments_user` (`user_id`),
-    KEY `idx_blogcomments_parent` (`parent_id`),
     CONSTRAINT `fk_blogcomments_post` FOREIGN KEY (`post_id`)
         REFERENCES `blog_posts` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT `fk_blogcomments_user` FOREIGN KEY (`user_id`)
         REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT `fk_blogcomments_parent` FOREIGN KEY (`parent_id`)
         REFERENCES `blog_comments` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Comentários nos artigos do blog com moderação';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ----------------------------------------------------------------
--- TABELA 43/54: course_announcements
--- Descrição: Anúncios específicos de um curso
--- Dependências: courses, users
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `course_announcements`;
 CREATE TABLE `course_announcements` (
     `id`          INT UNSIGNED     NOT NULL AUTO_INCREMENT,
     `course_id`   INT UNSIGNED     NOT NULL,
-    `author_id`   INT UNSIGNED     NOT NULL                        COMMENT 'Instrutor que publicou',
+    `author_id`   INT UNSIGNED     NOT NULL,
     `title`       VARCHAR(255)     NOT NULL,
     `content`     LONGTEXT         NOT NULL,
     `is_pinned`   TINYINT(1)       NOT NULL DEFAULT 0,
@@ -1412,27 +1503,20 @@ CREATE TABLE `course_announcements` (
     `updated_at`  TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`id`),
-    KEY `idx_courseannounce_course` (`course_id`, `created_at` DESC),
     CONSTRAINT `fk_courseannounce_course` FOREIGN KEY (`course_id`)
         REFERENCES `courses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT `fk_courseannounce_author` FOREIGN KEY (`author_id`)
         REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Avisos do instrutor para alunos de um curso específico';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ----------------------------------------------------------------
--- TABELA 44/54: course_bookmarks
--- Descrição: Aulas favoritas/salvas pelos alunos
--- Dependências: users, courses
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `course_bookmarks`;
 CREATE TABLE `course_bookmarks` (
     `id`          INT UNSIGNED    NOT NULL AUTO_INCREMENT,
     `user_id`     INT UNSIGNED    NOT NULL,
     `course_id`   INT UNSIGNED    NOT NULL,
-    `lesson_id`   INT UNSIGNED    DEFAULT NULL                    COMMENT 'Aula específica (preenchido nível 4)',
-    `note`        VARCHAR(500)    DEFAULT NULL                    COMMENT 'Nota pessoal do aluno',
+    `lesson_id`   INT UNSIGNED    DEFAULT NULL,
+    `note`        VARCHAR(500)    DEFAULT NULL,
     `created_at`  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`id`),
@@ -1441,195 +1525,123 @@ CREATE TABLE `course_bookmarks` (
         REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT `fk_bookmarks_course` FOREIGN KEY (`course_id`)
         REFERENCES `courses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Aulas e cursos salvos como favoritos pelo aluno';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ----------------------------------------------------------------
--- TABELA 45/54: report_abuse
--- Descrição: Denúncias de conteúdo impróprio
--- Dependências: users
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `report_abuse`;
 CREATE TABLE `report_abuse` (
     `id`              INT UNSIGNED     NOT NULL AUTO_INCREMENT,
-    `reporter_id`     INT UNSIGNED     NOT NULL                    COMMENT 'Quem denunciou',
-    `entity_type`     VARCHAR(50)      NOT NULL                    COMMENT 'review, discussion, reply, course, user',
-    `entity_id`       INT UNSIGNED     NOT NULL                    COMMENT 'ID do conteúdo denunciado',
-    `reason`          ENUM('spam','inappropriate','harassment','copyright','misinformation','other')
-                                       NOT NULL,
-    `description`     TEXT             DEFAULT NULL                COMMENT 'Detalhes da denúncia',
-    `status`          ENUM('pending','reviewing','action_taken','dismissed')
-                                       NOT NULL DEFAULT 'pending',
+    `reporter_id`     INT UNSIGNED     NOT NULL,
+    `entity_type`     VARCHAR(50)      NOT NULL,
+    `entity_id`       INT UNSIGNED     NOT NULL,
+    `reason`          ENUM('spam','inappropriate','harassment','copyright','misinformation','other') NOT NULL,
+    `description`     TEXT             DEFAULT NULL,
+    `status`          ENUM('pending','reviewing','action_taken','dismissed') NOT NULL DEFAULT 'pending',
     `reviewed_by`     INT UNSIGNED     DEFAULT NULL,
     `reviewed_at`     TIMESTAMP        NULL DEFAULT NULL,
-    `action_taken`    VARCHAR(255)     DEFAULT NULL                COMMENT 'Ação tomada pela moderação',
+    `action_taken`    VARCHAR(255)     DEFAULT NULL,
     `created_at`      TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`id`),
-    KEY `idx_reports_entity` (`entity_type`, `entity_id`),
-    KEY `idx_reports_status` (`status`),
-    KEY `idx_reports_reporter` (`reporter_id`),
     CONSTRAINT `fk_reports_reporter` FOREIGN KEY (`reporter_id`)
-        REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT `fk_reports_reviewer` FOREIGN KEY (`reviewed_by`)
-        REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Sistema de denúncias para moderação de conteúdo';
+        REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ================================================================
--- ================================================================
---
---   NÍVEL 4 - DEPENDEM DAS AULAS/LESSONS (6 tabelas)
---
--- ================================================================
--- ================================================================
-
-
--- ----------------------------------------------------------------
--- TABELA 46/54: lesson_progress
--- Descrição: Progresso do aluno em cada aula
--- Dependências: users, lessons, courses
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `lesson_progress`;
 CREATE TABLE `lesson_progress` (
     `id`            INT UNSIGNED     NOT NULL AUTO_INCREMENT,
     `user_id`       INT UNSIGNED     NOT NULL,
     `lesson_id`     INT UNSIGNED     NOT NULL,
-    `course_id`     INT UNSIGNED     NOT NULL                      COMMENT 'Denormalizado para queries rápidas',
-    `status`        ENUM('not_started','in_progress','completed')
-                                     NOT NULL DEFAULT 'not_started',
-    `watch_time`    INT UNSIGNED     NOT NULL DEFAULT 0            COMMENT 'Tempo total assistido em segundos',
-    `last_position` INT UNSIGNED     NOT NULL DEFAULT 0            COMMENT 'Última posição do vídeo em segundos',
+    `course_id`     INT UNSIGNED     NOT NULL,
+    `status`        ENUM('not_started','in_progress','completed') NOT NULL DEFAULT 'not_started',
+    `is_completed`  TINYINT(1)       NOT NULL DEFAULT 0,
+    `watch_time`    INT UNSIGNED     NOT NULL DEFAULT 0,
+    `last_position` INT UNSIGNED     NOT NULL DEFAULT 0,
     `completed_at`  TIMESTAMP        NULL DEFAULT NULL,
     `created_at`    TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`    TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_lesson_progress` (`user_id`, `lesson_id`),
-    KEY `idx_progress_course` (`user_id`, `course_id`),
-    KEY `idx_progress_status` (`status`),
-    KEY `idx_progress_completed` (`completed_at`),
     CONSTRAINT `fk_progress_user` FOREIGN KEY (`user_id`)
         REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT `fk_progress_lesson` FOREIGN KEY (`lesson_id`)
-        REFERENCES `lessons` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+        REFERENCES `course_lessons` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT `fk_progress_course` FOREIGN KEY (`course_id`)
         REFERENCES `courses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Controle granular do progresso de cada aluno em cada aula';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ----------------------------------------------------------------
--- TABELA 47/54: quizzes
--- Descrição: Quizzes vinculados a aulas
--- Dependências: lessons
--- Referenciada por: quiz_questions, quiz_attempts
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `quizzes`;
 CREATE TABLE `quizzes` (
     `id`                    INT UNSIGNED     NOT NULL AUTO_INCREMENT,
     `lesson_id`             INT UNSIGNED     NOT NULL,
     `title`                 VARCHAR(255)     NOT NULL,
     `description`           TEXT             DEFAULT NULL,
-    `time_limit`            INT UNSIGNED     DEFAULT NULL            COMMENT 'Limite em minutos (NULL = sem limite)',
-    `pass_percentage`       DECIMAL(5,2)     NOT NULL DEFAULT 70.00  COMMENT 'Percentual mínimo para aprovação',
-    `max_attempts`          INT UNSIGNED     DEFAULT NULL            COMMENT 'Máximo de tentativas (NULL = ilimitado)',
-    `shuffle_questions`     TINYINT(1)       NOT NULL DEFAULT 0      COMMENT 'Embaralhar perguntas?',
-    `shuffle_options`       TINYINT(1)       NOT NULL DEFAULT 0      COMMENT 'Embaralhar alternativas?',
-    `show_correct_answers`  TINYINT(1)       NOT NULL DEFAULT 1      COMMENT 'Mostrar gabarito após submissão?',
-    `show_explanation`      TINYINT(1)       NOT NULL DEFAULT 1      COMMENT 'Mostrar explicações?',
-    `question_count`        INT UNSIGNED     NOT NULL DEFAULT 0      COMMENT 'Cache: total de perguntas',
+    `time_limit`            INT UNSIGNED     DEFAULT NULL,
+    `pass_percentage`       DECIMAL(5,2)     NOT NULL DEFAULT 70.00,
+    `max_attempts`          INT UNSIGNED     DEFAULT NULL,
+    `shuffle_questions`     TINYINT(1)       NOT NULL DEFAULT 0,
+    `shuffle_options`       TINYINT(1)       NOT NULL DEFAULT 0,
+    `show_correct_answers`  TINYINT(1)       NOT NULL DEFAULT 1,
+    `show_explanation`      TINYINT(1)       NOT NULL DEFAULT 1,
+    `question_count`        INT UNSIGNED     NOT NULL DEFAULT 0,
     `is_active`             TINYINT(1)       NOT NULL DEFAULT 1,
     `created_at`            TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`            TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`id`),
-    KEY `idx_quizzes_lesson` (`lesson_id`),
     CONSTRAINT `fk_quizzes_lesson` FOREIGN KEY (`lesson_id`)
-        REFERENCES `lessons` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Quizzes avaliativos vinculados a aulas';
+        REFERENCES `course_lessons` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ----------------------------------------------------------------
--- TABELA 48/54: assignments
--- Descrição: Tarefas/projetos práticos
--- Dependências: lessons
--- Referenciada por: assignment_submissions
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `assignments`;
 CREATE TABLE `assignments` (
     `id`                   INT UNSIGNED     NOT NULL AUTO_INCREMENT,
     `lesson_id`            INT UNSIGNED     NOT NULL,
     `title`                VARCHAR(255)     NOT NULL,
     `description`          LONGTEXT         NOT NULL,
-    `instructions`         LONGTEXT         DEFAULT NULL             COMMENT 'Instruções detalhadas',
-    `starter_files_url`    VARCHAR(500)     DEFAULT NULL             COMMENT 'URL de arquivos iniciais para download',
+    `instructions`         LONGTEXT         DEFAULT NULL,
+    `starter_files_url`    VARCHAR(500)     DEFAULT NULL,
     `max_score`            INT UNSIGNED     NOT NULL DEFAULT 100,
-    `due_days`             INT UNSIGNED     DEFAULT NULL             COMMENT 'Dias após matrícula para entregar',
-    `allow_late`           TINYINT(1)       NOT NULL DEFAULT 0       COMMENT 'Aceitar entregas atrasadas?',
-    `late_penalty_percent` DECIMAL(5,2)     DEFAULT NULL             COMMENT 'Penalidade por atraso (%)',
-    `submission_type`      ENUM('file','text','url','github','zip')
-                                            NOT NULL DEFAULT 'file',
-    `allowed_extensions`   JSON             DEFAULT NULL             COMMENT '["zip","rar","pdf","png"]',
-    `max_file_size`        INT UNSIGNED     DEFAULT 52428800         COMMENT 'Limite em bytes (default 50MB)',
-    `rubric`               JSON             DEFAULT NULL             COMMENT 'Critérios de avaliação em JSON',
+    `due_days`             INT UNSIGNED     DEFAULT NULL,
+    `allow_late`           TINYINT(1)       NOT NULL DEFAULT 0,
+    `late_penalty_percent` DECIMAL(5,2)     DEFAULT NULL,
+    `submission_type`      ENUM('file','text','url','github','zip') NOT NULL DEFAULT 'file',
+    `allowed_extensions`   JSON             DEFAULT NULL,
+    `max_file_size`        INT UNSIGNED     DEFAULT 52428800,
+    `rubric`               JSON             DEFAULT NULL,
     `is_active`            TINYINT(1)       NOT NULL DEFAULT 1,
     `created_at`           TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`           TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`id`),
-    KEY `idx_assignments_lesson` (`lesson_id`),
     CONSTRAINT `fk_assignments_lesson` FOREIGN KEY (`lesson_id`)
-        REFERENCES `lessons` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Projetos práticos para alunos com critérios de avaliação';
+        REFERENCES `course_lessons` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ----------------------------------------------------------------
--- TABELA 49/54: student_notes
--- Descrição: Anotações dos alunos durante as aulas
--- Dependências: users, lessons
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `student_notes`;
 CREATE TABLE `student_notes` (
     `id`                  INT UNSIGNED    NOT NULL AUTO_INCREMENT,
     `user_id`             INT UNSIGNED    NOT NULL,
     `lesson_id`           INT UNSIGNED    NOT NULL,
     `content`             TEXT            NOT NULL,
-    `timestamp_seconds`   INT UNSIGNED    DEFAULT NULL              COMMENT 'Momento do vídeo para a nota',
-    `color`               VARCHAR(7)      DEFAULT '#fbbf24'         COMMENT 'Cor da nota para organização',
+    `timestamp_seconds`   INT UNSIGNED    DEFAULT NULL,
+    `color`               VARCHAR(7)      DEFAULT '#fbbf24',
     `created_at`          TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`          TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`id`),
-    KEY `idx_notes_user_lesson` (`user_id`, `lesson_id`),
-    KEY `idx_notes_timestamp` (`lesson_id`, `timestamp_seconds`),
     CONSTRAINT `fk_notes_user` FOREIGN KEY (`user_id`)
         REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT `fk_notes_lesson` FOREIGN KEY (`lesson_id`)
-        REFERENCES `lessons` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Anotações pessoais dos alunos vinculadas a momentos do vídeo';
+        REFERENCES `course_lessons` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ================================================================
--- ================================================================
---
---   NÍVEL 5 - DEPENDEM DOS QUIZZES E ASSIGNMENTS (3 tabelas)
---
--- ================================================================
--- ================================================================
-
-
--- ----------------------------------------------------------------
--- TABELA 50/54: quiz_questions
--- Descrição: Perguntas dos quizzes
--- Dependências: quizzes
--- Referenciada por: quiz_options
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `quiz_questions`;
 CREATE TABLE `quiz_questions` (
     `id`              INT UNSIGNED     NOT NULL AUTO_INCREMENT,
@@ -1637,73 +1649,99 @@ CREATE TABLE `quiz_questions` (
     `question_type`   ENUM('multiple_choice','multiple_select','true_false','short_answer','code','fill_blank')
                                        NOT NULL DEFAULT 'multiple_choice',
     `question_text`   TEXT             NOT NULL,
-    `code_snippet`    TEXT             DEFAULT NULL                 COMMENT 'Código para perguntas técnicas',
-    `code_language`   VARCHAR(20)      DEFAULT NULL                 COMMENT 'Linguagem do código: csharp, gdscript, cpp',
-    `image_url`       VARCHAR(500)     DEFAULT NULL                 COMMENT 'Imagem complementar',
-    `explanation`     TEXT             DEFAULT NULL                 COMMENT 'Explicação da resposta correta',
-    `points`          INT UNSIGNED     NOT NULL DEFAULT 1           COMMENT 'Pontos desta pergunta',
+    `code_snippet`    TEXT             DEFAULT NULL,
+    `code_language`   VARCHAR(20)      DEFAULT NULL,
+    `image_url`       VARCHAR(500)     DEFAULT NULL,
+    `explanation`     TEXT             DEFAULT NULL,
+    `points`          INT UNSIGNED     NOT NULL DEFAULT 1,
     `sort_order`      INT              NOT NULL DEFAULT 0,
     `created_at`      TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`id`),
-    KEY `idx_questions_quiz_order` (`quiz_id`, `sort_order`),
     CONSTRAINT `fk_questions_quiz` FOREIGN KEY (`quiz_id`)
         REFERENCES `quizzes` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Perguntas dos quizzes com suporte a código e imagens';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ----------------------------------------------------------------
--- TABELA 51/54: quiz_attempts
--- Descrição: Tentativas de resolução de quizzes
--- Dependências: users, quizzes
--- ----------------------------------------------------------------
+DROP TABLE IF EXISTS `quiz_options`;
+CREATE TABLE `quiz_options` (
+    `id`           INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    `question_id`  INT UNSIGNED     NOT NULL,
+    `option_text`  TEXT             NOT NULL,
+    `is_correct`   TINYINT(1)       NOT NULL DEFAULT 0,
+    `sort_order`   INT              NOT NULL DEFAULT 0,
+
+    PRIMARY KEY (`id`),
+    CONSTRAINT `fk_options_question` FOREIGN KEY (`question_id`)
+        REFERENCES `quiz_questions` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
 DROP TABLE IF EXISTS `quiz_attempts`;
 CREATE TABLE `quiz_attempts` (
     `id`             INT UNSIGNED     NOT NULL AUTO_INCREMENT,
     `user_id`        INT UNSIGNED     NOT NULL,
     `quiz_id`        INT UNSIGNED     NOT NULL,
-    `score`          DECIMAL(5,2)     NOT NULL DEFAULT 0.00        COMMENT 'Percentual de acerto',
-    `total_points`   INT UNSIGNED     NOT NULL DEFAULT 0           COMMENT 'Total de pontos possíveis',
-    `earned_points`  INT UNSIGNED     NOT NULL DEFAULT 0           COMMENT 'Pontos conquistados',
-    `passed`         TINYINT(1)       NOT NULL DEFAULT 0           COMMENT 'Atingiu o mínimo?',
-    `answers`        JSON             DEFAULT NULL                 COMMENT 'Respostas do aluno em JSON',
-    `attempt_number` INT UNSIGNED     NOT NULL DEFAULT 1           COMMENT 'Número da tentativa',
+    `score`          DECIMAL(5,2)     NOT NULL DEFAULT 0.00,
+    `total_points`   INT UNSIGNED     NOT NULL DEFAULT 0,
+    `earned_points`  INT UNSIGNED     NOT NULL DEFAULT 0,
+    `passed`         TINYINT(1)       NOT NULL DEFAULT 0,
+    `answers`        JSON             DEFAULT NULL,
+    `attempt_number` INT UNSIGNED     NOT NULL DEFAULT 1,
     `started_at`     TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `completed_at`   TIMESTAMP        NULL DEFAULT NULL,
-    `time_spent`     INT UNSIGNED     DEFAULT NULL                 COMMENT 'Tempo gasto em segundos',
+    `time_spent`     INT UNSIGNED     DEFAULT NULL,
 
     PRIMARY KEY (`id`),
-    KEY `idx_attempts_user_quiz` (`user_id`, `quiz_id`),
-    KEY `idx_attempts_quiz` (`quiz_id`),
-    KEY `idx_attempts_passed` (`passed`),
     CONSTRAINT `fk_attempts_user` FOREIGN KEY (`user_id`)
         REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT `fk_attempts_quiz` FOREIGN KEY (`quiz_id`)
         REFERENCES `quizzes` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ================================================================
+-- CORREÇÃO: quiz_answers
+-- (referenciada no AUTO_INCREMENT mas faltava no schema)
+-- ================================================================
+
+DROP TABLE IF EXISTS `quiz_answers`;
+CREATE TABLE `quiz_answers` (
+    `id`            INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+    `attempt_id`    INT UNSIGNED    NOT NULL,
+    `question_id`   INT UNSIGNED    NOT NULL,
+    `option_id`     INT UNSIGNED    DEFAULT NULL                    COMMENT 'Para multiple_choice',
+    `answer_text`   TEXT            DEFAULT NULL                    COMMENT 'Para short_answer / fill_blank',
+    `is_correct`    TINYINT(1)      NOT NULL DEFAULT 0,
+    `points_earned` INT UNSIGNED    NOT NULL DEFAULT 0,
+    `created_at`    TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    KEY `idx_quizanswers_attempt` (`attempt_id`),
+    CONSTRAINT `fk_quizanswers_attempt` FOREIGN KEY (`attempt_id`)
+        REFERENCES `quiz_attempts` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_quizanswers_question` FOREIGN KEY (`question_id`)
+        REFERENCES `quiz_questions` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_quizanswers_option` FOREIGN KEY (`option_id`)
+        REFERENCES `quiz_options` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Registro de todas as tentativas de quiz com respostas';
+  COMMENT='Respostas individuais de cada tentativa de quiz';
 
 
--- ----------------------------------------------------------------
--- TABELA 52/54: assignment_submissions
--- Descrição: Entregas de tarefas/projetos
--- Dependências: assignments, users
--- ----------------------------------------------------------------
 DROP TABLE IF EXISTS `assignment_submissions`;
 CREATE TABLE `assignment_submissions` (
     `id`              INT UNSIGNED     NOT NULL AUTO_INCREMENT,
     `assignment_id`   INT UNSIGNED     NOT NULL,
     `user_id`         INT UNSIGNED     NOT NULL,
-    `content`         LONGTEXT         DEFAULT NULL                COMMENT 'Texto da entrega',
-    `file_url`        VARCHAR(500)     DEFAULT NULL                COMMENT 'URL do arquivo enviado',
-    `github_url`      VARCHAR(500)     DEFAULT NULL                COMMENT 'Link do repositório',
-    `additional_urls` JSON             DEFAULT NULL                COMMENT 'Links extras: demo, vídeo, etc',
-    `score`           INT UNSIGNED     DEFAULT NULL                COMMENT 'Nota atribuída',
-    `feedback`        TEXT             DEFAULT NULL                COMMENT 'Feedback do instrutor',
+    `content`         LONGTEXT         DEFAULT NULL,
+    `file_url`        VARCHAR(500)     DEFAULT NULL,
+    `github_url`      VARCHAR(500)     DEFAULT NULL,
+    `additional_urls` JSON             DEFAULT NULL,
+    `score`           INT UNSIGNED     DEFAULT NULL,
+    `feedback`        TEXT             DEFAULT NULL,
     `status`          ENUM('submitted','under_review','graded','returned','resubmitted')
                                        NOT NULL DEFAULT 'submitted',
-    `is_late`         TINYINT(1)       NOT NULL DEFAULT 0          COMMENT 'Entregue com atraso?',
+    `is_late`         TINYINT(1)       NOT NULL DEFAULT 0,
     `graded_by`       INT UNSIGNED     DEFAULT NULL,
     `graded_at`       TIMESTAMP        NULL DEFAULT NULL,
     `attempt_number`  INT UNSIGNED     NOT NULL DEFAULT 1,
@@ -1711,634 +1749,1068 @@ CREATE TABLE `assignment_submissions` (
     `updated_at`      TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`id`),
-    KEY `idx_submissions_assignment` (`assignment_id`),
-    KEY `idx_submissions_user` (`user_id`),
-    KEY `idx_submissions_status` (`status`),
-    KEY `idx_submissions_grader` (`graded_by`),
     CONSTRAINT `fk_submissions_assignment` FOREIGN KEY (`assignment_id`)
         REFERENCES `assignments` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT `fk_submissions_user` FOREIGN KEY (`user_id`)
         REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT `fk_submissions_grader` FOREIGN KEY (`graded_by`)
         REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Entregas de projetos com sistema de avaliação e re-submissão';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 -- ================================================================
--- ================================================================
---
---   NÍVEL 6 - DEPENDÊNCIAS MAIS PROFUNDAS (1 tabela)
---
--- ================================================================
+-- CORREÇÃO: forums, forum_topics, forum_posts
+-- (referenciadas no AUTO_INCREMENT mas faltavam no schema)
 -- ================================================================
 
-
--- ----------------------------------------------------------------
--- TABELA 53/54: quiz_options
--- Descrição: Alternativas das perguntas de quiz
--- Dependências: quiz_questions
--- ----------------------------------------------------------------
-DROP TABLE IF EXISTS `quiz_options`;
-CREATE TABLE `quiz_options` (
-    `id`           INT UNSIGNED     NOT NULL AUTO_INCREMENT,
-    `question_id`  INT UNSIGNED     NOT NULL,
-    `option_text`  TEXT             NOT NULL                       COMMENT 'Texto da alternativa',
-    `is_correct`   TINYINT(1)       NOT NULL DEFAULT 0             COMMENT 'Esta é a correta?',
-    `sort_order`   INT              NOT NULL DEFAULT 0,
+DROP TABLE IF EXISTS `forums`;
+CREATE TABLE `forums` (
+    `id`          INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    `name`        VARCHAR(100)     NOT NULL,
+    `slug`        VARCHAR(120)     NOT NULL,
+    `description` TEXT             DEFAULT NULL,
+    `icon`        VARCHAR(100)     DEFAULT NULL,
+    `color`       VARCHAR(7)       DEFAULT '#6366f1',
+    `course_id`   INT UNSIGNED     DEFAULT NULL                      COMMENT 'Fórum vinculado a um curso específico',
+    `sort_order`  INT              NOT NULL DEFAULT 0,
+    `topic_count` INT UNSIGNED     NOT NULL DEFAULT 0,
+    `post_count`  INT UNSIGNED     NOT NULL DEFAULT 0,
+    `is_private`  TINYINT(1)       NOT NULL DEFAULT 0                COMMENT 'Apenas matriculados podem ver',
+    `is_active`   TINYINT(1)       NOT NULL DEFAULT 1,
+    `created_at`  TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`  TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`id`),
-    KEY `idx_options_question` (`question_id`, `sort_order`),
-    CONSTRAINT `fk_options_question` FOREIGN KEY (`question_id`)
-        REFERENCES `quiz_questions` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+    UNIQUE KEY `uk_forums_slug` (`slug`),
+    KEY `idx_forums_course` (`course_id`),
+    KEY `idx_forums_order` (`is_active`, `sort_order`),
+    CONSTRAINT `fk_forums_course` FOREIGN KEY (`course_id`)
+        REFERENCES `courses` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Alternativas de resposta para perguntas de múltipla escolha';
+  COMMENT='Fóruns da comunidade';
 
 
--- ================================================================
--- ================================================================
---
---   TABELA DE AUDITORIA - SEM FK RÍGIDA (1 tabela)
---
---   Esta tabela usa FK opcional para não impedir deleções
---   e registrar atividades de usuários deletados.
---
--- ================================================================
--- ================================================================
+DROP TABLE IF EXISTS `forum_topics`;
+CREATE TABLE `forum_topics` (
+    `id`            INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    `forum_id`      INT UNSIGNED     NOT NULL,
+    `user_id`       INT UNSIGNED     NOT NULL,
+    `title`         VARCHAR(255)     NOT NULL,
+    `slug`          VARCHAR(280)     NOT NULL,
+    `content`       LONGTEXT         NOT NULL,
+    `status`        ENUM('open','closed','pinned','archived') NOT NULL DEFAULT 'open',
+    `is_pinned`     TINYINT(1)       NOT NULL DEFAULT 0,
+    `is_locked`     TINYINT(1)       NOT NULL DEFAULT 0,
+    `is_featured`   TINYINT(1)       NOT NULL DEFAULT 0,
+    `view_count`    INT UNSIGNED     NOT NULL DEFAULT 0,
+    `reply_count`   INT UNSIGNED     NOT NULL DEFAULT 0,
+    `upvote_count`  INT UNSIGNED     NOT NULL DEFAULT 0,
+    `last_reply_at` TIMESTAMP        NULL DEFAULT NULL,
+    `last_reply_by` INT UNSIGNED     DEFAULT NULL,
+    `created_at`    TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`    TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_topic_slug` (`forum_id`, `slug`),
+    KEY `idx_topics_forum` (`forum_id`, `created_at` DESC),
+    KEY `idx_topics_user` (`user_id`),
+    FULLTEXT KEY `ft_topics_search` (`title`, `content`),
+    CONSTRAINT `fk_topics_forum` FOREIGN KEY (`forum_id`)
+        REFERENCES `forums` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_topics_user` FOREIGN KEY (`user_id`)
+        REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Tópicos dos fóruns';
 
 
--- ----------------------------------------------------------------
--- TABELA 54/54: activity_log
--- Descrição: Log de auditoria de todas as ações do sistema
--- Dependências: users (FK opcional com SET NULL)
--- ----------------------------------------------------------------
-DROP TABLE IF EXISTS `activity_log`;
-CREATE TABLE `activity_log` (
+DROP TABLE IF EXISTS `forum_posts`;
+CREATE TABLE `forum_posts` (
+    `id`              INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    `topic_id`        INT UNSIGNED     NOT NULL,
+    `user_id`         INT UNSIGNED     NOT NULL,
+    `parent_post_id`  INT UNSIGNED     DEFAULT NULL,
+    `content`         LONGTEXT         NOT NULL,
+    `is_best_answer`  TINYINT(1)       NOT NULL DEFAULT 0,
+    `upvote_count`    INT UNSIGNED     NOT NULL DEFAULT 0,
+    `downvote_count`  INT UNSIGNED     NOT NULL DEFAULT 0,
+    `is_edited`       TINYINT(1)       NOT NULL DEFAULT 0,
+    `edited_at`       TIMESTAMP        NULL DEFAULT NULL,
+    `is_deleted`      TINYINT(1)       NOT NULL DEFAULT 0,
+    `created_at`      TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`      TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    KEY `idx_forumposts_topic` (`topic_id`, `created_at`),
+    KEY `idx_forumposts_user` (`user_id`),
+    CONSTRAINT `fk_forumposts_topic` FOREIGN KEY (`topic_id`)
+        REFERENCES `forum_topics` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_forumposts_user` FOREIGN KEY (`user_id`)
+        REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_forumposts_parent` FOREIGN KEY (`parent_post_id`)
+        REFERENCES `forum_posts` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Posts dos tópicos de fórum';
+
+
+-- CORREÇÃO: renomeado de activity_log para logs
+DROP TABLE IF EXISTS `logs`;
+CREATE TABLE `logs` (
     `id`           BIGINT UNSIGNED  NOT NULL AUTO_INCREMENT,
-    `user_id`      INT UNSIGNED     DEFAULT NULL                   COMMENT 'Quem realizou (NULL se deletado ou sistema)',
-    `action`       VARCHAR(100)     NOT NULL                       COMMENT 'Ação: user.login, course.create, enrollment.complete, etc',
-    `entity_type`  VARCHAR(50)      DEFAULT NULL                   COMMENT 'Tipo: user, course, lesson, payment, etc',
-    `entity_id`    INT UNSIGNED     DEFAULT NULL                   COMMENT 'ID da entidade afetada',
-    `old_values`   JSON             DEFAULT NULL                   COMMENT 'Valores anteriores (para UPDATE)',
-    `new_values`   JSON             DEFAULT NULL                   COMMENT 'Valores novos',
+    `user_id`      INT UNSIGNED     DEFAULT NULL,
+    `action`       VARCHAR(100)     NOT NULL,
+    `entity_type`  VARCHAR(50)      DEFAULT NULL,
+    `entity_id`    INT UNSIGNED     DEFAULT NULL,
+    `old_values`   JSON             DEFAULT NULL,
+    `new_values`   JSON             DEFAULT NULL,
     `ip_address`   VARCHAR(45)      DEFAULT NULL,
     `user_agent`   VARCHAR(500)     DEFAULT NULL,
-    `extra`        JSON             DEFAULT NULL                   COMMENT 'Dados extras contextuais',
+    `extra`        JSON             DEFAULT NULL,
     `created_at`   TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`id`),
-    KEY `idx_actlog_user` (`user_id`),
-    KEY `idx_actlog_action` (`action`),
-    KEY `idx_actlog_entity` (`entity_type`, `entity_id`),
-    KEY `idx_actlog_created` (`created_at`),
-    CONSTRAINT `fk_actlog_user` FOREIGN KEY (`user_id`)
+    KEY `idx_logs_user` (`user_id`),
+    KEY `idx_logs_action` (`action`),
+    KEY `idx_logs_created` (`created_at`),
+    CONSTRAINT `fk_logs_user` FOREIGN KEY (`user_id`)
         REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Log de auditoria completo de todas as ações do sistema';
+  COMMENT='Log de atividades do sistema';
 
 
 -- ================================================================
--- ================================================================
---
---   TRIGGERS DE SEGURANÇA E CACHE
---
---   Mantêm os campos de cache (contadores) atualizados
---   automaticamente para evitar inconsistências.
---
--- ================================================================
+-- TABELAS EXTRAS (informacionais, sem AUTO_INCREMENT)
 -- ================================================================
 
+DROP TABLE IF EXISTS `contact_messages`;
+CREATE TABLE `contact_messages` (
+    `id`          INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+    `name`        VARCHAR(100)    NOT NULL,
+    `email`       VARCHAR(150)    NOT NULL,
+    `subject`     VARCHAR(255)    DEFAULT NULL,
+    `message`     TEXT            NOT NULL,
+    `is_read`     TINYINT(1)      NOT NULL DEFAULT 0,
+    `replied_at`  TIMESTAMP       NULL DEFAULT NULL,
+    `created_at`  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Trigger: Atualizar enrollment_count ao matricular
-DELIMITER //
-CREATE TRIGGER IF NOT EXISTS `trg_enrollment_after_insert`
-AFTER INSERT ON `enrollments`
-FOR EACH ROW
-BEGIN
-    UPDATE `courses` 
-    SET `enrollment_count` = `enrollment_count` + 1
-    WHERE `id` = NEW.`course_id`;
-END//
 
--- Trigger: Decrementar enrollment_count ao cancelar
-CREATE TRIGGER IF NOT EXISTS `trg_enrollment_after_delete`
-AFTER DELETE ON `enrollments`
-FOR EACH ROW
-BEGIN
-    UPDATE `courses` 
-    SET `enrollment_count` = GREATEST(`enrollment_count` - 1, 0)
-    WHERE `id` = OLD.`course_id`;
-END//
+DROP TABLE IF EXISTS `newsletter_subscribers`;
+CREATE TABLE `newsletter_subscribers` (
+    `id`               INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+    `email`            VARCHAR(150)    NOT NULL,
+    `name`             VARCHAR(100)    DEFAULT NULL,
+    `is_active`        TINYINT(1)      NOT NULL DEFAULT 1,
+    `subscribed_at`    TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `unsubscribed_at`  TIMESTAMP       NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_newsletter_email` (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Trigger: Atualizar rating_average ao inserir review
-CREATE TRIGGER IF NOT EXISTS `trg_review_after_insert`
-AFTER INSERT ON `reviews`
-FOR EACH ROW
-BEGIN
-    IF NEW.`is_approved` = 1 THEN
-        UPDATE `courses` SET
-            `rating_average` = (
-                SELECT COALESCE(AVG(`rating`), 0) 
-                FROM `reviews` 
-                WHERE `course_id` = NEW.`course_id` AND `is_approved` = 1
-            ),
-            `rating_count` = (
-                SELECT COUNT(*) 
-                FROM `reviews` 
-                WHERE `course_id` = NEW.`course_id` AND `is_approved` = 1
-            )
-        WHERE `id` = NEW.`course_id`;
-    END IF;
-END//
 
--- Trigger: Atualizar rating_average ao aprovar/editar review
-CREATE TRIGGER IF NOT EXISTS `trg_review_after_update`
-AFTER UPDATE ON `reviews`
-FOR EACH ROW
-BEGIN
-    UPDATE `courses` SET
-        `rating_average` = (
-            SELECT COALESCE(AVG(`rating`), 0) 
-            FROM `reviews` 
-            WHERE `course_id` = NEW.`course_id` AND `is_approved` = 1
-        ),
-        `rating_count` = (
-            SELECT COUNT(*) 
-            FROM `reviews` 
-            WHERE `course_id` = NEW.`course_id` AND `is_approved` = 1
-        )
-    WHERE `id` = NEW.`course_id`;
-END//
+DROP TABLE IF EXISTS `testimonials`;
+CREATE TABLE `testimonials` (
+    `id`           INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+    `user_id`      INT UNSIGNED    DEFAULT NULL,
+    `name`         VARCHAR(100)    NOT NULL,
+    `role`         VARCHAR(100)    DEFAULT NULL,
+    `content`      TEXT            NOT NULL,
+    `avatar`       VARCHAR(500)    DEFAULT NULL,
+    `rating`       TINYINT UNSIGNED DEFAULT NULL,
+    `is_featured`  TINYINT(1)      NOT NULL DEFAULT 0,
+    `is_active`    TINYINT(1)      NOT NULL DEFAULT 1,
+    `sort_order`   INT             NOT NULL DEFAULT 0,
+    `created_at`   TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Trigger: Atualizar reply_count ao responder discussão
-CREATE TRIGGER IF NOT EXISTS `trg_reply_after_insert`
-AFTER INSERT ON `discussion_replies`
-FOR EACH ROW
-BEGIN
-    UPDATE `discussions` SET
-        `reply_count` = `reply_count` + 1,
-        `last_reply_at` = NEW.`created_at`,
-        `last_reply_by` = NEW.`user_id`
-    WHERE `id` = NEW.`discussion_id`;
-END//
 
--- Trigger: Decrementar reply_count ao deletar resposta
-CREATE TRIGGER IF NOT EXISTS `trg_reply_after_delete`
-AFTER DELETE ON `discussion_replies`
-FOR EACH ROW
-BEGIN
-    UPDATE `discussions` SET
-        `reply_count` = GREATEST(`reply_count` - 1, 0)
-    WHERE `id` = OLD.`discussion_id`;
-END//
+DROP TABLE IF EXISTS `banners`;
+CREATE TABLE `banners` (
+    `id`           INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+    `title`        VARCHAR(255)    DEFAULT NULL,
+    `subtitle`     VARCHAR(500)    DEFAULT NULL,
+    `image`        VARCHAR(500)    NOT NULL,
+    `link`         VARCHAR(500)    DEFAULT NULL,
+    `button_text`  VARCHAR(100)    DEFAULT NULL,
+    `position`     ENUM('home','sidebar','footer') NOT NULL DEFAULT 'home',
+    `sort_order`   INT             NOT NULL DEFAULT 0,
+    `is_active`    TINYINT(1)      NOT NULL DEFAULT 1,
+    `starts_at`    TIMESTAMP       NULL DEFAULT NULL,
+    `ends_at`      TIMESTAMP       NULL DEFAULT NULL,
+    `created_at`   TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Trigger: Atualizar used_count ao usar cupom
-CREATE TRIGGER IF NOT EXISTS `trg_couponuse_after_insert`
-AFTER INSERT ON `coupon_uses`
-FOR EACH ROW
-BEGIN
-    UPDATE `coupons` SET
-        `used_count` = `used_count` + 1
-    WHERE `id` = NEW.`coupon_id`;
-END//
 
--- Trigger: Atualizar total_points do usuário
-CREATE TRIGGER IF NOT EXISTS `trg_points_after_insert`
-AFTER INSERT ON `user_points`
-FOR EACH ROW
-BEGIN
-    UPDATE `users` SET
-        `total_points` = (
-            SELECT COALESCE(SUM(`points`), 0) 
-            FROM `user_points` 
-            WHERE `user_id` = NEW.`user_id`
-        )
-    WHERE `id` = NEW.`user_id`;
-END//
+DROP TABLE IF EXISTS `site_counters`;
+CREATE TABLE `site_counters` (
+    `id`             INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+    `counter_key`    VARCHAR(50)     NOT NULL,
+    `counter_value`  INT UNSIGNED    NOT NULL DEFAULT 0,
+    `label`          VARCHAR(100)    DEFAULT NULL,
+    `icon`           VARCHAR(100)    DEFAULT NULL,
+    `is_active`      TINYINT(1)      NOT NULL DEFAULT 1,
+    `sort_order`     INT             NOT NULL DEFAULT 0,
+    `updated_at`     TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_counter_key` (`counter_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-DELIMITER ;
+
+DROP TABLE IF EXISTS `partners`;
+CREATE TABLE `partners` (
+    `id`          INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+    `name`        VARCHAR(100)    NOT NULL,
+    `logo`        VARCHAR(500)    NOT NULL,
+    `website`     VARCHAR(500)    DEFAULT NULL,
+    `sort_order`  INT             NOT NULL DEFAULT 0,
+    `is_active`   TINYINT(1)      NOT NULL DEFAULT 1,
+    `created_at`  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 -- ================================================================
--- ================================================================
---
---   VIEWS ÚTEIS
---
---   Views pré-definidas para queries frequentes no dashboard
---   e listagens. Evitam repetição de JOINs complexos.
---
--- ================================================================
+-- TABELAS DO SCHEMA LEGADO (v2.0 → reintegradas e adaptadas ao padrão v5)
+-- Todas as 19 tabelas que existiam no schema-old mas estavam ausentes aqui.
 -- ================================================================
 
+-- L01. Levels (Níveis de gamificação)
+DROP TABLE IF EXISTS `levels`;
+CREATE TABLE `levels` (
+    `id`            INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    `level_number`  INT UNSIGNED     NOT NULL,
+    `title`         VARCHAR(50)      NOT NULL,
+    `xp_required`   INT UNSIGNED     NOT NULL,
+    `badge_icon`    VARCHAR(100)     DEFAULT NULL,
+    `color`         VARCHAR(7)       NOT NULL DEFAULT '#6366f1',
+    `perks`         TEXT             DEFAULT NULL,
+    `created_at`    TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
--- View: Cursos com dados completos para listagem
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_level_number` (`level_number`),
+    KEY `idx_levels_xp` (`xp_required`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Níveis de gamificação da plataforma';
+
+
+-- L02. Daily Challenges (Desafios diários)
+DROP TABLE IF EXISTS `daily_challenges`;
+CREATE TABLE `daily_challenges` (
+    `id`                 INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    `date`               DATE             NOT NULL,
+    `title`              VARCHAR(200)     NOT NULL,
+    `description`        TEXT             DEFAULT NULL,
+    `type`               ENUM('lesson','quiz','time','streak','social','special') NOT NULL DEFAULT 'lesson',
+    `requirement_type`   VARCHAR(50)      NOT NULL,
+    `requirement_value`  INT UNSIGNED     NOT NULL DEFAULT 1,
+    `xp_reward`          INT UNSIGNED     NOT NULL DEFAULT 50,
+    `coin_reward`        INT UNSIGNED     NOT NULL DEFAULT 10,
+    `bonus_multiplier`   DECIMAL(3,2)     NOT NULL DEFAULT 1.00,
+    `is_active`          TINYINT(1)       NOT NULL DEFAULT 1,
+    `created_at`         TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_challenge_date` (`date`),
+    KEY `idx_challenges_active` (`is_active`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Desafios diários de gamificação';
+
+
+-- L03. Shop Items (Loja virtual)
+DROP TABLE IF EXISTS `shop_items`;
+CREATE TABLE `shop_items` (
+    `id`               INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    `name`             VARCHAR(100)     NOT NULL,
+    `slug`             VARCHAR(120)     DEFAULT NULL,
+    `description`      TEXT             DEFAULT NULL,
+    `type`             ENUM('avatar','badge','theme','power_up','cosmetic','course_unlock') NOT NULL,
+    `category`         VARCHAR(50)      NOT NULL DEFAULT 'general',
+    `image`            VARCHAR(500)     DEFAULT NULL,
+    `price_coins`      INT UNSIGNED     NOT NULL DEFAULT 0,
+    `price_gems`       INT UNSIGNED     NOT NULL DEFAULT 0,
+    `item_data`        JSON             DEFAULT NULL,
+    `stock_quantity`   INT              NOT NULL DEFAULT -1,
+    `level_required`   INT UNSIGNED     NOT NULL DEFAULT 1,
+    `is_featured`      TINYINT(1)       NOT NULL DEFAULT 0,
+    `is_active`        TINYINT(1)       NOT NULL DEFAULT 1,
+    `is_limited`       TINYINT(1)       NOT NULL DEFAULT 0,
+    `available_until`  DATETIME         DEFAULT NULL,
+    `sort_order`       INT              NOT NULL DEFAULT 0,
+    `purchase_count`   INT UNSIGNED     NOT NULL DEFAULT 0,
+    `created_at`       TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`       TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_shopitems_slug` (`slug`),
+    KEY `idx_shopitems_type` (`type`),
+    KEY `idx_shopitems_active` (`is_active`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Itens disponíveis na loja virtual';
+
+
+-- L04. Password Resets (Recuperação de senha — complementa user.password_reset_token)
+DROP TABLE IF EXISTS `password_resets`;
+CREATE TABLE `password_resets` (
+    `id`          INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    `email`       VARCHAR(150)     NOT NULL,
+    `token`       VARCHAR(255)     NOT NULL,
+    `ip_address`  VARCHAR(45)      DEFAULT NULL,
+    `expires_at`  TIMESTAMP        NOT NULL,
+    `used_at`     TIMESTAMP        NULL DEFAULT NULL,
+    `created_at`  TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    KEY `idx_pwreset_email` (`email`),
+    KEY `idx_pwreset_token` (`token`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Tokens para recuperação de senha';
+
+
+-- L05. User Daily Stats (Estatísticas diárias por usuário)
+DROP TABLE IF EXISTS `user_daily_stats`;
+CREATE TABLE `user_daily_stats` (
+    `id`                  INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    `user_id`             INT UNSIGNED     NOT NULL,
+    `date`                DATE             NOT NULL,
+    `xp_earned`           INT UNSIGNED     NOT NULL DEFAULT 0,
+    `coins_earned`        INT UNSIGNED     NOT NULL DEFAULT 0,
+    `lessons_completed`   INT UNSIGNED     NOT NULL DEFAULT 0,
+    `time_spent`          INT UNSIGNED     NOT NULL DEFAULT 0,
+    `quizzes_completed`   INT UNSIGNED     NOT NULL DEFAULT 0,
+    `projects_completed`  INT UNSIGNED     NOT NULL DEFAULT 0,
+    `streak_maintained`   TINYINT(1)       NOT NULL DEFAULT 0,
+    `created_at`          TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`          TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_userdailystats` (`user_id`, `date`),
+    KEY `idx_userdailystats_date` (`date`),
+    CONSTRAINT `fk_userdailystats_user` FOREIGN KEY (`user_id`)
+        REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Estatísticas diárias de atividade por usuário';
+
+
+-- L06. XP Transactions (Histórico de XP)
+DROP TABLE IF EXISTS `xp_transactions`;
+CREATE TABLE `xp_transactions` (
+    `id`            INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    `user_id`       INT UNSIGNED     NOT NULL,
+    `amount`        INT              NOT NULL,
+    `type`          ENUM('earned','bonus','achievement','level_up','streak','challenge','refund','admin')
+                                     NOT NULL DEFAULT 'earned',
+    `source`        VARCHAR(50)      NOT NULL,
+    `source_id`     INT UNSIGNED     DEFAULT NULL,
+    `description`   VARCHAR(255)     DEFAULT NULL,
+    `balance_after` INT UNSIGNED     DEFAULT NULL,
+    `created_at`    TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    KEY `idx_xptx_user` (`user_id`),
+    KEY `idx_xptx_type` (`type`),
+    KEY `idx_xptx_created` (`created_at`),
+    CONSTRAINT `fk_xptx_user` FOREIGN KEY (`user_id`)
+        REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Histórico de transações de XP';
+
+
+DROP TABLE IF EXISTS `xp_history`;
+CREATE TABLE `xp_history` (
+    `id`             INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    `user_id`        INT UNSIGNED     NOT NULL,
+    `xp_amount`      INT              NOT NULL,
+    `action_type`    VARCHAR(50)      NOT NULL,
+    `description`    VARCHAR(255)     DEFAULT NULL,
+    `reference_id`   INT UNSIGNED     DEFAULT NULL,
+    `reference_type` VARCHAR(50)      DEFAULT NULL,
+    `created_at`     TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    KEY `idx_xphistory_user` (`user_id`),
+    CONSTRAINT `fk_xphistory_user` FOREIGN KEY (`user_id`)
+        REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Histórico de XP compatível com Gamification.php';
+
+
+DROP TABLE IF EXISTS `weekly_leaderboard`;
+CREATE TABLE `weekly_leaderboard` (
+    `id`                 INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    `user_id`            INT UNSIGNED     NOT NULL,
+    `week_start`         DATE             NOT NULL,
+    `xp_earned`          INT UNSIGNED     DEFAULT 0,
+    `lessons_completed`  INT UNSIGNED     DEFAULT 0,
+
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_weekly_leaderboard` (`user_id`, `week_start`),
+    CONSTRAINT `fk_weekly_leaderboard_user` FOREIGN KEY (`user_id`)
+        REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Ranking semanal compatível com Gamification.php';
+
+
+-- L07. Coin Transactions (Histórico de moedas)
+DROP TABLE IF EXISTS `coin_transactions`;
+CREATE TABLE `coin_transactions` (
+    `id`            INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    `user_id`       INT UNSIGNED     NOT NULL,
+    `amount`        INT              NOT NULL,
+    `type`          ENUM('earned','spent','bonus','refund','gift','admin') NOT NULL,
+    `source`        VARCHAR(50)      NOT NULL,
+    `source_id`     INT UNSIGNED     DEFAULT NULL,
+    `description`   VARCHAR(255)     DEFAULT NULL,
+    `balance_after` INT UNSIGNED     DEFAULT NULL,
+    `created_at`    TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    KEY `idx_cointx_user` (`user_id`),
+    KEY `idx_cointx_type` (`type`),
+    KEY `idx_cointx_created` (`created_at`),
+    CONSTRAINT `fk_cointx_user` FOREIGN KEY (`user_id`)
+        REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Histórico de transações de moedas';
+
+
+-- L08. Email Verifications (complementa user.email_verification_token)
+DROP TABLE IF EXISTS `email_verifications`;
+CREATE TABLE `email_verifications` (
+    `id`          INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    `user_id`     INT UNSIGNED     NOT NULL,
+    `email`       VARCHAR(150)     NOT NULL,
+    `token`       VARCHAR(255)     NOT NULL,
+    `expires_at`  TIMESTAMP        NOT NULL,
+    `verified_at` TIMESTAMP        NULL DEFAULT NULL,
+    `created_at`  TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    KEY `idx_emailverif_token` (`token`),
+    KEY `idx_emailverif_expires` (`expires_at`),
+    CONSTRAINT `fk_emailverif_user` FOREIGN KEY (`user_id`)
+        REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Tokens de verificação de e-mail';
+
+
+-- L09. User Follows (Seguir usuários)
+DROP TABLE IF EXISTS `user_follows`;
+CREATE TABLE `user_follows` (
+    `id`            INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    `follower_id`   INT UNSIGNED     NOT NULL,
+    `following_id`  INT UNSIGNED     NOT NULL,
+    `created_at`    TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_follow` (`follower_id`, `following_id`),
+    KEY `idx_follow_follower` (`follower_id`),
+    KEY `idx_follow_following` (`following_id`),
+    CONSTRAINT `fk_follow_follower` FOREIGN KEY (`follower_id`)
+        REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_follow_following` FOREIGN KEY (`following_id`)
+        REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Seguindo/seguidores entre usuários';
+
+
+-- L10. User Inventory (Inventário da loja — depende de shop_items)
+DROP TABLE IF EXISTS `user_inventory`;
+CREATE TABLE `user_inventory` (
+    `id`            INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    `user_id`       INT UNSIGNED     NOT NULL,
+    `item_id`       INT UNSIGNED     NOT NULL,
+    `quantity`      INT UNSIGNED     NOT NULL DEFAULT 1,
+    `is_equipped`   TINYINT(1)       NOT NULL DEFAULT 0,
+    `is_active`     TINYINT(1)       NOT NULL DEFAULT 1,
+    `purchased_at`  TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `expires_at`    DATETIME         DEFAULT NULL,
+
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_user_item` (`user_id`, `item_id`),
+    KEY `idx_inventory_equipped` (`is_equipped`),
+    CONSTRAINT `fk_inventory_user` FOREIGN KEY (`user_id`)
+        REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_inventory_item` FOREIGN KEY (`item_id`)
+        REFERENCES `shop_items` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Inventário de itens da loja por usuário';
+
+
+-- L11. User Daily Challenges (Progresso nos desafios diários)
+DROP TABLE IF EXISTS `user_daily_challenges`;
+CREATE TABLE `user_daily_challenges` (
+    `id`            INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    `user_id`       INT UNSIGNED     NOT NULL,
+    `challenge_id`  INT UNSIGNED     NOT NULL,
+    `progress`      INT UNSIGNED     NOT NULL DEFAULT 0,
+    `is_completed`  TINYINT(1)       NOT NULL DEFAULT 0,
+    `completed_at`  TIMESTAMP        NULL DEFAULT NULL,
+    `xp_earned`     INT UNSIGNED     NOT NULL DEFAULT 0,
+    `coins_earned`  INT UNSIGNED     NOT NULL DEFAULT 0,
+    `created_at`    TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`    TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_user_challenge` (`user_id`, `challenge_id`),
+    KEY `idx_userchallenge_user` (`user_id`),
+    CONSTRAINT `fk_userchallenge_user` FOREIGN KEY (`user_id`)
+        REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_userchallenge_challenge` FOREIGN KEY (`challenge_id`)
+        REFERENCES `daily_challenges` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Progresso dos usuários nos desafios diários';
+
+
+-- L12. Course Prerequisites (Pré-requisitos de cursos)
+DROP TABLE IF EXISTS `course_prerequisites`;
+CREATE TABLE `course_prerequisites` (
+    `id`                      INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    `course_id`               INT UNSIGNED     NOT NULL,
+    `prerequisite_course_id`  INT UNSIGNED     NOT NULL,
+    `is_required`             TINYINT(1)       NOT NULL DEFAULT 1,
+    `sort_order`              INT              NOT NULL DEFAULT 0,
+    `created_at`              TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_prerequisite` (`course_id`, `prerequisite_course_id`),
+    KEY `idx_prereq_course` (`course_id`),
+    CONSTRAINT `fk_prereq_course` FOREIGN KEY (`course_id`)
+        REFERENCES `courses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_prereq_prerequisite` FOREIGN KEY (`prerequisite_course_id`)
+        REFERENCES `courses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Pré-requisitos de cursos';
+
+
+-- L13. Module Progress (Progresso por módulo — FK para course_modules)
+DROP TABLE IF EXISTS `module_progress`;
+CREATE TABLE `module_progress` (
+    `id`                 INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    `user_id`            INT UNSIGNED     NOT NULL,
+    `module_id`          INT UNSIGNED     NOT NULL,
+    `enrollment_id`      INT UNSIGNED     DEFAULT NULL,
+    `is_completed`       TINYINT(1)       NOT NULL DEFAULT 0,
+    `progress_percent`   DECIMAL(5,2)     NOT NULL DEFAULT 0.00,
+    `completed_lessons`  INT UNSIGNED     NOT NULL DEFAULT 0,
+    `total_lessons`      INT UNSIGNED     NOT NULL DEFAULT 0,
+    `started_at`         TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `completed_at`       TIMESTAMP        NULL DEFAULT NULL,
+
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_module_progress` (`user_id`, `module_id`),
+    KEY `idx_moduleprog_module` (`module_id`),
+    CONSTRAINT `fk_moduleprog_user` FOREIGN KEY (`user_id`)
+        REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_moduleprog_module` FOREIGN KEY (`module_id`)
+        REFERENCES `course_modules` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_moduleprog_enrollment` FOREIGN KEY (`enrollment_id`)
+        REFERENCES `enrollments` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Progresso dos módulos por usuário';
+
+
+-- L14. Review Votes (Votos de utilidade em avaliações)
+DROP TABLE IF EXISTS `review_votes`;
+CREATE TABLE `review_votes` (
+    `id`          INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    `review_id`   INT UNSIGNED     NOT NULL,
+    `user_id`     INT UNSIGNED     NOT NULL,
+    `is_helpful`  TINYINT(1)       NOT NULL,
+    `created_at`  TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_review_vote` (`review_id`, `user_id`),
+    KEY `idx_reviewvote_review` (`review_id`),
+    CONSTRAINT `fk_reviewvote_review` FOREIGN KEY (`review_id`)
+        REFERENCES `course_reviews` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_reviewvote_user` FOREIGN KEY (`user_id`)
+        REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Votos de utilidade em avaliações de cursos';
+
+
+-- L15. Projects (Projetos práticos — FK para course_lessons renomeado)
+DROP TABLE IF EXISTS `projects`;
+CREATE TABLE `projects` (
+    `id`                  INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    `lesson_id`           INT UNSIGNED     DEFAULT NULL,
+    `course_id`           INT UNSIGNED     DEFAULT NULL,
+    `title`               VARCHAR(200)     NOT NULL,
+    `description`         TEXT             DEFAULT NULL,
+    `instructions`        TEXT             DEFAULT NULL,
+    `requirements`        TEXT             DEFAULT NULL,
+    `starter_files_url`   VARCHAR(500)     DEFAULT NULL,
+    `solution_url`        VARCHAR(500)     DEFAULT NULL,
+    `difficulty`          ENUM('beginner','intermediate','advanced','expert') NOT NULL DEFAULT 'beginner',
+    `estimated_hours`     INT UNSIGNED     NOT NULL DEFAULT 1,
+    `xp_reward`           INT UNSIGNED     NOT NULL DEFAULT 100,
+    `coin_reward`         INT UNSIGNED     NOT NULL DEFAULT 20,
+    `type`                ENUM('practice','challenge','portfolio','certification') NOT NULL DEFAULT 'practice',
+    `submission_type`     ENUM('link','file','github','text') NOT NULL DEFAULT 'link',
+    `allows_review`       TINYINT(1)       NOT NULL DEFAULT 1,
+    `review_criteria`     TEXT             DEFAULT NULL,
+    `is_published`        TINYINT(1)       NOT NULL DEFAULT 1,
+    `submissions_count`   INT UNSIGNED     NOT NULL DEFAULT 0,
+    `created_at`          TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`          TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    KEY `idx_projects_lesson` (`lesson_id`),
+    KEY `idx_projects_course` (`course_id`),
+    KEY `idx_projects_difficulty` (`difficulty`),
+    CONSTRAINT `fk_projects_lesson` FOREIGN KEY (`lesson_id`)
+        REFERENCES `course_lessons` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_projects_course` FOREIGN KEY (`course_id`)
+        REFERENCES `courses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Projetos práticos dos cursos';
+
+
+-- L16. Lesson Comments (antigo "comments" — FK para course_lessons)
+DROP TABLE IF EXISTS `lesson_comments`;
+CREATE TABLE `lesson_comments` (
+    `id`                   INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    `user_id`              INT UNSIGNED     NOT NULL,
+    `lesson_id`            INT UNSIGNED     NOT NULL,
+    `parent_id`            INT UNSIGNED     DEFAULT NULL,
+    `content`              TEXT             NOT NULL,
+    `is_pinned`            TINYINT(1)       NOT NULL DEFAULT 0,
+    `is_instructor_reply`  TINYINT(1)       NOT NULL DEFAULT 0,
+    `is_approved`          TINYINT(1)       NOT NULL DEFAULT 1,
+    `is_resolved`          TINYINT(1)       NOT NULL DEFAULT 0,
+    `likes_count`          INT UNSIGNED     NOT NULL DEFAULT 0,
+    `replies_count`        INT UNSIGNED     NOT NULL DEFAULT 0,
+    `report_count`         INT UNSIGNED     NOT NULL DEFAULT 0,
+    `created_at`           TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`           TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`           TIMESTAMP        NULL DEFAULT NULL,
+
+    PRIMARY KEY (`id`),
+    KEY `idx_lessoncomments_user` (`user_id`),
+    KEY `idx_lessoncomments_lesson` (`lesson_id`),
+    KEY `idx_lessoncomments_parent` (`parent_id`),
+    CONSTRAINT `fk_lessoncomments_user` FOREIGN KEY (`user_id`)
+        REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_lessoncomments_lesson` FOREIGN KEY (`lesson_id`)
+        REFERENCES `course_lessons` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_lessoncomments_parent` FOREIGN KEY (`parent_id`)
+        REFERENCES `lesson_comments` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Comentários nas aulas';
+
+
+-- L17. Project Submissions (Submissões de projetos)
+DROP TABLE IF EXISTS `project_submissions`;
+CREATE TABLE `project_submissions` (
+    `id`              INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    `project_id`      INT UNSIGNED     NOT NULL,
+    `user_id`         INT UNSIGNED     NOT NULL,
+    `title`           VARCHAR(200)     DEFAULT NULL,
+    `description`     TEXT             DEFAULT NULL,
+    `submission_url`  VARCHAR(500)     DEFAULT NULL,
+    `github_url`      VARCHAR(500)     DEFAULT NULL,
+    `live_url`        VARCHAR(500)     DEFAULT NULL,
+    `content`         TEXT             DEFAULT NULL,
+    `status`          ENUM('pending','under_review','approved','rejected','needs_revision')
+                                       NOT NULL DEFAULT 'pending',
+    `score`           DECIMAL(5,2)     DEFAULT NULL,
+    `feedback`        TEXT             DEFAULT NULL,
+    `reviewed_by`     INT UNSIGNED     DEFAULT NULL,
+    `reviewed_at`     TIMESTAMP        NULL DEFAULT NULL,
+    `xp_earned`       INT UNSIGNED     NOT NULL DEFAULT 0,
+    `coins_earned`    INT UNSIGNED     NOT NULL DEFAULT 0,
+    `likes_count`     INT UNSIGNED     NOT NULL DEFAULT 0,
+    `views_count`     INT UNSIGNED     NOT NULL DEFAULT 0,
+    `is_featured`     TINYINT(1)       NOT NULL DEFAULT 0,
+    `is_public`       TINYINT(1)       NOT NULL DEFAULT 1,
+    `submitted_at`    TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`      TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    KEY `idx_projsub_project` (`project_id`),
+    KEY `idx_projsub_user` (`user_id`),
+    KEY `idx_projsub_status` (`status`),
+    CONSTRAINT `fk_projsub_project` FOREIGN KEY (`project_id`)
+        REFERENCES `projects` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_projsub_user` FOREIGN KEY (`user_id`)
+        REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_projsub_reviewer` FOREIGN KEY (`reviewed_by`)
+        REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Submissões de projetos pelos alunos';
+
+
+-- L18. Lesson Comment Likes (antigo "comment_likes")
+DROP TABLE IF EXISTS `lesson_comment_likes`;
+CREATE TABLE `lesson_comment_likes` (
+    `id`          INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    `comment_id`  INT UNSIGNED     NOT NULL,
+    `user_id`     INT UNSIGNED     NOT NULL,
+    `created_at`  TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_comment_like` (`comment_id`, `user_id`),
+    KEY `idx_commentlike_comment` (`comment_id`),
+    CONSTRAINT `fk_commentlike_comment` FOREIGN KEY (`comment_id`)
+        REFERENCES `lesson_comments` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_commentlike_user` FOREIGN KEY (`user_id`)
+        REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Curtidas em comentários de aulas';
+
+
+-- L19. Project Likes (Curtidas em submissões de projetos)
+DROP TABLE IF EXISTS `project_likes`;
+CREATE TABLE `project_likes` (
+    `id`             INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    `submission_id`  INT UNSIGNED     NOT NULL,
+    `user_id`        INT UNSIGNED     NOT NULL,
+    `created_at`     TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_project_like` (`submission_id`, `user_id`),
+    KEY `idx_projectlike_submission` (`submission_id`),
+    CONSTRAINT `fk_projectlike_submission` FOREIGN KEY (`submission_id`)
+        REFERENCES `project_submissions` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_projectlike_user` FOREIGN KEY (`user_id`)
+        REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Curtidas em submissões de projetos';
+
+
+-- ================================================================
+-- VIEWS
+-- ================================================================
+
 CREATE OR REPLACE VIEW `vw_courses_listing` AS
-SELECT 
-    c.`id`,
-    c.`title`,
-    c.`slug`,
-    c.`short_description`,
-    c.`thumbnail`,
-    c.`level`,
-    c.`price`,
-    c.`original_price`,
-    c.`is_free`,
-    c.`is_featured`,
-    c.`is_bestseller`,
-    c.`duration_hours`,
-    c.`total_lessons`,
-    c.`enrollment_count`,
-    c.`rating_average`,
-    c.`rating_count`,
-    c.`game_engine`,
-    c.`status`,
-    c.`published_at`,
-    u.`id` AS `instructor_id`,
-    u.`name` AS `instructor_name`,
-    u.`avatar` AS `instructor_avatar`,
-    cat.`id` AS `category_id`,
-    cat.`name` AS `category_name`,
-    cat.`slug` AS `category_slug`
-FROM `courses` c
-INNER JOIN `users` u ON c.`instructor_id` = u.`id`
-LEFT JOIN `categories` cat ON c.`category_id` = cat.`id`;
+SELECT
+    c.id, c.title, c.slug, c.short_description, c.thumbnail, c.image,
+    c.level, c.price, c.original_price, c.is_free, c.is_featured,
+    c.is_bestseller, c.duration_hours, c.total_lessons,
+    c.enrollment_count, c.total_students, c.rating_average, c.average_rating,
+    c.rating_count, c.total_reviews, c.game_engine, c.status, c.is_published,
+    c.published_at,
+    u.id AS instructor_id, u.name AS instructor_name, u.avatar AS instructor_avatar,
+    cat.id AS category_id, cat.name AS category_name, cat.slug AS category_slug
+FROM courses c
+INNER JOIN users u ON c.instructor_id = u.id
+LEFT JOIN categories cat ON c.category_id = cat.id;
 
 
--- View: Dashboard stats
 CREATE OR REPLACE VIEW `vw_dashboard_stats` AS
 SELECT
-    (SELECT COUNT(*) FROM `users` WHERE `role` = 'student' AND `is_active` = 1) AS `total_students`,
-    (SELECT COUNT(*) FROM `users` WHERE `role` = 'instructor' AND `is_active` = 1) AS `total_instructors`,
-    (SELECT COUNT(*) FROM `courses` WHERE `status` = 'published') AS `total_courses`,
-    (SELECT COUNT(*) FROM `enrollments` WHERE `status` = 'active') AS `active_enrollments`,
-    (SELECT COUNT(*) FROM `enrollments` WHERE `status` = 'completed') AS `completed_enrollments`,
-    (SELECT COALESCE(SUM(`amount` - `discount_amount`), 0) FROM `payments` WHERE `status` = 'completed') AS `total_revenue`,
-    (SELECT COUNT(*) FROM `enrollments` WHERE `enrolled_at` >= DATE_SUB(NOW(), INTERVAL 30 DAY)) AS `monthly_enrollments`,
-    (SELECT COUNT(*) FROM `enrollments` WHERE `enrolled_at` >= DATE_SUB(NOW(), INTERVAL 7 DAY)) AS `weekly_enrollments`,
-    (SELECT COALESCE(SUM(`amount` - `discount_amount`), 0) FROM `payments` WHERE `status` = 'completed' AND `paid_at` >= DATE_SUB(NOW(), INTERVAL 30 DAY)) AS `monthly_revenue`,
-    (SELECT COUNT(*) FROM `support_tickets` WHERE `status` IN ('open', 'in_progress')) AS `open_tickets`,
-    (SELECT COUNT(*) FROM `reviews` WHERE `is_approved` = 0) AS `pending_reviews`;
+    (SELECT COUNT(*) FROM users WHERE role = 'student' AND is_active = 1) AS total_students,
+    (SELECT COUNT(*) FROM users WHERE role = 'instructor' AND is_active = 1) AS total_instructors,
+    (SELECT COUNT(*) FROM courses WHERE status = 'published') AS total_courses,
+    (SELECT COUNT(*) FROM enrollments WHERE status = 'active') AS active_enrollments,
+    (SELECT COUNT(*) FROM enrollments WHERE status = 'completed') AS completed_enrollments,
+    (SELECT COALESCE(SUM(amount - discount_amount), 0) FROM payments WHERE status = 'completed') AS total_revenue,
+    (SELECT COUNT(*) FROM enrollments WHERE enrolled_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)) AS monthly_enrollments,
+    (SELECT COUNT(*) FROM support_tickets WHERE status IN ('open', 'in_progress')) AS open_tickets,
+    (SELECT COUNT(*) FROM course_reviews WHERE is_approved = 0) AS pending_reviews;
 
 
--- View: Progresso detalhado do aluno
 CREATE OR REPLACE VIEW `vw_student_progress` AS
-SELECT 
-    e.`user_id`,
-    e.`course_id`,
-    c.`title` AS `course_title`,
-    c.`total_lessons`,
-    e.`progress_percent`,
-    e.`lessons_completed`,
-    e.`status` AS `enrollment_status`,
-    e.`enrolled_at`,
-    e.`completed_at`,
-    e.`last_accessed_at`,
-    u.`name` AS `student_name`,
-    u.`email` AS `student_email`
-FROM `enrollments` e
-INNER JOIN `courses` c ON e.`course_id` = c.`id`
-INNER JOIN `users` u ON e.`user_id` = u.`id`;
+SELECT
+    e.user_id, e.course_id, c.title AS course_title, c.total_lessons,
+    e.progress_percent, e.lessons_completed, e.status AS enrollment_status,
+    e.enrolled_at, e.completed_at, e.last_accessed_at,
+    u.name AS student_name, u.email AS student_email
+FROM enrollments e
+INNER JOIN courses c ON e.course_id = c.id
+INNER JOIN users u ON e.user_id = u.id;
+
+
+SET FOREIGN_KEY_CHECKS = 1;
 
 
 -- ================================================================
--- ================================================================
---
---   DADOS INICIAIS (SEEDS)
---
---   Dados essenciais para o sistema funcionar após instalação.
---   Executados apenas se as tabelas estiverem vazias.
---
--- ================================================================
+-- AUTO INCREMENT INITIALIZATION
+-- (todos os nomes corrigidos para refletir as tabelas reais)
 -- ================================================================
 
-
--- ----------------------------------------------------------------
--- Usuário administrador padrão
--- ATENÇÃO: Mude a senha imediatamente após instalação!
--- Senha padrão: Admin@123 (hash bcrypt)
--- ----------------------------------------------------------------
-INSERT INTO `users` (`name`, `email`, `password`, `role`, `email_verified_at`, `is_active`)
-SELECT 'Administrador', 'admin@gamedevacademy.com',
-       '$2y$12$LJ3m4ys3VEz3VEz3VEz3VeKX8PvQ3VEz3VEz3VEz3VEz3VEz3VEz3V',
-       'super_admin', NOW(), 1
-FROM DUAL
-WHERE NOT EXISTS (SELECT 1 FROM `users` WHERE `email` = 'admin@gamedevacademy.com');
-
-
--- ----------------------------------------------------------------
--- Categorias padrão para cursos de gamedev
--- ----------------------------------------------------------------
-INSERT INTO `categories` (`name`, `slug`, `description`, `icon`, `color`, `sort_order`)
-SELECT * FROM (
-    SELECT 'Unity' AS n, 'unity' AS s, 'Desenvolvimento de jogos com Unity Engine e C#' AS d, 'fas fa-cube' AS i, '#000000' AS c, 1 AS o
-    UNION ALL SELECT 'Unreal Engine', 'unreal-engine', 'Desenvolvimento com Unreal Engine e C++/Blueprints', 'fas fa-fire', '#2563eb', 2
-    UNION ALL SELECT 'Godot', 'godot', 'Desenvolvimento com Godot Engine e GDScript', 'fas fa-robot', '#478cbf', 3
-    UNION ALL SELECT 'GameMaker', 'gamemaker', 'Desenvolvimento com GameMaker Studio', 'fas fa-gamepad', '#8bc34a', 4
-    UNION ALL SELECT 'Game Design', 'game-design', 'Princípios, mecânicas e teoria de game design', 'fas fa-pencil-ruler', '#8b5cf6', 5
-    UNION ALL SELECT 'Arte 2D', 'arte-2d', 'Pixel art, sprites, animação e arte 2D para jogos', 'fas fa-palette', '#ec4899', 6
-    UNION ALL SELECT 'Arte 3D', 'arte-3d', 'Modelagem, texturização, rigging e arte 3D', 'fas fa-shapes', '#f59e0b', 7
-    UNION ALL SELECT 'Programação', 'programacao', 'Fundamentos de programação aplicados a jogos', 'fas fa-code', '#10b981', 8
-    UNION ALL SELECT 'Áudio e Música', 'audio', 'Sound design, efeitos sonoros e trilha para jogos', 'fas fa-music', '#6366f1', 9
-    UNION ALL SELECT 'Narrativa', 'narrativa', 'Roteiro, storytelling e narrativa interativa', 'fas fa-book', '#ef4444', 10
-    UNION ALL SELECT 'Mobile Games', 'mobile-games', 'Desenvolvimento de jogos para iOS e Android', 'fas fa-mobile-alt', '#14b8a6', 11
-    UNION ALL SELECT 'Web Games', 'web-games', 'Jogos para navegador com HTML5/JavaScript', 'fas fa-globe', '#0ea5e9', 12
-    UNION ALL SELECT 'Multiplayer', 'multiplayer', 'Networking, servidores e jogos multiplayer', 'fas fa-users', '#a855f7', 13
-    UNION ALL SELECT 'VR/AR', 'vr-ar', 'Realidade virtual e aumentada para jogos', 'fas fa-vr-cardboard', '#f43f5e', 14
-    UNION ALL SELECT 'Marketing de Jogos', 'marketing-jogos', 'Monetização, publicação e marketing', 'fas fa-bullhorn', '#84cc16', 15
-) AS seed
-WHERE NOT EXISTS (SELECT 1 FROM `categories` LIMIT 1);
-
-
--- ----------------------------------------------------------------
--- Configurações iniciais do sistema
--- ----------------------------------------------------------------
-INSERT INTO `settings` (`setting_key`, `setting_value`, `setting_type`, `setting_group`, `description`, `is_public`)
-SELECT * FROM (
-    -- Geral
-    SELECT 'site_name' AS k, 'GameDev Academy' AS v, 'string' AS t, 'general' AS g, 'Nome do site' AS d, 1 AS p
-    UNION ALL SELECT 'site_description', 'Aprenda a criar jogos do zero ao profissional', 'string', 'general', 'Descrição do site', 1
-    UNION ALL SELECT 'site_tagline', 'Sua jornada no desenvolvimento de jogos começa aqui', 'string', 'general', 'Tagline/slogan', 1
-    UNION ALL SELECT 'site_logo', '/assets/images/logo.png', 'string', 'general', 'URL do logo', 1
-    UNION ALL SELECT 'site_favicon', '/assets/images/favicon.ico', 'string', 'general', 'URL do favicon', 1
-    UNION ALL SELECT 'site_url', 'http://localhost', 'string', 'general', 'URL base do site', 1
-    UNION ALL SELECT 'contact_email', 'contato@gamedevacademy.com', 'string', 'general', 'Email de contato', 1
-    UNION ALL SELECT 'maintenance_mode', 'false', 'boolean', 'general', 'Modo manutenção ativado', 0
-    UNION ALL SELECT 'items_per_page', '12', 'number', 'general', 'Itens por página nas listagens', 0
-    UNION ALL SELECT 'timezone', 'America/Sao_Paulo', 'string', 'general', 'Fuso horário padrão', 0
-    -- Pagamento
-    UNION ALL SELECT 'currency', 'BRL', 'string', 'payment', 'Moeda padrão', 0
-    UNION ALL SELECT 'currency_symbol', 'R$', 'string', 'payment', 'Símbolo da moeda', 1
-    UNION ALL SELECT 'stripe_enabled', 'false', 'boolean', 'payment', 'Stripe habilitado', 0
-    UNION ALL SELECT 'stripe_public_key', '', 'string', 'payment', 'Stripe Publishable Key', 0
-    UNION ALL SELECT 'stripe_secret_key', '', 'string', 'payment', 'Stripe Secret Key', 0
-    UNION ALL SELECT 'pix_enabled', 'false', 'boolean', 'payment', 'PIX habilitado', 0
-    UNION ALL SELECT 'instructor_commission', '70', 'number', 'payment', 'Comissão do instrutor (%)', 0
-    -- Email
-    UNION ALL SELECT 'smtp_host', '', 'string', 'email', 'Servidor SMTP', 0
-    UNION ALL SELECT 'smtp_port', '587', 'number', 'email', 'Porta SMTP', 0
-    UNION ALL SELECT 'smtp_user', '', 'string', 'email', 'Usuário SMTP', 0
-    UNION ALL SELECT 'smtp_pass', '', 'string', 'email', 'Senha SMTP', 0
-    UNION ALL SELECT 'smtp_encryption', 'tls', 'string', 'email', 'Encriptação: tls ou ssl', 0
-    UNION ALL SELECT 'email_from_name', 'GameDev Academy', 'string', 'email', 'Nome do remetente', 0
-    UNION ALL SELECT 'email_from_address', 'noreply@gamedevacademy.com', 'string', 'email', 'Email do remetente', 0
-    -- Features
-    UNION ALL SELECT 'certificate_enabled', 'true', 'boolean', 'features', 'Habilitar certificados', 0
-    UNION ALL SELECT 'gamification_enabled', 'true', 'boolean', 'features', 'Habilitar gamificação', 0
-    UNION ALL SELECT 'forum_enabled', 'true', 'boolean', 'features', 'Habilitar fórum de discussão', 0
-    UNION ALL SELECT 'blog_enabled', 'true', 'boolean', 'features', 'Habilitar blog', 0
-    UNION ALL SELECT 'reviews_enabled', 'true', 'boolean', 'features', 'Habilitar avaliações de cursos', 0
-    UNION ALL SELECT 'wishlist_enabled', 'true', 'boolean', 'features', 'Habilitar lista de desejos', 0
-    UNION ALL SELECT 'support_enabled', 'true', 'boolean', 'features', 'Habilitar sistema de suporte', 0
-    UNION ALL SELECT 'registration_enabled', 'true', 'boolean', 'features', 'Permitir novos cadastros', 0
-    UNION ALL SELECT 'instructor_registration', 'false', 'boolean', 'features', 'Permitir cadastro de instrutores', 0
-    -- SEO
-    UNION ALL SELECT 'google_analytics_id', '', 'string', 'seo', 'Google Analytics ID', 0
-    UNION ALL SELECT 'google_tag_manager_id', '', 'string', 'seo', 'Google Tag Manager ID', 0
-    UNION ALL SELECT 'facebook_pixel_id', '', 'string', 'seo', 'Facebook Pixel ID', 0
-    -- Social
-    UNION ALL SELECT 'social_github', 'https://github.com/davidcreator/gamedev-academy', 'string', 'social', 'GitHub da plataforma', 1
-    UNION ALL SELECT 'social_youtube', '', 'string', 'social', 'Canal YouTube', 1
-    UNION ALL SELECT 'social_discord', '', 'string', 'social', 'Servidor Discord', 1
-    UNION ALL SELECT 'social_twitter', '', 'string', 'social', 'Twitter/X', 1
-    UNION ALL SELECT 'social_instagram', '', 'string', 'social', 'Instagram', 1
-) AS seed
-WHERE NOT EXISTS (SELECT 1 FROM `settings` LIMIT 1);
-
-
--- ----------------------------------------------------------------
--- Badges padrão de gamificação
--- ----------------------------------------------------------------
-INSERT INTO `badges` (`name`, `slug`, `description`, `icon`, `category`, `criteria_type`, `criteria_value`, `points_reward`, `rarity`, `sort_order`)
-SELECT * FROM (
-    -- Conquistas de aulas
-    SELECT 'Primeiro Passo' AS n, 'primeiro-passo' AS s, 'Complete sua primeira aula' AS d, '🎮' AS i, 'achievement' AS c, 'lessons_completed' AS ct, 1 AS cv, 10 AS pr, 'common' AS r, 1 AS so
-    UNION ALL SELECT 'Estudante Dedicado', 'estudante-dedicado', 'Complete 10 aulas', '📚', 'engagement', 'lessons_completed', 10, 50, 'common', 2
-    UNION ALL SELECT 'Maratonista', 'maratonista', 'Complete 50 aulas', '🏃', 'engagement', 'lessons_completed', 50, 200, 'uncommon', 3
-    UNION ALL SELECT 'Máquina de Aprender', 'maquina-aprender', 'Complete 100 aulas', '🤖', 'engagement', 'lessons_completed', 100, 500, 'rare', 4
-    -- Conquistas de cursos
-    UNION ALL SELECT 'Primeiro Curso', 'primeiro-curso', 'Complete seu primeiro curso', '🎓', 'course', 'courses_completed', 1, 100, 'common', 5
-    UNION ALL SELECT 'Colecionador', 'colecionador', 'Complete 5 cursos', '🏆', 'course', 'courses_completed', 5, 500, 'rare', 6
-    UNION ALL SELECT 'Mestre dos Jogos', 'mestre-dos-jogos', 'Complete 10 cursos', '👑', 'course', 'courses_completed', 10, 1000, 'epic', 7
-    UNION ALL SELECT 'Lendário', 'lendario', 'Complete 25 cursos', '⭐', 'course', 'courses_completed', 25, 2500, 'legendary', 8
-    -- Streaks
-    UNION ALL SELECT 'Streak Semanal', 'streak-7', 'Estude por 7 dias seguidos', '🔥', 'engagement', 'streak_days', 7, 70, 'common', 9
-    UNION ALL SELECT 'Streak Mensal', 'streak-30', 'Estude por 30 dias seguidos', '⚡', 'engagement', 'streak_days', 30, 300, 'rare', 10
-    UNION ALL SELECT 'Streak Épico', 'streak-90', 'Estude por 90 dias seguidos', '💫', 'engagement', 'streak_days', 90, 900, 'epic', 11
-    -- Quizzes
-    UNION ALL SELECT 'Quiz Master', 'quiz-master', 'Acerte 100% em 10 quizzes', '🧠', 'achievement', 'perfect_quizzes', 10, 250, 'rare', 12
-    UNION ALL SELECT 'Sem Erros', 'sem-erros', 'Acerte 100% no primeiro quiz', '✅', 'achievement', 'perfect_quizzes', 1, 25, 'common', 13
-    -- Comunidade
-    UNION ALL SELECT 'Ajudante', 'ajudante', 'Responda 10 perguntas no fórum', '🤝', 'community', 'forum_replies', 10, 150, 'uncommon', 14
-    UNION ALL SELECT 'Mentor', 'mentor', 'Tenha 5 respostas marcadas como melhor resposta', '🌟', 'community', 'best_answers', 5, 300, 'rare', 15
-    -- Especiais
-    UNION ALL SELECT 'Pioneiro', 'pioneiro', 'Seja um dos primeiros 100 alunos', '🚀', 'special', 'early_adopter', 1, 200, 'epic', 16
-    UNION ALL SELECT 'Avaliador', 'avaliador', 'Avalie 5 cursos', '📝', 'community', 'reviews_posted', 5, 100, 'uncommon', 17
-) AS seed
-WHERE NOT EXISTS (SELECT 1 FROM `badges` LIMIT 1);
-
-
--- ----------------------------------------------------------------
--- Páginas estáticas padrão
--- ----------------------------------------------------------------
-INSERT INTO `pages` (`title`, `slug`, `content`, `show_in_footer`, `is_published`)
-SELECT * FROM (
-    SELECT 'Sobre Nós' AS t, 'sobre' AS s, '<h1>Sobre a GameDev Academy</h1><p>Somos uma plataforma brasileira dedicada ao ensino de desenvolvimento de jogos. Nossa missão é democratizar o acesso ao conhecimento de gamedev, oferecendo cursos de alta qualidade em português.</p>' AS c, 1 AS f, 1 AS p
-    UNION ALL SELECT 'Termos de Uso', 'termos-de-uso', '<h1>Termos de Uso</h1><p>Ao utilizar a plataforma GameDev Academy, você concorda com os seguintes termos e condições...</p>', 1, 1
-    UNION ALL SELECT 'Política de Privacidade', 'politica-de-privacidade', '<h1>Política de Privacidade</h1><p>A GameDev Academy valoriza a sua privacidade. Esta política descreve como coletamos e utilizamos seus dados...</p>', 1, 1
-    UNION ALL SELECT 'Política de Reembolso', 'politica-de-reembolso', '<h1>Política de Reembolso</h1><p>Oferecemos garantia de satisfação de 7 dias para todos os cursos pagos...</p>', 1, 1
-    UNION ALL SELECT 'Contato', 'contato', '<h1>Fale Conosco</h1><p>Tem dúvidas ou sugestões? Entre em contato através do nosso formulário ou email.</p>', 1, 1
-) AS seed
-WHERE NOT EXISTS (SELECT 1 FROM `pages` LIMIT 1);
-
-
--- ----------------------------------------------------------------
--- Template de certificado padrão
--- ----------------------------------------------------------------
-INSERT INTO `certificate_templates` (`name`, `html_template`, `css_styles`, `orientation`, `is_default`, `is_active`)
-SELECT 'Certificado Padrão GameDev Academy',
-       '<div class="certificate">
-    <div class="header">
-        <img src="{{site_logo}}" alt="Logo" class="logo">
-        <h1>Certificado de Conclusão</h1>
-    </div>
-    <div class="body">
-        <p>Certificamos que</p>
-        <h2 class="student-name">{{student_name}}</h2>
-        <p>concluiu com sucesso o curso</p>
-        <h3 class="course-name">{{course_name}}</h3>
-        <p class="details">
-            Carga horária: {{total_hours}} horas<br>
-            Data de conclusão: {{completion_date}}<br>
-            Instrutor: {{instructor_name}}
-        </p>
-    </div>
-    <div class="footer">
-        <div class="code">Código de verificação: {{certificate_code}}</div>
-        <div class="verify">Verifique em: {{site_url}}/certificado/{{certificate_code}}</div>
-    </div>
-</div>',
-       '.certificate { font-family: Georgia, serif; text-align: center; padding: 60px; border: 3px solid #6366f1; }
-.logo { height: 60px; }
-.student-name { font-size: 32px; color: #1e293b; border-bottom: 2px solid #6366f1; display: inline-block; padding: 10px 40px; }
-.course-name { font-size: 24px; color: #6366f1; }
-.code { font-family: monospace; color: #64748b; }',
-       'landscape', 1, 1
-FROM DUAL
-WHERE NOT EXISTS (SELECT 1 FROM `certificate_templates` LIMIT 1);
-
-
--- ----------------------------------------------------------------
--- Templates de email padrão
--- ----------------------------------------------------------------
-INSERT INTO `email_templates` (`name`, `subject`, `body_html`, `variables`)
-SELECT * FROM (
-    SELECT 'welcome' AS n, 
-           'Bem-vindo à GameDev Academy, {{name}}!' AS s,
-           '<h1>Olá, {{name}}! 🎮</h1><p>Seja bem-vindo à GameDev Academy!</p><p>Sua conta foi criada com sucesso. Comece explorando nossos cursos.</p><p><a href="{{site_url}}/cursos">Ver Cursos</a></p>' AS b,
-           '["name", "email", "site_url"]' AS v
-    UNION ALL SELECT 'password_reset',
-           'Redefinição de Senha - GameDev Academy',
-           '<h1>Redefinição de Senha</h1><p>Olá, {{name}}.</p><p>Recebemos uma solicitação para redefinir sua senha.</p><p><a href="{{reset_url}}">Clique aqui para redefinir</a></p><p>Este link expira em {{expiry_hours}} horas.</p><p>Se você não solicitou, ignore este email.</p>',
-           '["name", "reset_url", "expiry_hours"]'
-    UNION ALL SELECT 'enrollment_confirmation',
-           'Matrícula Confirmada: {{course_title}}',
-           '<h1>Matrícula Confirmada! 🎉</h1><p>Olá, {{name}}!</p><p>Sua matrícula no curso <strong>{{course_title}}</strong> foi confirmada.</p><p><a href="{{course_url}}">Começar a Estudar</a></p>',
-           '["name", "course_title", "course_url"]'
-    UNION ALL SELECT 'course_completed',
-           'Parabéns! Você concluiu {{course_title}} 🎓',
-           '<h1>Parabéns, {{name}}! 🏆</h1><p>Você concluiu o curso <strong>{{course_title}}</strong>!</p><p>Seu certificado já está disponível.</p><p><a href="{{certificate_url}}">Ver Certificado</a></p>',
-           '["name", "course_title", "certificate_url"]'
-    UNION ALL SELECT 'payment_confirmation',
-           'Pagamento Confirmado - GameDev Academy',
-           '<h1>Pagamento Confirmado ✅</h1><p>Olá, {{name}}.</p><p>Seu pagamento de {{amount}} foi processado com sucesso.</p><p>Curso: {{course_title}}</p><p>ID da transação: {{transaction_id}}</p>',
-           '["name", "amount", "course_title", "transaction_id"]'
-) AS seed
-WHERE NOT EXISTS (SELECT 1 FROM `email_templates` LIMIT 1);
-
-
--- ----------------------------------------------------------------
--- Categorias de FAQ
--- ----------------------------------------------------------------
-INSERT INTO `faq_categories` (`name`, `slug`, `icon`, `sort_order`)
-SELECT * FROM (
-    SELECT 'Conta e Acesso' AS n, 'conta-acesso' AS s, 'fas fa-user-circle' AS i, 1 AS o
-    UNION ALL SELECT 'Cursos e Aulas', 'cursos-aulas', 'fas fa-graduation-cap', 2
-    UNION ALL SELECT 'Pagamentos', 'pagamentos', 'fas fa-credit-card', 3
-    UNION ALL SELECT 'Certificados', 'certificados', 'fas fa-certificate', 4
-    UNION ALL SELECT 'Problemas Técnicos', 'problemas-tecnicos', 'fas fa-tools', 5
-) AS seed
-WHERE NOT EXISTS (SELECT 1 FROM `faq_categories` LIMIT 1);
-
-
--- ----------------------------------------------------------------
--- FAQs iniciais
--- ----------------------------------------------------------------
-INSERT INTO `faqs` (`category_id`, `question`, `answer`, `sort_order`)
-SELECT * FROM (
-    SELECT 1 AS c, 'Como criar minha conta?' AS q, '<p>Clique em "Cadastrar" no canto superior direito e preencha o formulário com seus dados. Você receberá um email de confirmação.</p>' AS a, 1 AS o
-    UNION ALL SELECT 1, 'Esqueci minha senha. O que fazer?', '<p>Clique em "Esqueci minha senha" na tela de login. Enviaremos um email com instruções para redefinir sua senha.</p>', 2
-    UNION ALL SELECT 2, 'Posso acessar os cursos de qualquer dispositivo?', '<p>Sim! Nossa plataforma é responsiva e funciona em computadores, tablets e smartphones.</p>', 3
-    UNION ALL SELECT 2, 'Os cursos têm prazo de validade?', '<p>Não! Após a matrícula, você tem acesso vitalício ao conteúdo do curso.</p>', 4
-    UNION ALL SELECT 3, 'Quais formas de pagamento são aceitas?', '<p>Aceitamos cartão de crédito, PIX e boleto bancário.</p>', 5
-    UNION ALL SELECT 3, 'Qual é a política de reembolso?', '<p>Oferecemos garantia de 7 dias. Se não ficar satisfeito, devolvemos 100% do valor.</p>', 6
-    UNION ALL SELECT 4, 'Como obter meu certificado?', '<p>O certificado é gerado automaticamente ao completar 100% das aulas obrigatórias do curso.</p>', 7
-    UNION ALL SELECT 4, 'O certificado tem validade?', '<p>Nossos certificados possuem código de verificação único e podem ser validados online a qualquer momento.</p>', 8
-) AS seed
-WHERE NOT EXISTS (SELECT 1 FROM `faqs` LIMIT 1);
-
-
--- ----------------------------------------------------------------
--- Idiomas suportados
--- ----------------------------------------------------------------
-INSERT INTO `languages` (`name`, `code`, `native_name`)
-SELECT * FROM (
-    SELECT 'Português (Brasil)' AS n, 'pt-BR' AS c, 'Português' AS nn
-    UNION ALL SELECT 'English', 'en-US', 'English'
-    UNION ALL SELECT 'Español', 'es', 'Español'
-) AS seed
-WHERE NOT EXISTS (SELECT 1 FROM `languages` LIMIT 1);
-
-
--- ----------------------------------------------------------------
--- Países principais
--- ----------------------------------------------------------------
-INSERT INTO `countries` (`name`, `code`, `phone_code`, `currency`)
-SELECT * FROM (
-    SELECT 'Brasil' AS n, 'BR' AS c, '+55' AS p, 'BRL' AS cu
-    UNION ALL SELECT 'Portugal', 'PT', '+351', 'EUR'
-    UNION ALL SELECT 'Estados Unidos', 'US', '+1', 'USD'
-    UNION ALL SELECT 'Angola', 'AO', '+244', 'AOA'
-    UNION ALL SELECT 'Moçambique', 'MZ', '+258', 'MZN'
-) AS seed
-WHERE NOT EXISTS (SELECT 1 FROM `countries` LIMIT 1);
+ALTER TABLE `users`                 AUTO_INCREMENT = 1;
+ALTER TABLE `user_profiles`         AUTO_INCREMENT = 1;
+ALTER TABLE `user_settings`         AUTO_INCREMENT = 1;
+ALTER TABLE `user_social_links`     AUTO_INCREMENT = 1;
+ALTER TABLE `user_daily_stats`      AUTO_INCREMENT = 1;
+ALTER TABLE `user_follows`          AUTO_INCREMENT = 1;
+ALTER TABLE `user_daily_challenges` AUTO_INCREMENT = 1;
+ALTER TABLE `user_inventory`        AUTO_INCREMENT = 1;
+ALTER TABLE `categories`            AUTO_INCREMENT = 1;
+ALTER TABLE `tags`                  AUTO_INCREMENT = 1;
+ALTER TABLE `settings`              AUTO_INCREMENT = 1;
+ALTER TABLE `pages`                 AUTO_INCREMENT = 1;
+ALTER TABLE `badges`                AUTO_INCREMENT = 1;
+ALTER TABLE `achievements`          AUTO_INCREMENT = 1;
+ALTER TABLE `user_achievements`     AUTO_INCREMENT = 1;
+ALTER TABLE `user_badges`           AUTO_INCREMENT = 1;
+ALTER TABLE `levels`                AUTO_INCREMENT = 1;
+ALTER TABLE `points`                AUTO_INCREMENT = 1;
+ALTER TABLE `xp_transactions`       AUTO_INCREMENT = 1;
+ALTER TABLE `coin_transactions`     AUTO_INCREMENT = 1;
+ALTER TABLE `leaderboard`           AUTO_INCREMENT = 1;
+ALTER TABLE `daily_challenges`      AUTO_INCREMENT = 1;
+ALTER TABLE `notifications`         AUTO_INCREMENT = 1;
+ALTER TABLE `user_notifications`    AUTO_INCREMENT = 1;
+ALTER TABLE `subscription_plans`    AUTO_INCREMENT = 1;
+ALTER TABLE `subscriptions`         AUTO_INCREMENT = 1;
+ALTER TABLE `coupons`               AUTO_INCREMENT = 1;
+ALTER TABLE `coupon_usage`          AUTO_INCREMENT = 1;
+ALTER TABLE `shop_items`            AUTO_INCREMENT = 1;
+ALTER TABLE `courses`               AUTO_INCREMENT = 1;
+ALTER TABLE `course_prerequisites`  AUTO_INCREMENT = 1;
+ALTER TABLE `course_requirements`   AUTO_INCREMENT = 1;
+ALTER TABLE `course_objectives`     AUTO_INCREMENT = 1;
+ALTER TABLE `course_modules`        AUTO_INCREMENT = 1;
+ALTER TABLE `module_progress`       AUTO_INCREMENT = 1;
+ALTER TABLE `course_lessons`        AUTO_INCREMENT = 1;
+ALTER TABLE `course_resources`      AUTO_INCREMENT = 1;
+ALTER TABLE `course_reviews`        AUTO_INCREMENT = 1;
+ALTER TABLE `review_votes`          AUTO_INCREMENT = 1;
+ALTER TABLE `enrollments`           AUTO_INCREMENT = 1;
+ALTER TABLE `lesson_progress`       AUTO_INCREMENT = 1;
+ALTER TABLE `lesson_comments`       AUTO_INCREMENT = 1;
+ALTER TABLE `lesson_comment_likes`  AUTO_INCREMENT = 1;
+ALTER TABLE `projects`              AUTO_INCREMENT = 1;
+ALTER TABLE `project_submissions`   AUTO_INCREMENT = 1;
+ALTER TABLE `project_likes`         AUTO_INCREMENT = 1;
+ALTER TABLE `quizzes`               AUTO_INCREMENT = 1;
+ALTER TABLE `quiz_questions`        AUTO_INCREMENT = 1;
+ALTER TABLE `quiz_options`          AUTO_INCREMENT = 1;
+ALTER TABLE `quiz_attempts`         AUTO_INCREMENT = 1;
+ALTER TABLE `quiz_answers`          AUTO_INCREMENT = 1;
+ALTER TABLE `assignments`           AUTO_INCREMENT = 1;
+ALTER TABLE `assignment_submissions` AUTO_INCREMENT = 1;
+ALTER TABLE `certificates`          AUTO_INCREMENT = 1;
+ALTER TABLE `discussions`           AUTO_INCREMENT = 1;
+ALTER TABLE `discussion_replies`    AUTO_INCREMENT = 1;
+ALTER TABLE `messages`              AUTO_INCREMENT = 1;
+ALTER TABLE `message_participants`  AUTO_INCREMENT = 1;
+ALTER TABLE `carts`                 AUTO_INCREMENT = 1;
+ALTER TABLE `cart_items`            AUTO_INCREMENT = 1;
+ALTER TABLE `orders`                AUTO_INCREMENT = 1;
+ALTER TABLE `order_items`           AUTO_INCREMENT = 1;
+ALTER TABLE `payments`              AUTO_INCREMENT = 1;
+ALTER TABLE `email_verifications`   AUTO_INCREMENT = 1;
+ALTER TABLE `password_resets`       AUTO_INCREMENT = 1;
+ALTER TABLE `wishlists`             AUTO_INCREMENT = 1;
+ALTER TABLE `forums`                AUTO_INCREMENT = 1;
+ALTER TABLE `forum_topics`          AUTO_INCREMENT = 1;
+ALTER TABLE `forum_posts`           AUTO_INCREMENT = 1;
+ALTER TABLE `blog_posts`            AUTO_INCREMENT = 1;
+ALTER TABLE `blog_comments`         AUTO_INCREMENT = 1;
+ALTER TABLE `pages`                 AUTO_INCREMENT = 1;
+ALTER TABLE `logs`                  AUTO_INCREMENT = 1;
 
 
 -- ================================================================
+-- VERIFICAÇÃO FINAL
 -- ================================================================
---
---   RESTAURAÇÃO DAS CONFIGURAÇÕES ORIGINAIS
---
--- ================================================================
--- ================================================================
-
-SET FOREIGN_KEY_CHECKS = @OLD_FOREIGN_KEY_CHECKS;
-SET UNIQUE_CHECKS = @OLD_UNIQUE_CHECKS;
-SET SQL_MODE = @OLD_SQL_MODE;
-SET CHARACTER_SET_CLIENT = @OLD_CHARACTER_SET_CLIENT;
-SET CHARACTER_SET_RESULTS = @OLD_CHARACTER_SET_RESULTS;
-SET COLLATION_CONNECTION = @OLD_COLLATION_CONNECTION;
-SET SQL_NOTES = @OLD_SQL_NOTES;
-
+SELECT
+    (SELECT COUNT(*) FROM information_schema.tables
+     WHERE table_schema = DATABASE() AND table_type = 'BASE TABLE') AS total_tabelas,
+    (SELECT COUNT(*) FROM information_schema.views
+     WHERE table_schema = DATABASE()) AS total_views;
 
 -- ================================================================
+-- DADOS INICIAIS (Seed) — migrados do schema-old v2.0
 -- ================================================================
---
---   INSTALAÇÃO CONCLUÍDA COM SUCESSO!
---
---   RESUMO:
---   ├── 54 tabelas criadas
---   ├── 8 triggers de cache
---   ├── 3 views utilitárias  
---   ├── Seeds de dados iniciais
---   └── Configurações padrão
---
---   PRÓXIMOS PASSOS:
---   1. Altere a senha do admin (admin@gamedevacademy.com)
---   2. Configure o SMTP em Configurações > Email
---   3. Configure o gateway de pagamento
---   4. Personalize as categorias
---   5. Crie seu primeiro curso!
---
---   ÍNDICE DE TABELAS POR NÚMERO:
---   ┌─────────────────────────────────────────────┐
---   │ 01. users              28. blog_post_tags   │
---   │ 02. categories         29. modules          │
---   │ 03. tags               30. enrollments      │
---   │ 04. settings           31. reviews          │
---   │ 05. pages              32. wishlists         │
---   │ 06. badges             33. certificates     │
---   │ 07. certificate_templ  34. payments         │
---   │ 08. email_templates    35. coupon_uses      │
---   │ 09. email_log          36. discussions      │
---   │ 10. faq_categories     37. support_tickets  │
---   │ 11. faqs               38. instructor_pay   │
---   │ 12. announcements      39. lessons          │
---   │ 13. countries          40. discussion_repl   │
---   │ 14. languages          41. ticket_messages  │
---   │ 15. user_sessions      42. blog_comments    │
---   │ 16. user_streaks       43. course_announce  │
---   │ 17. user_badges        44. course_bookmarks │
---   │ 18. user_points        45. report_abuse     │
---   │ 19. leaderboard        46. lesson_progress  │
---   │ 20. notifications      47. quizzes          │
---   │ 21. notification_pref  48. assignments      │
---   │ 22. media              49. student_notes    │
---   │ 23. coupons            50. quiz_questions   │
---   │ 24. courses            51. quiz_attempts    │
---   │ 25. blog_posts         52. assignment_sub   │
---   │ 26. course_tags        53. quiz_options     │
---   │ 27. course_categories  54. activity_log     │
---   └─────────────────────────────────────────────┘
---
--- ================================================================
--- ================================================================
+
+-- Níveis de gamificação
+INSERT IGNORE INTO `levels` (`level_number`, `title`, `xp_required`, `badge_icon`, `color`, `perks`) VALUES
+(1,  'Iniciante',        0,     '🌱', '#10b981', 'Acesso aos cursos básicos'),
+(2,  'Aprendiz',         100,   '📚', '#6366f1', 'Desbloqueio de conquistas'),
+(3,  'Estudante',        300,   '✏️',  '#8b5cf6', 'Acesso a quizzes avançados'),
+(4,  'Praticante',       600,   '💻', '#ec4899', 'Projetos práticos'),
+(5,  'Desenvolvedor Jr', 1000,  '🚀', '#f59e0b', 'Certificados personalizados'),
+(6,  'Desenvolvedor',    1500,  '⚡', '#ef4444', 'Acesso a conteúdo exclusivo'),
+(7,  'Desenvolvedor Sr', 2500,  '🔥', '#dc2626', 'Mentoria com instrutores'),
+(8,  'Especialista',     4000,  '💎', '#0ea5e9', 'Criar seus próprios cursos'),
+(9,  'Mestre',           6000,  '👑', '#fbbf24', 'Acesso vitalício a todos os cursos'),
+(10, 'Lenda',            10000, '🏆', '#f59e0b', 'Reconhecimento especial na plataforma');
+
+
+-- Conquistas iniciais
+INSERT IGNORE INTO `achievements` (`name`, `slug`, `description`, `icon`, `requirement_type`, `requirement_value`, `xp_reward`, `coin_reward`, `sort_order`, `is_active`) VALUES
+('Primeiro Passo',    'primeiro-passo',    'Complete sua primeira lição',         '🎯', 'lessons_completed',  1,    10,   5,    1,  1),
+('Estudante Dedicado','estudante-dedicado','Complete 10 lições',                  '📖', 'lessons_completed',  10,   50,   20,   2,  1),
+('Maratonista',       'maratonista',       'Complete 50 lições',                  '🏃', 'lessons_completed',  50,   150,  50,   3,  1),
+('Mestre das Lições', 'mestre-licoes',     'Complete 100 lições',                 '📚', 'lessons_completed',  100,  300,  100,  4,  1),
+('Formando',          'formando',          'Complete seu primeiro curso',          '🎓', 'courses_completed',  1,    100,  50,   5,  1),
+('Multitarefa',       'multitarefa',       'Complete 5 cursos',                   '🎖️','courses_completed',  5,    500,  200,  6,  1),
+('Acadêmico',         'academico',         'Complete 10 cursos',                  '🏅', 'courses_completed',  10,   1000, 500,  7,  1),
+('Constante',         'constante',         'Mantenha um streak de 7 dias',        '🔥', 'streak',             7,    70,   30,   8,  1),
+('Imparável',         'imparavel',         'Mantenha um streak de 30 dias',       '⚡', 'streak',             30,   300,  150,  9,  1),
+('Lenda Viva',        'lenda-viva',        'Mantenha um streak de 100 dias',      '💫', 'streak',             100,  1000, 500,  10, 1),
+('Nota Perfeita',     'nota-perfeita',     'Acerte 100% em um quiz',              '💯', 'perfect_quiz',       1,    50,   25,   11, 1),
+('Gênio',             'genio',             'Acerte 100% em 10 quizzes',           '🧠', 'perfect_quiz',       10,   200,  100,  12, 1),
+('Caçador de XP',     'cacador-xp',        'Ganhe 1000 XP',                       '⭐', 'xp_earned',          1000, 100,  50,   13, 1),
+('Mestre do XP',      'mestre-xp',         'Ganhe 10000 XP',                      '🌟', 'xp_earned',          10000,500,  250,  14, 1);
+
+
+-- Cursos iniciais (instructor_id = 1 que é o admin)
+INSERT IGNORE INTO `courses` (`id`, `title`, `slug`, `short_description`, `description`, `instructor_id`, `category_id`, `level`, `price`, `is_published`, `status`) VALUES
+(1, 'Phaser 3 para Iniciantes', 'phaser-3-iniciantes', 'Aprenda a criar seu primeiro jogo HTML5', 'Neste curso você vai aprender as bases do Phaser 3, criando um jogo completo de plataforma.', 1, 1, 'beginner', 0.00, 1, 'published'),
+(2, 'React para Desenvolvedores de Jogos', 'react-para-jogos', 'Crie interfaces incríveis para seus jogos', 'Aprenda a usar React para criar UIs complexas, inventários e menus para jogos web.', 1, 2, 'intermediate', 49.90, 1, 'published'),
+(3, 'Arquitetura Avançada em Unity', 'unity-arquitetura-avancada', 'Domine padrões de projeto e performance', 'Curso focado em arquitetura limpa, ScriptableObjects e otimização para grandes projetos Unity.', 1, 6, 'advanced', 199.00, 1, 'published'),
+(4, 'Sistemas ECS e DOTS em Unity', 'unity-ecs-dots', 'Performance extrema com Data-Oriented Technology Stack', 'Neste curso avançado, você aprenderá a usar o Entity Component System da Unity para renderizar milhões de entidades.', 1, 6, 'expert', 299.00, 1, 'published');
+
+
+-- Módulos iniciais
+INSERT IGNORE INTO `course_modules` (`id`, `course_id`, `title`, `sort_order`) VALUES
+(1, 1, 'Introdução ao Phaser', 1),
+(2, 1, 'Criando o Mundo', 2),
+(3, 2, 'React Hooks para Games', 1),
+(4, 3, 'Padrões de Projeto em C#', 1);
+
+
+-- Lições iniciais
+INSERT IGNORE INTO `course_lessons` (`course_id`, `module_id`, `title`, `slug`, `content_type`, `content`, `sort_order`, `is_published`) VALUES
+(1, 1, 'Bem-vindo ao Curso', 'bem-vindo', 'text', 'Olá! Nesta aula vamos preparar nosso ambiente de desenvolvimento.', 1, 1),
+(1, 1, 'Configurando o Phaser', 'configuracao', 'video', 'Conteúdo em vídeo sobre configuração do framework.', 2, 1),
+(1, 2, 'Sprites e Assets', 'sprites', 'video', 'Como carregar e exibir imagens no jogo.', 1, 1),
+(2, 3, 'UseState no Inventário', 'react-hooks-inventario', 'video', 'Usando hooks para gerenciar o estado do inventário.', 1, 1),
+(3, 4, 'Singleton vs ScriptableObjects', 'singleton-scriptable', 'video', 'Análise profunda sobre persistência de dados.', 1, 1);
+
+
+-- Desafios diários
+INSERT IGNORE INTO `daily_challenges` (`date`, `title`, `description`, `type`, `requirement_type`, `requirement_value`, `xp_reward`, `coin_reward`) VALUES
+(CURDATE(), 'Madrugador', 'Complete uma lição hoje', 'lesson', 'lessons_completed', 1, 50, 10),
+(DATE_ADD(CURDATE(), INTERVAL 1 DAY), 'Mestre dos Quizzes', 'Acerte um quiz com 100%', 'quiz', 'perfect_quiz', 1, 100, 20);
+
+
+-- Notícias / Blog
+INSERT IGNORE INTO `blog_posts` (`title`, `slug`, `excerpt`, `content`, `author_id`, `category_id`, `status`, `is_featured`, `published_at`) VALUES
+('Bem-vindo à GameDev Academy!', 'bem-vindo-gda', 'Conheça a nova plataforma para desenvolvedores de jogos.', 'Estamos muito felizes em lançar a GameDev Academy! Aqui você encontrará os melhores cursos de desenvolvimento de jogos, uma comunidade vibrante e um sistema de gamificação para tornar seu aprendizado mais divertido.', 1, 5, 'published', 1, NOW()),
+('O que é Gamificação no Aprendizado?', 'gamificacao-aprendizado', 'Entenda como nosso sistema de XP e Conquistas ajuda você.', 'Aprender pode ser difícil, mas com jogos fica mais fácil. Nosso sistema recompensa sua dedicação com níveis, badges e itens exclusivos.', 1, 5, 'published', 0, NOW());
+
+
+-- Categorias iniciais
+INSERT IGNORE INTO `categories` (`name`, `slug`, `description`, `icon`, `color`, `sort_order`, `is_active`, `status`) VALUES
+('Phaser 3',       'phaser-3',       'Framework JavaScript para desenvolvimento de jogos 2D', '🎮', '#6366f1', 1,  1, 'active'),
+('React',          'react',          'Biblioteca JavaScript para construção de interfaces',   '⚛️','#61dafb', 2,  1, 'active'),
+('JavaScript',     'javascript',     'Linguagem de programação essencial para web',           '📜', '#f7df1e', 3,  1, 'active'),
+('TypeScript',     'typescript',     'JavaScript com tipagem estática',                       '📘', '#3178c6', 4,  1, 'active'),
+('Game Design',    'game-design',    'Princípios e técnicas de design de jogos',              '🎨', '#ec4899', 5,  1, 'active'),
+('Unity',          'unity',          'Motor de jogos profissional multiplataforma',           '🎯', '#000000', 6,  1, 'active'),
+('Godot',          'godot',          'Motor de jogos open source',                            '🤖', '#478cbf', 7,  1, 'active'),
+('Pixel Art',      'pixel-art',      'Criação de arte em pixel para jogos',                  '🖼️','#ff6b6b', 8,  1, 'active'),
+('Game Audio',     'game-audio',     'Áudio e música para jogos',                            '🎵', '#9b59b6', 9,  1, 'active'),
+('Marketing Indie','marketing-indie','Marketing e publicação de jogos indie',                 '📈', '#2ecc71', 10, 1, 'active');
+
+
+-- Badges iniciais
+INSERT IGNORE INTO `badges` (`name`, `slug`, `description`, `icon`, `category`, `criteria_type`, `criteria_value`, `points_reward`, `rarity`, `sort_order`, `is_active`) VALUES
+('Verificado',   'verificado',   'Perfil verificado',              '✓',   'special',     'special', 1, 0,   'common',    1, 1),
+('Instrutor',    'instrutor',    'Instrutor da plataforma',        '👨‍🏫','community',   'special', 1, 0,   'uncommon',  2, 1),
+('Premium',      'premium',      'Membro premium',                 '💎',  'special',     'special', 1, 0,   'rare',      3, 1),
+('Beta Tester',  'beta-tester',  'Testador beta da plataforma',    '🔬',  'special',     'special', 1, 100, 'epic',      4, 1),
+('Contribuidor', 'contribuidor', 'Contribuiu com o projeto',       '⭐',  'achievement', 'special', 1, 200, 'legendary', 5, 1);
+
+
+-- Configurações padrão do sistema
+INSERT IGNORE INTO `settings` (`setting_key`, `setting_label`, `setting_value`, `setting_type`, `setting_group`, `description`, `is_public`) VALUES
+('site_name',              'Nome do Site',        'GameDev Academy',                                              'string',  'general',      'Nome exibido no site',                1),
+('site_description',       'Descrição do Site',   'Aprenda desenvolvimento de jogos do zero ao profissional',    'string',  'general',      'Descrição para SEO',                  1),
+('site_logo',              'Logo',                '/assets/images/logo.png',                                     'string',  'general',      'Logo do site',                        1),
+('contact_email',          'Email de Contato',    'contato@gamedev.academy',                                     'string',  'general',      'Email principal de contato',          1),
+('maintenance_mode',       'Modo Manutenção',     '0',                                                           'boolean', 'system',       'Ativa/desativa modo manutenção',      0),
+('registration_enabled',   'Permitir Registro',   '1',                                                           'boolean', 'system',       'Permite novos cadastros',             0),
+('xp_per_lesson',          'XP por Lição',        '10',                                                          'number',  'gamification', 'XP ganho ao completar lição',         0),
+('coins_per_lesson',       'Moedas por Lição',    '1',                                                           'number',  'gamification', 'Moedas ganhas ao completar lição',    0),
+('streak_bonus_multiplier','Multiplicador Streak','1.5',                                                          'string',  'gamification', 'Bônus de XP para streak ativo',       0),
+('default_theme',          'Tema Padrão',         'dark',                                                        'string',  'appearance',   'Tema padrão para novos usuários',     0),
+('default_language',       'Idioma Padrão',       'pt-BR',                                                       'string',  'appearance',   'Idioma padrão da plataforma',         0);
+
+
+-- Usuário admin padrão (senha: admin123 — trocar imediatamente em produção)
+INSERT IGNORE INTO `users` (`username`, `email`, `password`, `name`, `full_name`, `role`, `total_points`, `is_active`, `status`, `email_verified_at`) VALUES
+('admin', 'admin@gamedev.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+ 'Admin', 'Administrador', 'admin', 0, 1, 'active', NOW());
+
+-- Usuário demo (senha: demo123)
+INSERT IGNORE INTO `users` (`username`, `email`, `password`, `name`, `full_name`, `role`, `total_points`, `is_active`, `status`, `email_verified_at`) VALUES
+('demo', 'demo@gamedev.com', '$2y$10$4J4/XoQJBtV4nVqKcRwFbOUwP7rn1UTdDI5rDNr8oOvFnCy8MXKHO',
+ 'Demo', 'Usuário Demo', 'student', 150, 1, 'active', NOW());
+
+-- Instrutor de exemplo (senha: password)
+INSERT IGNORE INTO `users` (`username`, `email`, `password`, `name`, `full_name`, `role`, `is_active`, `status`, `specialization`, `bio`) VALUES
+('mestre_jogos', 'mestre@gamedev.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Mestre', 'Mestre dos Jogos', 'instructor', 1, 'active', 'Phaser 3 & Game Design', 'Especialista em desenvolvimento de jogos 2D com mais de 10 anos de experiência.');
+
+-- Categorias de Cursos
+INSERT IGNORE INTO `categories` (`name`, `slug`, `description`, `icon`, `color`, `order_index`, `is_active`) VALUES
+('Phaser 3', 'phaser-3', 'Desenvolvimento de jogos 2D para web com Phaser.', '🎮', '#6366f1', 1, 1),
+('React & Games', 'react-games', 'Criação de interfaces e jogos usando React.', '⚛️', '#61dafb', 2, 1),
+('Unity', 'unity', 'Desenvolvimento de jogos 3D e 2D com Unity Engine.', '🛠️', '#222c37', 3, 1),
+('Game Design', 'game-design', 'Fundamentos e teorias de design de jogos.', '🎨', '#f59e0b', 4, 1),
+('Programação', 'programacao', 'Lógica de programação aplicada a jogos.', '💻', '#10b981', 5, 1);
+
+-- Cursos de exemplo
+INSERT IGNORE INTO `courses` (`title`, `slug`, `short_description`, `description`, `instructor_id`, `category_id`, `level`, `duration_hours`, `xp_reward`, `coin_reward`, `is_published`, `is_featured`, `is_free`, `total_students`) VALUES
+('Phaser 3: Do Zero ao Jogo Completo', 'phaser-3-zero-jogo', 'Aprenda Phaser 3 criando um RPG de aventura.', 'Neste curso você aprenderá todos os fundamentos do Phaser 3, desde o setup inicial até a publicação do seu jogo.', 3, 1, 'beginner', 12.5, 500, 50, 1, 1, 1, 120),
+('React para Desenvolvedores de Jogos', 'react-para-jogos', 'Interfaces dinâmicas para seus jogos web.', 'Aprenda a integrar React com motores de jogo e criar HUDs incríveis.', 3,(3, 2, 'intermediate', 8.0, 350, 30, 1, 1, 0, 45);
+
+-- Instrutores adicionais (senha: password)
+INSERT IGNORE INTO `users` (`username`, `email`, `password`, `name`, `full_name`, `role`, `is_active`, `status`, `specialization`, `bio`, `avatar`) VALUES
+('ana_art', 'ana@gamedev.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Ana', 'Ana Silva (Pixel Art)', 'instructor', 1, 'active', 'Pixel Art & Animação 2D', 'Artista técnica com foco em estética retrô e animação frame-a-frame.', 'https://i.pravatar.cc/150?u=ana'),
+('bruno_unity', 'bruno@gamedev.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Bruno', 'Bruno Oliveira (Unity)', 'instructor', 1, 'active', 'Unity & C# Programming', 'Engenheiro de software especializado em arquitetura de sistemas para jogos 3D.', 'https://i.pravatar.cc/150?u=bruno');
+
+-- Mais Cursos
+INSERT IGNORE INTO `courses` (`title`, `slug`, `short_description`, `description`, `instructor_id`, `category_id`, `level`, `duration_hours`, `xp_reward`, `coin_reward`, `is_published`, `is_featured`, `is_free`, `thumbnail`, `image`) VALUES
+('Pixel Art para Games: Estilo Top-Down', 'pixel-art-top-down', 'Domine a arte de criar cenários e personagens 2D.', 'Aprenda técnicas de sombreamento, paletas de cores e animação para jogos estilo RPG Maker e Zelda.', 4, 8, 'beginner', 10.0, 400, 40, 1, 1, 0, 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800', 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=1200'),
+('Godot 4: Do Zero ao Primeiro Jogo', 'godot-4-iniciantes', 'Explore o motor de jogos open-source que está conquistando o mundo.', 'Crie um jogo de plataforma completo usando GDScript e as novas ferramentas do Godot 4.', 3, 7, 'beginner', 14.5, 550, 55, 1, 0, 1, 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800', 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1200'),
+('Game Design: A Psicologia do Jogador', 'psicologia-game-design', 'Entenda o que faz um jogo ser divertido e viciante.', 'Aprenda sobre loops de gameplay, sistemas de recompensa e curva de dificuldade.', 3, 4, 'intermediate', 6.0, 300, 25, 1, 1, 0, 'https://images.unsplash.com/photo-1580234811497-9bd7fd04086e?w=800', 'https://images.unsplash.com/photo-1580234811497-9bd7fd04086e?w=1200');
+
+-- Mais Notícias
+INSERT IGNORE INTO `blog_posts` (`title`, `slug`, `excerpt`, `content`, `author_id`, `category_id`, `status`, `is_featured`, `published_at`, `featured_image`) VALUES
+('O Futuro da WebGL no Desenvolvimento de Jogos', 'futuro-webgl-games', 'Como as novas APIs estão mudando o que é possível no navegador.', '<p>Com a chegada do WebGPU, os jogos de navegador estão prestes a dar um salto gigantesco em fidelidade visual.</p>', 3, 5, 'published', 1, NOW(), 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800'),
+('5 Dicas de Pixel Art para Iniciantes', 'dicas-pixel-art-iniciantes', 'Melhore sua arte com técnicas simples de cor e forma.', '<p>Muitos iniciantes cometem erros comuns em paletas. Aqui mostramos como evitar o efeito "dirty pixel".</p>', 4, 8, 'published', 0, NOW(), 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800');
+
+-- Ranking (Leaderboard) - Dados fictícios para amostra
+INSERT IGNORE INTO `weekly_leaderboard` (`user_id`, `week_start`, `xp_earned`, `lessons_completed`) VALUES
+(1, DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY), 1250, 12),
+(2, DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY), 850, 8),
+(3, DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY), 2100, 15);
+
+-- Amostra de Rankings Globais (Points na tabela users)
+UPDATE `users` SET `total_points` = 5000, `experience_points` = 5000 WHERE `id` = 1;
+UPDATE `users` SET `total_points` = 2500, `experience_points` = 2500 WHERE `id` = 2;
+UPDATE `users` SET `total_points` = 3800, `experience_points` = 3800 WHERE `id` = 3;
+UPDATE `users` SET `total_points` = 1200, `experience_points` = 1200 WHERE `id` = 4;
+UPDATE `users` SET `total_points` = 900, `experience_points` = 900 WHERE `id` = 5;
+
+-- Exemplos de Matrículas (Enrollments) para preencher o site
+INSERT IGNORE INTO `enrollments` (`user_id`, `course_id`, `status`, `progress_percent`, `lessons_completed`, `enrolled_at`) VALUES
+(2, 1, 'active', 45.50, 5, DATE_SUB(NOW(), INTERVAL 10 DAY)),
+(5, 1, 'completed', 100.00, 12, DATE_SUB(NOW(), INTERVAL 30 DAY));
+
+COMMIT;
+
+-- Módulos de exemplo
+INSERT IGNORE INTO `course_modules` (`course_id`, `title`, `description`, `sort_order`, `xp_reward`) VALUES
+(1, 'Introdução ao Phaser', 'Conhecendo o motor e ambiente.', 1, 50),
+(1, 'Primeiros Passos', 'Sprites, grupos e física.', 2, 50),
+(2, 'Fundamentos do React', 'Hooks e Componentes.', 1, 40);
+
+-- Lições de exemplo
+INSERT IGNORE INTO `course_lessons` (`module_id`, `course_id`, `title`, `slug`, `content_type`, `video_url`, `video_provider`, `video_duration`, `xp_reward`, `coin_reward`, `sort_order`, `is_published`) VALUES
+(1, 1, 'O que é Phaser?', 'introducao-phaser', 'video', 'https://www.youtube.com/embed/dQw4w9WgXcQ', 'youtube', 10, 10, 1, 1, 1),
+(1, 1, 'Configurando o Ambiente', 'configurando-ambiente', 'video', 'https://www.youtube.com/embed/dQw4w9WgXcQ', 'youtube', 15, 10, 1, 2, 1),
+(2, 1, 'Trabalhando com Sprites', 'trabalhando-sprites', 'video', 'https://www.youtube.com/embed/dQw4w9WgXcQ', 'youtube', 20, 15, 2, 1, 1);
+
+-- Conquistas (Achievements)
+INSERT IGNORE INTO `achievements` (`name`, `slug`, `description`, `icon`, `xp_reward`, `coin_reward`, `requirement_type`, `requirement_value`) VALUES
+('Primeiros Passos', 'primeiros-passos', 'Concluiu sua primeira lição.', '🌱', 50, 10, 'lessons_completed', 1),
+('Estudante Dedicado', 'estudante-dedicado', 'Concluiu 10 lições.', '📚', 200, 50, 'lessons_completed', 10),
+('Mestre do Phaser', 'mestre-phaser', 'Concluiu o curso de Phaser 3.', '👑', 500, 100, 'courses_completed', 1);
+
+
+-- Notícias (Blog Posts)
+INSERT IGNORE INTO `blog_posts` (`title`, `slug`, `excerpt`, `content`, `author_id`, `category_id`, `status`, `is_featured`, `published_at`) VALUES
+('Bem-vindo ao GameDev Academy!', 'bem-vindo', 'Estamos felizes em anunciar nossa nova plataforma.', '<p>Olá desenvolvedores! É com muita alegria que lançamos a GameDev Academy, sua nova casa para aprender desenvolvimento de jogos.</p>', 1, 5, 'published', 1, NOW()),
+('Phaser 3.60: O que há de novo?', 'phaser-3-60-novidades', 'Confira as principais mudanças na nova versão do Phaser.', '<p>A nova versão do Phaser traz melhorias significativas em performance e novos recursos para física.</p>', 3, 1, 'published', 0, NOW());
+
+COMMIT;

@@ -3,7 +3,7 @@
 
 class News {
     private $db;
-    private $table = 'news';
+    private $table = 'blog_posts';
     
     public function __construct($database = null) {
         if ($database) {
@@ -103,7 +103,7 @@ class News {
         $params = ['status' => 'published'];
         
         if ($category) {
-            $where[] = 'category = :category';
+            $where[] = 'category_id = :category';
             $params['category'] = $category;
         }
         

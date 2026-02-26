@@ -81,8 +81,8 @@ CREATE TABLE courses (
     slug VARCHAR(200) UNIQUE NOT NULL,
     description TEXT,
     thumbnail VARCHAR(255),
-    difficulty ENUM('beginner', 'intermediate', 'advanced') DEFAULT 'beginner',
-    estimated_hours INT DEFAULT 0,
+    level ENUM('beginner', 'intermediate', 'advanced') DEFAULT 'beginner',
+    duration_hours INT DEFAULT 0,
     xp_reward INT DEFAULT 100,
     coin_reward INT DEFAULT 10,
     is_free TINYINT(1) DEFAULT 0,
@@ -261,7 +261,7 @@ INSERT INTO users (username, email, password, full_name, role, xp_total, level) 
 ('admin', 'admin@gamedev.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Administrador', 'admin', 0, 1);
 
 -- Curso de exemplo
-INSERT INTO courses (category_id, title, slug, description, difficulty, estimated_hours, xp_reward, is_free, is_published, instructor_id) VALUES
+INSERT INTO courses (category_id, title, slug, description, level, duration_hours, xp_reward, is_free, is_published, instructor_id) VALUES
 (1, 'Introdução ao Phaser 3', 'introducao-phaser-3', 'Aprenda os fundamentos do Phaser 3 e crie seu primeiro jogo 2D!', 'beginner', 5, 200, 1, 1, 1),
 (2, 'React do Zero ao Avançado', 'react-zero-avancado', 'Domine React com hooks, context e muito mais!', 'intermediate', 15, 500, 0, 1, 1);
 

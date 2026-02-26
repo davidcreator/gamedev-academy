@@ -466,38 +466,38 @@ if (!function_exists('getAvatar')) {
 // ====================================================================
 
 if (!function_exists('getDifficultyBadge')) {
-    function getDifficultyBadge(?string $difficulty): string {
+    function getDifficultyBadge(?string $level): string {
         $badges = [
             'beginner' => '<span class="badge bg-success">Iniciante</span>',
             'intermediate' => '<span class="badge bg-warning text-dark">Intermediário</span>',
             'advanced' => '<span class="badge bg-danger">Avançado</span>',
             'expert' => '<span class="badge bg-dark">Expert</span>'
         ];
-        return $badges[$difficulty] ?? $badges['beginner'];
+        return $badges[$level] ?? $badges['beginner'];
     }
 }
 
 if (!function_exists('getDifficultyText')) {
-    function getDifficultyText(?string $difficulty): string {
+    function getDifficultyText(?string $level): string {
         $texts = [
             'beginner' => 'Iniciante',
             'intermediate' => 'Intermediário',
             'advanced' => 'Avançado',
             'expert' => 'Expert'
         ];
-        return $texts[$difficulty] ?? 'Iniciante';
+        return $texts[$level] ?? 'Iniciante';
     }
 }
 
 if (!function_exists('getDifficultyColor')) {
-    function getDifficultyColor(?string $difficulty): string {
+    function getDifficultyColor(?string $level): string {
         $colors = [
             'beginner' => 'success',
             'intermediate' => 'warning',
             'advanced' => 'danger',
             'expert' => 'dark'
         ];
-        return $colors[$difficulty] ?? 'success';
+        return $colors[$level] ?? 'success';
     }
 }
 

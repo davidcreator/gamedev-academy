@@ -72,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 </td>
                 <td><?= escape($course['category_name'] ?? 'Sem categoria') ?></td>
-                <td><?= getDifficultyBadge($course['difficulty']) ?></td>
+                <td><?= getDifficultyBadge($course['level'] ?? 'beginner') ?></td>
                 <td><?= $course['total_modules'] ?? 0 ?></td>
                 <td>
                     <span class="badge badge-primary"><?= $course['total_students'] ?></span>

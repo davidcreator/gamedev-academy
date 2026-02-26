@@ -152,7 +152,7 @@ $recentActivity = $db->fetchAll(
                         <div>
                             <div><?= escape($course['title']) ?></div>
                             <div style="font-size: 0.8rem; color: var(--gray-500);">
-                                <?= getDifficultyText($course['difficulty']) ?>
+                                <?= getDifficultyText($course['level']) ?>
                             </div>
                         </div>
                     </td>

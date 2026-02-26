@@ -20,7 +20,7 @@ $courseId = intval($_GET['course_id'] ?? 0);
 // Validar ID
 if ($id <= 0) {
     flash('error', 'ID da lição inválido.');
-    redirect(url('admin/lessons/list.php'));
+    redirect(url('admin/lessons/lessons-list.php'));
 }
 
 // Buscar lição
@@ -28,15 +28,15 @@ $lesson = $db->fetch("
     SELECT l.*, 
            m.title as module_title,
            c.title as course_title
-    FROM lessons l
-    LEFT JOIN modules m ON l.module_id = m.id
+    FROM course_lessons l
+     LEFT JOIN course_modules m ON l.module_id = m.id
     LEFT JOIN courses c ON m.course_id = c.id
     WHERE l.id = ?
 ", [$id]);
 
 if (!$lesson) {
     flash('error', 'Lição não encontrada.');
-    redirect(url('admin/lessons/list.php?module_id=' . $moduleId . '&course_id=' . $courseId));
+    redirect(url('admin/lessons/lessons-list.php?module_id=' . $moduleId . '&course_id=' . $courseId));
 }
 
 // Se for requisição POST, executar exclusão
@@ -51,27 +51,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $db->delete('lesson_progress', 'lesson_id = ?', [$id]);
     
     // Excluir a lição
-    $deleted = $db->delete('lessons', 'id = ?', [$id]);
+    $deleted = $db->delete('course_lessons', 'id = ?', [$id]);
     
     if ($deleted) {
-        // Reordenar as lições restantes do módulo
+        // Reordenar lições restantes no módulo
         $remainingLessons = $db->fetchAll(
-            "SELECT id FROM lessons WHERE module_id = ? ORDER BY order_position ASC",
-            [$lesson['module_id']]
+            "SELECT id FROM course_lessons WHERE module_id = ? ORDER BY sort_order ASC",
+            [$moduleId]
         );
         
         foreach ($remainingLessons as $order => $remaining) {
-            $db->update('lessons', [
-                'order_position' => $order + 1
-            ], 'id = :id', ['id' => $remaining['id']]);
+            $db->update('course_lessons', [
+                'sort_order' => $order + 1
+            ], 'id = ?', [$remaining['id']]);
         }
+    }
         
         flash('success', 'Lição excluída com sucesso!');
     } else {
         flash('error', 'Erro ao excluir lição.');
     }
     
-    redirect(url('admin/lessons/list.php?module_id=' . $moduleId . '&course_id=' . $courseId));
+    redirect(url('admin/lessons/lessons-list.php?module_id=' . $moduleId . '&course_id=' . $courseId));
 }
 
 // Mostrar página de confirmação

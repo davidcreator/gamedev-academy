@@ -129,7 +129,7 @@ try {
     $siteStats['total_students'] = $stmt->fetchColumn() ?: 0;
     
     // Total de lições
-    $stmt = $pdo->query("SELECT COUNT(*) FROM lessons WHERE is_published = 1");
+    $stmt = $pdo->query("SELECT COUNT(*) FROM course_lessons WHERE is_published = 1");
     $siteStats['total_lessons'] = $stmt->fetchColumn() ?: 0;
     
     // Total de cursos completados
@@ -383,8 +383,8 @@ include __DIR__ . '/includes/header.php';
                     <?php if ($course['is_free']): ?>
                         <span class="badge badge-free">Grátis</span>
                     <?php endif; ?>
-                    <span class="badge badge-difficulty badge-<?= $course['difficulty'] ?>">
-                        <?= ucfirst($course['difficulty']) ?>
+                    <span class="badge badge-difficulty badge-<?= $course['level'] ?>">
+                        <?= ucfirst($course['level']) ?>
                     </span>
                 </div>
                 
@@ -411,7 +411,7 @@ include __DIR__ . '/includes/header.php';
                         </div>
                         <div class="meta-item">
                             <span class="meta-icon">⏱️</span>
-                            <span><?= $course['estimated_hours'] ?>h</span>
+                            <span><?= $course['duration_hours'] ?>h</span>
                         </div>
                         <div class="meta-item">
                             <span class="meta-icon">⭐</span>

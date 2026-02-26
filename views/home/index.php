@@ -58,7 +58,7 @@
                     <h3><?= $course['title'] ?></h3>
                     <p><?= $course['description'] ?></p>
                     <div class="course-meta">
-                        <span>⏱️ <?= $course['estimated_hours'] ?>h</span>
+                        <span>⏱️ <?= $course['duration_hours'] ?>h</span>
                         <span>⚡ <?= $course['xp_reward'] ?> XP</span>
                     </div>
                 </div>

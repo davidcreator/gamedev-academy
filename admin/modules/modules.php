@@ -22,9 +22,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'course_id' => $courseId,
             'title' => trim($_POST['title'] ?? ''),
             'description' => trim($_POST['description'] ?? ''),
-            'order_index' => intval($_POST['order_index'] ?? 0),
+            'sort_order' => intval($_POST['order_index'] ?? 0),
             'xp_reward' => intval($_POST['xp_reward'] ?? 50),
-            'estimated_minutes' => intval($_POST['estimated_minutes'] ?? 0),
+            'duration_minutes' => intval($_POST['estimated_minutes'] ?? 0),
             'is_published' => isset($_POST['is_published']) ? 1 : 0,
             'is_free_preview' => isset($_POST['is_free_preview']) ? 1 : 0,
             'unlock_after_module' => intval($_POST['unlock_after_module'] ?? 0) ?: null,
@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$data['title']) {
             flash('error', 'Informe o título do módulo.');
         } else {
-            $db->insert('modules', $data);
+            $db->insert('course_modules', $data);
             flash('success', 'Módulo criado com sucesso!');
         }
         redirect(url('admin/modules/modules.php?course_id=' . $courseId));
@@ -44,14 +44,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $data = [
                 'title' => trim($_POST['title'] ?? ''),
                 'description' => trim($_POST['description'] ?? ''),
-                'order_index' => intval($_POST['order_index'] ?? 0),
+                'sort_order' => intval($_POST['order_index'] ?? 0),
                 'xp_reward' => intval($_POST['xp_reward'] ?? 50),
-                'estimated_minutes' => intval($_POST['estimated_minutes'] ?? 0),
+                'duration_minutes' => intval($_POST['estimated_minutes'] ?? 0),
                 'is_published' => isset($_POST['is_published']) ? 1 : 0,
                 'is_free_preview' => isset($_POST['is_free_preview']) ? 1 : 0,
                 'unlock_after_module' => intval($_POST['unlock_after_module'] ?? 0) ?: null,
             ];
-            $db->update('modules', $data, 'id = :id', ['id' => $id]);
+            $db->update('course_modules', $data, 'id = :id', ['id' => $id]);
             flash('success', 'Módulo atualizado!');
         }
         redirect(url('admin/modules/modules.php?course_id=' . $courseId));
@@ -60,21 +60,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'delete') {
         $id = intval($_POST['id'] ?? 0);
         if ($id) {
-            $db->delete('modules', 'id = :id', ['id' => $id]);
+            $db->delete('course_modules', 'id = :id', ['id' => $id]);
             flash('success', 'Módulo removido!');
         }
         redirect(url('admin/modules/modules.php?course_id=' . $courseId));
     }
 }
 
-$modules = $courseModel->getModules($courseId);
+$modules = $db->fetchAll("SELECT * FROM course_modules WHERE course_id = ? ORDER BY sort_order ASC", [$courseId]);
 ?>
 
 <?= showFlashMessages() ?>
 
 <div class="d-flex justify-between align-center mb-4">
     <div>
-        <a href="<?= url('admin/courses/course-edit.php?id=' . $course['id']) ?>" class="btn btn-secondary">← Voltar</a>
+        <a href="<?= url('admin/courses/courses.php') ?>" class="btn btn-secondary">← Voltar</a>
     </div>
     <div class="d-flex align-center gap-2">
         <h2><?= escape($course['title']) ?></h2>
@@ -99,43 +99,36 @@ $modules = $courseModel->getModules($courseId);
                 <label>Ordem
                     <input type="number" name="order_index" class="form-control" value="<?= count($modules) ?>">
                 </label>
-                <label>XP
+                <label>XP ao Concluir
                     <input type="number" name="xp_reward" class="form-control" value="50">
                 </label>
-                <label>Minutos
+                <label>Minutos Estimados
                     <input type="number" name="estimated_minutes" class="form-control" value="0">
                 </label>
             </div>
-            <div class="d-flex gap-2">
+            <div class="d-flex align-center gap-2 mt-2">
                 <label class="d-flex align-center gap-1">
-                    <input type="checkbox" name="is_published"> Publicado
+                    <input type="checkbox" name="is_published" checked> Publicado
                 </label>
                 <label class="d-flex align-center gap-1">
-                    <input type="checkbox" name="is_free_preview"> Prévia grátis
+                    <input type="checkbox" name="is_free_preview"> Preview Grátis
                 </label>
             </div>
-            <label>Desbloquear após módulo (ID)
-                <input type="number" name="unlock_after_module" class="form-control" min="0">
-            </label>
-            <div class="mt-2">
-                <button class="btn btn-success" type="submit">Salvar</button>
-                <button class="btn btn-secondary" type="button" onclick="this.closest('#create-module').setAttribute('hidden','')">Cancelar</button>
+            <div class="mt-3 grid-full">
+                <button type="submit" class="btn btn-primary">Criar Módulo</button>
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('create-module').setAttribute('hidden', 'true')">Cancelar</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Lista de Módulos -->
 <div class="admin-table-container">
     <table class="admin-table">
         <thead>
             <tr>
-                <th>ID</th>
-                <th>Título</th>
                 <th>Ordem</th>
+                <th>Título</th>
                 <th>Lições</th>
-                <th>XP</th>
-                <th>Minutos</th>
                 <th>Status</th>
                 <th>Ações</th>
             </tr>
@@ -143,12 +136,17 @@ $modules = $courseModel->getModules($courseId);
         <tbody>
             <?php foreach ($modules as $m): ?>
             <tr>
-                <td>#<?= $m['id'] ?></td>
-                <td><?= escape($m['title']) ?></td>
-                <td><?= intval($m['order_index']) ?></td>
-                <td><?= intval($m['total_lessons'] ?? 0) ?></td>
-                <td><?= intval($m['xp_reward']) ?></td>
-                <td><?= intval($m['estimated_minutes']) ?></td>
+                <td><?= $m['sort_order'] ?></td>
+                <td>
+                    <strong><?= escape($m['title']) ?></strong>
+                    <div class="text-muted small"><?= escape($m['description']) ?></div>
+                </td>
+                <td>
+                    <?php
+                    $lessonCount = $db->fetch("SELECT COUNT(*) as count FROM course_lessons WHERE module_id = ?", [$m['id']])['count'];
+                    echo $lessonCount;
+                    ?>
+                </td>
                 <td>
                     <span class="badge <?= $m['is_published'] ? 'badge-success' : 'badge-warning' ?>">
                         <?= $m['is_published'] ? 'Publicado' : 'Rascunho' ?>
@@ -156,58 +154,13 @@ $modules = $courseModel->getModules($courseId);
                 </td>
                 <td>
                     <div class="admin-actions">
-                        <button class="btn-action edit" title="Editar" onclick="toggleEdit(<?= $m['id'] ?>)">✏️</button>
                         <a href="<?= url('admin/lessons/lessons.php?module_id=' . $m['id'] . '&course_id=' . $courseId) ?>" class="btn-action" title="Lições">📖</a>
-                        <form method="POST" class="d-inline" onsubmit="return confirm('Remover este módulo?')">
+                        <button class="btn-action edit" onclick="editModule(<?= htmlspecialchars(json_encode($m)) ?>)">✏️</button>
+                        <form method="POST" class="d-inline" onsubmit="return confirm('Excluir módulo e todas as suas lições?')">
                             <input type="hidden" name="action" value="delete">
                             <input type="hidden" name="id" value="<?= $m['id'] ?>">
-                            <button class="btn-action delete" title="Deletar">🗑️</button>
+                            <button type="submit" class="btn-action delete">🗑️</button>
                         </form>
-                    </div>
-                </td>
-            </tr>
-            <tr id="edit-<?= $m['id'] ?>" hidden>
-                <td colspan="8">
-                    <div class="card">
-                        <div class="card-body">
-                            <h4 class="card-title">Editar Módulo #<?= $m['id'] ?></h4>
-                            <form method="POST" class="grid-cols-2 gap-2">
-                                <input type="hidden" name="action" value="update">
-                                <input type="hidden" name="id" value="<?= $m['id'] ?>">
-                                <label>Título
-                                    <input type="text" name="title" class="form-control" value="<?= escape($m['title']) ?>" required>
-                                </label>
-                                <label>Descrição
-                                    <input type="text" name="description" class="form-control" value="<?= escape($m['description'] ?? '') ?>">
-                                </label>
-                                <div class="d-flex gap-2">
-                                    <label>Ordem
-                                        <input type="number" name="order_index" class="form-control" value="<?= intval($m['order_index']) ?>">
-                                    </label>
-                                    <label>XP
-                                        <input type="number" name="xp_reward" class="form-control" value="<?= intval($m['xp_reward']) ?>">
-                                    </label>
-                                    <label>Minutos
-                                        <input type="number" name="estimated_minutes" class="form-control" value="<?= intval($m['estimated_minutes']) ?>">
-                                    </label>
-                                </div>
-                                <div class="d-flex gap-2">
-                                    <label class="d-flex align-center gap-1">
-                                        <input type="checkbox" name="is_published" <?= $m['is_published'] ? 'checked' : '' ?>> Publicado
-                                    </label>
-                                    <label class="d-flex align-center gap-1">
-                                        <input type="checkbox" name="is_free_preview" <?= $m['is_free_preview'] ? 'checked' : '' ?>> Prévia grátis
-                                    </label>
-                                </div>
-                                <label>Desbloquear após módulo (ID)
-                                    <input type="number" name="unlock_after_module" class="form-control" value="<?= intval($m['unlock_after_module'] ?? 0) ?>">
-                                </label>
-                                <div class="mt-2">
-                                    <button class="btn btn-success" type="submit">Salvar</button>
-                                    <button class="btn btn-secondary" type="button" onclick="toggleEdit(<?= $m['id'] ?>)">Cancelar</button>
-                                </div>
-                            </form>
-                        </div>
                     </div>
                 </td>
             </tr>
@@ -216,10 +169,55 @@ $modules = $courseModel->getModules($courseId);
     </table>
 </div>
 
+<!-- Modal de Edição (Simples) -->
+<div id="edit-module-container" hidden>
+    <div class="modal-backdrop" onclick="closeEdit()"></div>
+    <div class="modal-content card" style="max-width: 600px;">
+        <div class="card-body">
+            <h3>Editar Módulo</h3>
+            <form method="POST">
+                <input type="hidden" name="action" value="update">
+                <input type="hidden" name="id" id="edit-id">
+                
+                <div class="mb-2">
+                    <label>Título</label>
+                    <input type="text" name="title" id="edit-title" class="form-control" required>
+                </div>
+                
+                <div class="mb-2">
+                    <label>Descrição</label>
+                    <textarea name="description" id="edit-description" class="form-control"></textarea>
+                </div>
+                
+                <div class="grid-cols-2 gap-2">
+                    <label>Ordem
+                        <input type="number" name="order_index" id="edit-order" class="form-control">
+                    </label>
+                    <label>XP ao Concluir
+                        <input type="number" name="xp_reward" id="edit-xp" class="form-control">
+                    </label>
+                </div>
+                
+                <div class="mt-3">
+                    <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeEdit()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
-function toggleEdit(id) {
-    const tr = document.getElementById('edit-' + id);
-    if (tr.hasAttribute('hidden')) tr.removeAttribute('hidden'); else tr.setAttribute('hidden','');
+function editModule(m) {
+    document.getElementById('edit-id').value = m.id;
+    document.getElementById('edit-title').value = m.title;
+    document.getElementById('edit-description').value = m.description || '';
+    document.getElementById('edit-order').value = m.sort_order;
+    document.getElementById('edit-xp').value = m.xp_reward;
+    document.getElementById('edit-module-container').removeAttribute('hidden');
+}
+function closeEdit() {
+    document.getElementById('edit-module-container').setAttribute('hidden', 'true');
 }
 </script>
 

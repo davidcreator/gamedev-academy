@@ -9,7 +9,7 @@ if ($lesson_id <= 0) {
 }
 
 try {
-    $stmt = $pdo->prepare("SELECT * FROM lessons WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT * FROM course_lessons WHERE id = ?");
     $stmt->execute([$lesson_id]);
     $lesson = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -34,10 +34,10 @@ try {
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1>Visualizar Aula</h1>
             <div>
-                <a href="edit.php?id=<?php echo $lesson_id; ?>" class="btn btn-primary">
+                <a href="lessons-edit.php?id=<?php echo $lesson_id; ?>" class="btn btn-primary">
                     <i class="bi bi-pencil"></i> Editar
                 </a>
-                <a href="index.php" class="btn btn-secondary">
+                <a href="lessons-list.php" class="btn btn-secondary">
                     <i class="bi bi-arrow-left"></i> Voltar
                 </a>
             </div>
@@ -49,9 +49,9 @@ try {
                     <div class="card-body">
                         <h2><?php echo htmlspecialchars($lesson['title'] ?? ''); ?></h2>
                         
-                        <?php if (!empty($lesson['description'])): ?>
+                        <?php if (!empty($lesson['summary'])): ?>
                         <p class="lead text-muted">
-                            <?php echo htmlspecialchars($lesson['description']); ?>
+                            <?php echo htmlspecialchars($lesson['summary']); ?>
                         </p>
                         <?php endif; ?>
                         
@@ -79,7 +79,7 @@ try {
                         <hr>
                         
                         <div class="d-grid gap-2">
-                            <a href="edit.php?id=<?php echo $lesson_id; ?>" class="btn btn-primary">
+                            <a href="lessons-edit.php?id=<?php echo $lesson_id; ?>" class="btn btn-primary">
                                 <i class="bi bi-pencil"></i> Editar
                             </a>
                         </div>
