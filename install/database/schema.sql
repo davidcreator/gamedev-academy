@@ -753,6 +753,7 @@ CREATE TABLE `courses` (
     `image`             VARCHAR(500)     DEFAULT NULL,
     `cover_image`       VARCHAR(500)     DEFAULT NULL                    COMMENT 'Alias para thumbnail',
     `preview_video`     VARCHAR(500)     DEFAULT NULL,
+    `trailer_url`       VARCHAR(500)     DEFAULT NULL,
     `instructor_id`     INT UNSIGNED     NOT NULL,
     `category_id`       INT UNSIGNED     DEFAULT NULL,
     `level`             ENUM('beginner','intermediate','advanced','expert','all_levels')
@@ -1370,6 +1371,7 @@ CREATE TABLE `course_lessons` (
     `video_thumbnail`  VARCHAR(500)     DEFAULT NULL,
     `xp_reward`        INT UNSIGNED     NOT NULL DEFAULT 10,
     `coin_reward`      INT UNSIGNED     NOT NULL DEFAULT 1,
+    `attachment_url`   VARCHAR(500)     DEFAULT NULL,
     `attachments`      JSON             DEFAULT NULL,
     `resources`        JSON             DEFAULT NULL,
     `sort_order`       INT              NOT NULL DEFAULT 0,

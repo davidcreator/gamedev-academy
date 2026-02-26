@@ -190,7 +190,7 @@ showFlashMessages()
                 <td>#<?= $l['id'] ?></td>
                 <td><?= escape($l['title']) ?></td>
                 <td><span class="badge badge-secondary"><?= escape($l['content_type']) ?></span></td>
-                <td><?= intval($l['order_index']) ?></td>
+                <td><?= intval($l['sort_order']) ?></td>
                 <td><?= intval($l['xp_reward']) ?></td>
                 <td><?= intval($l['coin_reward']) ?></td>
                 <td>
@@ -232,7 +232,7 @@ showFlashMessages()
                                 </label>
                                 <div class="d-flex gap-2">
                                     <label>Ordem
-                                        <input type="number" name="order_index" class="form-control" value="<?= intval($l['order_index']) ?>">
+                                        <input type="number" name="order_index" class="form-control" value="<?= intval($l['sort_order']) ?>">
                                     </label>
                                     <label>XP
                                         <input type="number" name="xp_reward" class="form-control" value="<?= intval($l['xp_reward']) ?>">

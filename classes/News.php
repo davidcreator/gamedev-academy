@@ -115,7 +115,7 @@ class News {
         $whereClause = implode(' AND ', $where);
         
         // Verificar se as tabelas relacionadas existem
-        $sql = "SELECT n.*";
+        $sql = "SELECT n.*, n.featured_image as thumbnail, c.name as category";
         
         // Adicionar joins apenas se as tabelas existirem
         if ($this->tableExists('users')) {
@@ -131,6 +131,7 @@ class News {
         }
         
         $sql .= " FROM {$this->table} n";
+        $sql .= " LEFT JOIN categories c ON n.category_id = c.id";
         
         if ($this->tableExists('users')) {
             $sql .= " LEFT JOIN users u ON n.author_id = u.id";
@@ -163,7 +164,7 @@ class News {
         $this->checkConnection();
         
         try {
-            $sql = "SELECT n.*";
+            $sql = "SELECT n.*, n.featured_image as thumbnail, c.name as category";
             
             if ($this->tableExists('users')) {
                 $sql .= ", u.username as author_name, u.avatar as author_avatar";
@@ -174,6 +175,7 @@ class News {
             }
             
             $sql .= " FROM {$this->table} n";
+            $sql .= " LEFT JOIN categories c ON n.category_id = c.id";
             
             if ($this->tableExists('users')) {
                 $sql .= " LEFT JOIN users u ON n.author_id = u.id";
@@ -202,25 +204,26 @@ class News {
         $this->checkConnection();
         
         try {
-            // Verificar se a coluna 'featured' existe
-            if (!$this->columnExists($this->table, 'featured')) {
+            // Verificar se a coluna 'is_featured' existe
+            if (!$this->columnExists($this->table, 'is_featured')) {
                 return $this->getLatest($limit); // Fallback para últimas notícias
             }
             
-            $sql = "SELECT n.*";
+            $sql = "SELECT n.*, n.featured_image as thumbnail, c.name as category";
             
             if ($this->tableExists('users')) {
                 $sql .= ", u.username as author_name, u.avatar as author_avatar";
             }
             
             $sql .= " FROM {$this->table} n";
+            $sql .= " LEFT JOIN categories c ON n.category_id = c.id";
             
             if ($this->tableExists('users')) {
                 $sql .= " LEFT JOIN users u ON n.author_id = u.id";
             }
             
             $sql .= " WHERE n.status = 'published' 
-                      AND n.featured = 1
+                      AND n.is_featured = 1
                       AND (n.published_at IS NULL OR n.published_at <= NOW())
                       ORDER BY n.published_at DESC, n.created_at DESC
                       LIMIT :limit";
@@ -239,17 +242,18 @@ class News {
     /**
      * Obter notícias relacionadas
      */
-    public function getRelated($newsId, $category, $limit = 4) {
+    public function getRelated($newsId, $category_id, $limit = 4) {
         $this->checkConnection();
         
         try {
-            $sql = "SELECT n.*";
+            $sql = "SELECT n.*, n.featured_image as thumbnail, c.name as category";
             
             if ($this->tableExists('users')) {
                 $sql .= ", u.username as author_name";
             }
             
             $sql .= " FROM {$this->table} n";
+            $sql .= " LEFT JOIN categories c ON n.category_id = c.id";
             
             if ($this->tableExists('users')) {
                 $sql .= " LEFT JOIN users u ON n.author_id = u.id";
@@ -257,14 +261,14 @@ class News {
             
             $sql .= " WHERE n.status = 'published' 
                       AND n.id != :news_id
-                      AND n.category = :category
+                      AND n.category_id = :category_id
                       AND (n.published_at IS NULL OR n.published_at <= NOW())
                       ORDER BY n.published_at DESC, n.created_at DESC
                       LIMIT :limit";
             
             $stmt = $this->db->prepare($sql);
             $stmt->bindValue('news_id', $newsId, PDO::PARAM_INT);
-            $stmt->bindValue('category', $category);
+            $stmt->bindValue('category_id', $category_id);
             $stmt->bindValue('limit', $limit, PDO::PARAM_INT);
             $stmt->execute();
             
@@ -282,7 +286,7 @@ class News {
         $this->checkConnection();
         
         try {
-            $sql = "SELECT n.*";
+            $sql = "SELECT n.*, n.featured_image as thumbnail, c.name as category";
             
             if ($this->tableExists('users')) {
                 $sql .= ", u.username as author_name, u.avatar as author_avatar, u.bio as author_bio";
@@ -297,6 +301,7 @@ class News {
             }
             
             $sql .= " FROM {$this->table} n";
+            $sql .= " LEFT JOIN categories c ON n.category_id = c.id";
             
             if ($this->tableExists('users')) {
                 $sql .= " LEFT JOIN users u ON n.author_id = u.id";

@@ -146,7 +146,7 @@ EditorJSLoader::renderStyles();
                                     <option value="vimeo">Vimeo</option>
                                     <option value="cloudflare">Cloudflare</option>
                                     <option value="bunny">Bunny</option>
-                                    <option value="self">Próprio</option>
+                                    <option value="self_hosted">Próprio</option>
                                 </select>
                             </div>
                         </div>

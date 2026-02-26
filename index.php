@@ -275,16 +275,18 @@ $totalCourses = $courseModel->count();
                 <?php foreach ($latestNews as $news): ?>
                 <a href="<?= url('news/' . $news['slug']) ?>" class="news-card">
                     <div class="news-thumbnail">
-                        <?php if ($news['thumbnail']): ?>
+                        <?php if (!empty($news['thumbnail'])): ?>
                             <img src="<?= url('uploads/news/' . $news['thumbnail']) ?>" alt="">
+                        <?php elseif (!empty($news['featured_image'])): ?>
+                            <img src="<?= url('uploads/news/' . $news['featured_image']) ?>" alt="">
                         <?php else: ?>
                             📰
                         <?php endif; ?>
                     </div>
                     <div class="news-content">
-                        <span class="news-category"><?= escape($news['category']) ?></span>
+                        <span class="news-category"><?= escape($news['category'] ?? 'Geral') ?></span>
                         <h3 class="news-title"><?= escape($news['title']) ?></h3>
-                        <p class="news-excerpt"><?= escape(truncate($news['excerpt'], 120)) ?></p>
+                        <p class="news-excerpt"><?= escape(truncate($news['excerpt'] ?? $news['content'], 120)) ?></p>
                         <div class="news-meta">
                             <span><?= escape($news['author_name'] ?? 'Admin') ?></span>
                             <span><?= timeAgo($news['published_at'] ?? $news['created_at']) ?></span>

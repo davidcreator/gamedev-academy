@@ -163,7 +163,7 @@ EditorJSLoader::renderStyles();
                                 <label class="form-label fw-bold">Provedor</label>
                                 <select name="video_provider" class="form-select border-2">
                                     <?php 
-                                    $providers = ['youtube' => 'YouTube', 'vimeo' => 'Vimeo', 'cloudflare' => 'Cloudflare', 'bunny' => 'Bunny', 'self' => 'Próprio'];
+                                    $providers = ['youtube' => 'YouTube', 'vimeo' => 'Vimeo', 'cloudflare' => 'Cloudflare', 'bunny' => 'Bunny', 'self_hosted' => 'Próprio'];
                                     foreach ($providers as $k => $v): 
                                     ?>
                                         <option value="<?= $k ?>" <?= ($lesson['video_provider'] ?? 'youtube') === $k ? 'selected' : '' ?>><?= $v ?></option>

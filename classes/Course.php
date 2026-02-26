@@ -49,7 +49,8 @@ class Course {
     
     public function getFeatured(int $limit = 6): array {
         return $this->db->fetchAll(
-            "SELECT c.*, cat.name as category_name 
+            "SELECT c.*, cat.name as category_name,
+             (SELECT COUNT(*) FROM course_modules WHERE course_id = c.id) as total_modules
              FROM courses c 
              LEFT JOIN categories cat ON c.category_id = cat.id 
              WHERE c.is_published = 1 

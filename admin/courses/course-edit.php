@@ -38,14 +38,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (!$data['title']) {
         flash('error', 'Informe o título do curso.');
+    } elseif (!$data['instructor_id']) {
+        flash('error', 'Selecione um instrutor para o curso.');
     } else {
-        if ($isEdit) {
-            $courseModel->update($id, $data);
-            flash('success', 'Curso atualizado com sucesso!');
-        } else {
-            $newId = $courseModel->create($data);
-            flash('success', 'Curso criado com sucesso!');
-            redirect(url('admin/courses/course-edit.php?id=' . $newId));
+        try {
+            if ($isEdit) {
+                $courseModel->update($id, $data);
+                flash('success', 'Curso atualizado com sucesso!');
+            } else {
+                $newId = $courseModel->create($data);
+                flash('success', 'Curso criado com sucesso!');
+                redirect(url('admin/courses/course-edit.php?id=' . $newId));
+            }
+        } catch (PDOException $e) {
+            flash('error', 'Erro ao salvar no banco de dados: ' . $e->getMessage());
         }
     }
 }
