@@ -55,95 +55,96 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 
-<div class="mb-4">
-    <a href="<?= url('admin/users/users.php') ?>" class="btn btn-secondary">← Voltar para Lista</a>
-</div>
+<div class="wrapper-container">
+    <div class="mb-4">
+        <a href="<?= url('admin/users/users.php') ?>" class="btn btn-secondary">← Voltar para Lista</a>
+    </div>
 
-<?= showFlashMessages() ?>
+    <?= showFlashMessages() ?>
 
-<div class="card p-4" style="max-width: 800px; margin: 0 auto;">
-    <h2 class="mb-4">Editar Usuário: <?= escape($user['username']) ?></h2>
-    
-    <form method="POST">
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <label class="form-label">Nome Completo <span class="text-danger">*</span></label>
-                <input type="text" name="full_name" class="form-control" 
-                       value="<?= escape($user['full_name']) ?>" required>
-            </div>
-            
-            <div class="col-md-6 mb-3">
-                <label class="form-label">Username <span class="text-danger">*</span></label>
-                <input type="text" name="username" class="form-control" 
-                       value="<?= escape($user['username']) ?>" required>
-            </div>
-        </div>
+    <div class="card" style="max-width: 800px; margin: 0 auto; padding: 35px;">
+        <h2 class="mb-4">Editar Usuário: <?= escape($user['username']) ?></h2>
         
-        <div class="mb-3">
-            <label class="form-label">Email <span class="text-danger">*</span></label>
-            <input type="email" name="email" class="form-control" 
-                   value="<?= escape($user['email']) ?>" required>
-        </div>
-        
-        <div class="mb-3">
-            <label class="form-label">Senha (Deixe em branco para manter a atual)</label>
-            <input type="password" name="password" class="form-control" 
-                   placeholder="Nova senha...">
-        </div>
-        
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <label class="form-label">Cargo</label>
-                <select name="role" class="form-control">
-                    <option value="student" <?= $user['role'] === 'student' ? 'selected' : '' ?>>Estudante</option>
-                    <option value="instructor" <?= $user['role'] === 'instructor' ? 'selected' : '' ?>>Instrutor</option>
-                    <option value="admin" <?= $user['role'] === 'admin' ? 'selected' : '' ?>>Administrador</option>
-                </select>
-            </div>
-            
-            <div class="col-md-6 mb-3">
-                <label class="form-label">Status</label>
-                <div class="form-check mt-2">
-                    <input type="checkbox" name="is_active" id="is_active" class="form-check-input" 
-                           <?= $user['is_active'] ? 'checked' : '' ?>>
-                    <label class="form-check-label" for="is_active">Conta Ativa</label>
+        <form method="POST">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Nome Completo <span class="text-danger">*</span></label>
+                    <input type="text" name="full_name" class="form-control" 
+                        value="<?= escape($user['full_name']) ?>" required>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Username <span class="text-danger">*</span></label>
+                    <input type="text" name="username" class="form-control" 
+                        value="<?= escape($user['username']) ?>" required>
                 </div>
             </div>
-        </div>
-        
-        <hr class="my-4">
-        <h3 class="mb-3">Gamificação</h3>
-        
-        <div class="row">
-            <div class="col-md-4 mb-3">
-                <label class="form-label">Nível</label>
-                <input type="number" name="level" class="form-control" min="1" 
-                       value="<?= $user['level'] ?>">
+            
+            <div class="mb-3">
+                <label class="form-label">Email <span class="text-danger">*</span></label>
+                <input type="email" name="email" class="form-control" 
+                    value="<?= escape($user['email']) ?>" required>
             </div>
             
-            <div class="col-md-4 mb-3">
-                <label class="form-label">XP Total</label>
-                <input type="number" name="xp_total" class="form-control" min="0" 
-                       value="<?= $user['xp_total'] ?>">
+            <div class="mb-3">
+                <label class="form-label">Senha (Deixe em branco para manter a atual)</label>
+                <input type="password" name="password" class="form-control" 
+                    placeholder="Nova senha...">
             </div>
             
-            <div class="col-md-4 mb-3">
-                <label class="form-label">Moedas</label>
-                <input type="number" name="coins" class="form-control" min="0" 
-                       value="<?= $user['coins'] ?>">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Cargo</label>
+                    <select name="role" class="form-control">
+                        <option value="student" <?= $user['role'] === 'student' ? 'selected' : '' ?>>Estudante</option>
+                        <option value="instructor" <?= $user['role'] === 'instructor' ? 'selected' : '' ?>>Instrutor</option>
+                        <option value="admin" <?= $user['role'] === 'admin' ? 'selected' : '' ?>>Administrador</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Status</label>
+                    <div class="form-check mt-2">
+                        <input type="checkbox" name="is_active" id="is_active" class="form-check-input" 
+                            <?= $user['is_active'] ? 'checked' : '' ?>>
+                        <label class="form-check-label" for="is_active">Conta Ativa</label>
+                    </div>
+                </div>
             </div>
-        </div>
-        
-        <div class="mb-3">
-            <label class="form-label">Biografia</label>
-            <textarea name="bio" class="form-control" rows="4"><?= escape($user['bio'] ?? '') ?></textarea>
-        </div>
-        
-        <div class="d-flex justify-end gap-2 mt-4">
-            <a href="<?= url('admin/users.php') ?>" class="btn btn-secondary">Cancelar</a>
-            <button type="submit" class="btn btn-primary">Salvar Alterações</button>
-        </div>
-    </form>
+            
+            <hr class="my-4">
+            <h3 class="mb-3 mt-4">Gamificação</h3>
+            
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Nível</label>
+                    <input type="number" name="level" class="form-control" min="1" 
+                        value="<?= $user['level'] ?>">
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">XP Total</label>
+                    <input type="number" name="xp_total" class="form-control" min="0" 
+                        value="<?= $user['xp_total'] ?>">
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Moedas</label>
+                    <input type="number" name="coins" class="form-control" min="0" 
+                        value="<?= $user['coins'] ?>">
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Biografia</label>
+                <textarea name="bio" class="form-control" rows="4"><?= escape($user['bio'] ?? '') ?></textarea>
+            </div>
+            
+            <div class="d-flex justify-end gap-2 mt-4">
+                <a href="<?= url('admin/users.php') ?>" class="btn btn-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+            </div>
+        </form>
+    </div>
 </div>
-
 <?php include '../includes/footer.php'; ?>
