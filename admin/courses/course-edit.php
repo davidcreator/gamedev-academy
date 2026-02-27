@@ -64,7 +64,7 @@ EditorJSLoader::renderStyles();
 
 <div class="wrapper-container">
     <div class="container-fluid py-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="mb-4">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0">
                     <!-- <li class="breadcrumb-item"><a href="<?= url('admin/dashboard.php') ?>">Dashboard</a></li> -->
@@ -87,13 +87,13 @@ EditorJSLoader::renderStyles();
             </div>
         </div>
 
-        <form method="POST" id="courseForm">
-            <div class="row">
+        <form method="POST" id="courseForm" class="courseForm">
+            <div class="row" style="max-width: 830px; margin: 0 auto; padding: 35px;">
                 <!-- Coluna Principal -->
                 <div class="col-lg-8">
                     <div class="card shadow-sm mb-4">
                         <div class="card-header bg-white py-3">
-                            <h3 class="p-5 mb-0 fw-bold"><i class="fas fa-info-circle me-2 text-primary"></i>Informações do Curso</h3>
+                            <h5><i class="fas fa-info-circle me-2 text-primary"></i>Informações do Curso</h5>
                         </div>
                         <div class="card-body p-4">
                             <div class="mb-4">
@@ -159,7 +159,7 @@ EditorJSLoader::renderStyles();
                 <div class="col-lg-4">
                     <div class="card shadow-sm mb-4">
                         <div class="card-header bg-white py-3">
-                            <h5 class="mb-0 fw-bold"><i class="fas fa-cog me-2 text-primary"></i>Configurações</h5>
+                            <h5><i class="fas fa-cog me-2 text-primary"></i>Configurações</h5>
                         </div>
                         <div class="card-body p-4">
                             <div class="mb-4">
@@ -223,7 +223,7 @@ EditorJSLoader::renderStyles();
 
                     <div class="card shadow-sm mb-4">
                         <div class="card-header bg-white py-3">
-                            <h5 class="mb-0 fw-bold"><i class="fas fa-coins me-2 text-primary"></i>Valores e Recompensas</h5>
+                            <h5><i class="fas fa-coins me-2 text-primary"></i>Valores e Recompensas</h5>
                         </div>
                         <div class="card-body p-4">
                             <div class="mb-3">

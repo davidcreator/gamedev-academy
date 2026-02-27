@@ -208,6 +208,11 @@
 .btn-action.edit { color: var(--primary); }
 .btn-action.delete { color: var(--danger); }
 
+.courseForm h5{
+    font-size: 2rem;
+    padding: 15px;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .admin-sidebar {
