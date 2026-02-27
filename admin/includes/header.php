@@ -41,7 +41,7 @@ $currentPage = basename($_SERVER['PHP_SELF'], '.php');
             <div class="admin-header">
                 <h1><?= $pageTitle ?? 'Dashboard' ?></h1>
                 <div class="d-flex align-center gap-2">
-                    <span>Olá, <?= escape($currentUser['full_name']) ?></span>
+                    <span>Olá, <?= escape($currentUser['name']) ?></span>
                     <a href="<?= url() ?>" class="btn btn-sm btn-outline">Ver Site</a>
                     <a href="<?= url('logout.php') ?>" class="btn btn-sm btn-secondary">Sair</a>
                 </div>
