@@ -5,6 +5,10 @@
     min-height: 100vh;
 }
 
+.wrapper-dash {
+    padding: 15px;
+}
+
 /* Admin Sidebar */
 .admin-sidebar {
     width: 250px;
@@ -141,6 +145,7 @@
     border-radius: var(--radius-lg);
     overflow: hidden;
     border: 1px solid var(--gray-700);
+    margin-bottom: 2rem;
 }
 
 .admin-table-header {

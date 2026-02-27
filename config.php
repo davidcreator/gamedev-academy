@@ -2,7 +2,7 @@
 /**
  * Arquivo de configuração do sistema
  * Gerado automaticamente pelo instalador
- * Data: 2026-02-27 12:57:28
+ * Data: 2026-02-27 13:34:09
  */
 
 // Configurações do Banco de Dados
@@ -21,7 +21,7 @@ define('SITE_EMAIL', 'smarteloedu@gmail.com');
 define('TIMEZONE', 'UTC');
 
 // Configurações de Segurança
-define('SECURITY_SALT', '2b28c5067990b0be61cc5fb86406c4c5863e931ab3ec7e37ff08b6ba95be0dc6');
+define('SECURITY_SALT', '5d2d9e4b08e2248ae7f5ed47b39c89f1dbf6c404c6883aa8d5dd449d46a53e87');
 define('SESSION_NAME', 'gamedev_session');
 define('COOKIE_SECURE', false);
 define('COOKIE_HTTPONLY', true);
@@ -42,7 +42,7 @@ define('CACHE_TIME', 3600); // 1 hora
 
 // Versão do Sistema
 define('SYSTEM_VERSION', '2.0.0');
-define('INSTALL_DATE', '2026-02-27 12:57:28');
+define('INSTALL_DATE', '2026-02-27 13:34:09');
 
 // Prevenir acesso direto
 if (!defined('ROOT_PATH')) {
