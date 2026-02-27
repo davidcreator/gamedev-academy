@@ -56,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ?>
 
 <div class="mb-4">
-    <a href="<?= url('admin/users.php') ?>" class="btn btn-secondary">← Voltar para Lista</a>
+    <a href="<?= url('admin/users/users.php') ?>" class="btn btn-secondary">← Voltar para Lista</a>
 </div>
 
 <?= showFlashMessages() ?>

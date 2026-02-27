@@ -37,6 +37,7 @@ foreach ($categories as $cat) {
 </div>
 
 <?php foreach ($settingsByCategory as $group => $items): ?>
+
 <section id="<?= escape($group) ?>" class="card mt-4">
     <div class="card-body">
         <h3 class="card-title"><?= ucfirst($group) ?></h3>
@@ -84,40 +85,42 @@ foreach ($categories as $cat) {
         </form>
     </div>
 </section>
-<?php endforeach; ?>
 
-<!-- Personalizações do Administrador -->
-<section class="card mt-4">
-    <div class="card-body">
-        <h3 class="card-title">Preferências do Administrador</h3>
-        <form method="POST" action="<?= url('admin/settings/settings.php') ?>">
-            <div class="grid-cols-2 gap-2">
-                <label>Tema do Painel
-                    <select name="settings[default_theme]" class="form-control">
-                        <option value="system">Sistema</option>
-                        <option value="light">Claro</option>
-                        <option value="dark">Escuro</option>
-                    </select>
-                </label>
-                <label>Idioma Padrão
-                    <select name="settings[default_language]" class="form-control">
-                        <option value="pt-BR">Português (Brasil)</option>
-                        <option value="en-US">English (US)</option>
-                        <option value="es-ES">Español</option>
-                    </select>
-                </label>
-                <label>Nome do Site
-                    <input type="text" name="settings[site_name]" class="form-control" value="<?= escape(SITE_NAME) ?>">
-                </label>
-                <label>Email de Contato
-                    <input type="email" name="settings[contact_email]" class="form-control" value="<?= escape(SITE_EMAIL) ?>">
-                </label>
-            </div>
-            <div class="mt-3">
-                <button class="btn btn-primary" type="submit">Atualizar Preferências</button>
-            </div>
-        </form>
-    </div>
-</section>
+    <?php endforeach; ?>
 
+<div class="wrapper-container">
+    <!-- Personalizações do Administrador -->
+    <section class="card mt-4">
+        <div class="card-body">
+            <h3 class="card-title">Preferências do Administrador</h3>
+            <form method="POST" action="<?= url('admin/settings/settings.php') ?>">
+                <div class="grid-cols-2 gap-2">
+                    <label>Tema do Painel
+                        <select name="settings[default_theme]" class="form-control">
+                            <option value="system">Sistema</option>
+                            <option value="light">Claro</option>
+                            <option value="dark">Escuro</option>
+                        </select>
+                    </label>
+                    <label>Idioma Padrão
+                        <select name="settings[default_language]" class="form-control">
+                            <option value="pt-BR">Português (Brasil)</option>
+                            <option value="en-US">English (US)</option>
+                            <option value="es-ES">Español</option>
+                        </select>
+                    </label>
+                    <label>Nome do Site
+                        <input type="text" name="settings[site_name]" class="form-control" value="<?= escape(SITE_NAME) ?>">
+                    </label>
+                    <label>Email de Contato
+                        <input type="email" name="settings[contact_email]" class="form-control" value="<?= escape(SITE_EMAIL) ?>">
+                    </label>
+                </div>
+                <div class="mt-3">
+                    <button class="btn btn-primary" type="submit">Atualizar Preferências</button>
+                </div>
+            </form>
+        </div>
+    </section>
+</div>
 <?php include '../includes/footer.php'; ?>

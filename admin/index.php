@@ -42,7 +42,7 @@ $recentActivity = $db->fetchAll(
 );
 ?>
 
-<div class="wrapper-dash">
+<div class="wrapper-container">
     <!-- Estatísticas -->
     <div class="admin-stats">
         <div class="admin-stat-card">

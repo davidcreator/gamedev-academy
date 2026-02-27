@@ -104,211 +104,212 @@ $users = $db->fetchAll("SELECT id, username, full_name FROM users WHERE is_activ
 ?>
 
 <?= showFlashMessages() ?>
-
-<div class="d-flex justify-between align-center mb-4">
-    <form method="GET" class="d-flex gap-2">
-        <input type="text" name="search" class="form-control" placeholder="Buscar conquistas..." value="<?= escape($search) ?>">
-        <select name="type" class="form-control">
-            <option value="">Tipo de requisito</option>
-            <option value="lessons_completed" <?= $filterType === 'lessons_completed' ? 'selected' : '' ?>>Lições completadas</option>
-            <option value="courses_completed" <?= $filterType === 'courses_completed' ? 'selected' : '' ?>>Cursos completados</option>
-            <option value="streak" <?= $filterType === 'streak' ? 'selected' : '' ?>>Streak</option>
-            <option value="xp_earned" <?= $filterType === 'xp_earned' ? 'selected' : '' ?>>XP acumulado</option>
-            <option value="special" <?= $filterType === 'special' ? 'selected' : '' ?>>Especial</option>
-        </select>
-        <button class="btn btn-primary" type="submit">Filtrar</button>
-        <?php if ($search || $filterType): ?>
-            <a href="<?= url('admin/archievements/achievements.php') ?>" class="btn btn-secondary">Limpar</a>
-        <?php endif; ?>
-    </form>
-    <button class="btn btn-success" onclick="toggleCreate()">Nova Conquista</button>
-</div>
-
-<!-- Criar Conquista -->
-<div id="create-achievement" class="card mb-4" hidden>
-    <div class="card-body">
-        <h3 class="card-title">Criar Conquista</h3>
-        <form method="POST" class="grid-cols-2 gap-2">
-            <input type="hidden" name="action" value="create">
-            <label>Nome
-                <input type="text" name="name" class="form-control" required>
-            </label>
-            <label>Ícone
-                <input type="text" name="icon" class="form-control" placeholder="Ex.: 🎯">
-            </label>
-            <label>Descrição
-                <textarea name="description" class="form-control" rows="2"></textarea>
-            </label>
-            <div class="d-flex gap-2">
-                <label>XP
-                    <input type="number" name="xp_reward" class="form-control" value="0">
-                </label>
-                <label>Moedas
-                    <input type="number" name="coin_reward" class="form-control" value="0">
-                </label>
-            </div>
-            <div class="d-flex gap-2">
-                <label>Tipo de requisito
-                    <select name="requirement_type" class="form-control">
-                        <option value="lessons_completed">Lições completadas</option>
-                        <option value="courses_completed">Cursos completados</option>
-                        <option value="streak">Streak</option>
-                        <option value="xp_earned">XP acumulado</option>
-                        <option value="special">Especial</option>
-                    </select>
-                </label>
-                <label>Valor requerido
-                    <input type="number" name="requirement_value" class="form-control" value="1">
-                </label>
-            </div>
-            <label class="d-flex align-center gap-1">
-                <input type="checkbox" name="is_secret"> Secreta
-            </label>
-            <div class="mt-2">
-                <button class="btn btn-success" type="submit">Salvar</button>
-                <button class="btn btn-secondary" type="button" onclick="toggleCreate()">Cancelar</button>
-            </div>
+<div class="wrapper-container">
+    <div class="d-flex justify-between align-center mb-4">
+        <form method="GET" class="d-flex gap-2">
+            <input type="text" name="search" class="form-control" placeholder="Buscar conquistas..." value="<?= escape($search) ?>">
+            <select name="type" class="form-control">
+                <option value="">Tipo de requisito</option>
+                <option value="lessons_completed" <?= $filterType === 'lessons_completed' ? 'selected' : '' ?>>Lições completadas</option>
+                <option value="courses_completed" <?= $filterType === 'courses_completed' ? 'selected' : '' ?>>Cursos completados</option>
+                <option value="streak" <?= $filterType === 'streak' ? 'selected' : '' ?>>Streak</option>
+                <option value="xp_earned" <?= $filterType === 'xp_earned' ? 'selected' : '' ?>>XP acumulado</option>
+                <option value="special" <?= $filterType === 'special' ? 'selected' : '' ?>>Especial</option>
+            </select>
+            <button class="btn btn-primary" type="submit">Filtrar</button>
+            <?php if ($search || $filterType): ?>
+                <a href="<?= url('admin/archievements/achievements.php') ?>" class="btn btn-secondary">Limpar</a>
+            <?php endif; ?>
         </form>
+        <button class="btn btn-success" onclick="toggleCreate()">Nova Conquista</button>
     </div>
-</div>
 
-<!-- Lista de Conquistas -->
-<div class="admin-table-container">
-    <table class="admin-table">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Ícone</th>
-                <th>Nome</th>
-                <th>Descrição</th>
-                <th>Requisito</th>
-                <th>Recompensas</th>
-                <th>Secreta</th>
-                <th>Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php foreach ($achievements as $a): ?>
-            <tr>
-                <td>#<?= $a['id'] ?></td>
-                <td><?= escape($a['icon']) ?></td>
-                <td><?= escape($a['name']) ?></td>
-                <td><?= escape($a['description']) ?></td>
-                <td>
-                    <span class="badge badge-primary">
-                        <?= escape($a['requirement_type']) ?>: <?= intval($a['requirement_value']) ?>
-                    </span>
-                </td>
-                <td>
-                    <?php if (($a['xp_reward'] ?? 0) > 0): ?>
-                        <span class="badge badge-warning">⚡ <?= intval($a['xp_reward']) ?> XP</span>
-                    <?php endif; ?>
-                    <?php if (($a['coin_reward'] ?? 0) > 0): ?>
-                        <span class="badge badge-success">🪙 <?= intval($a['coin_reward']) ?></span>
-                    <?php endif; ?>
-                </td>
-                <td><?= !empty($a['is_secret']) ? 'Sim' : 'Não' ?></td>
-                <td>
-                    <div class="admin-actions">
-                        <button class="btn-action edit" title="Editar" onclick="toggleEdit(<?= $a['id'] ?>)">✏️</button>
-                        <form method="POST" onsubmit="return confirm('Remover esta conquista?')">
-                            <input type="hidden" name="action" value="delete">
-                            <input type="hidden" name="id" value="<?= $a['id'] ?>">
-                            <button class="btn-action delete" title="Deletar">🗑️</button>
-                        </form>
-                    </div>
-                </td>
-            </tr>
-            <tr id="edit-<?= $a['id'] ?>" hidden>
-                <td colspan="8">
-                    <div class="card">
-                        <div class="card-body">
-                            <h4 class="card-title">Editar Conquista #<?= $a['id'] ?></h4>
-                            <form method="POST" class="grid-cols-2 gap-2">
-                                <input type="hidden" name="action" value="update">
+    <!-- Criar Conquista -->
+    <div id="create-achievement" class="card mb-4" hidden>
+        <div class="card-body">
+            <h3 class="card-title">Criar Conquista</h3>
+            <form method="POST" class="grid-cols-2 gap-2">
+                <input type="hidden" name="action" value="create">
+                <label>Nome
+                    <input type="text" name="name" class="form-control" required>
+                </label>
+                <label>Ícone
+                    <input type="text" name="icon" class="form-control" placeholder="Ex.: 🎯">
+                </label>
+                <label>Descrição
+                    <textarea name="description" class="form-control" rows="2"></textarea>
+                </label>
+                <div class="d-flex gap-2">
+                    <label>XP
+                        <input type="number" name="xp_reward" class="form-control" value="0">
+                    </label>
+                    <label>Moedas
+                        <input type="number" name="coin_reward" class="form-control" value="0">
+                    </label>
+                </div>
+                <div class="d-flex gap-2">
+                    <label>Tipo de requisito
+                        <select name="requirement_type" class="form-control">
+                            <option value="lessons_completed">Lições completadas</option>
+                            <option value="courses_completed">Cursos completados</option>
+                            <option value="streak">Streak</option>
+                            <option value="xp_earned">XP acumulado</option>
+                            <option value="special">Especial</option>
+                        </select>
+                    </label>
+                    <label>Valor requerido
+                        <input type="number" name="requirement_value" class="form-control" value="1">
+                    </label>
+                </div>
+                <label class="d-flex align-center gap-1">
+                    <input type="checkbox" name="is_secret"> Secreta
+                </label>
+                <div class="mt-2">
+                    <button class="btn btn-success" type="submit">Salvar</button>
+                    <button class="btn btn-secondary" type="button" onclick="toggleCreate()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lista de Conquistas -->
+    <div class="admin-table-container">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Ícone</th>
+                    <th>Nome</th>
+                    <th>Descrição</th>
+                    <th>Requisito</th>
+                    <th>Recompensas</th>
+                    <th>Secreta</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($achievements as $a): ?>
+                <tr>
+                    <td>#<?= $a['id'] ?></td>
+                    <td><?= escape($a['icon']) ?></td>
+                    <td><?= escape($a['name']) ?></td>
+                    <td><?= escape($a['description']) ?></td>
+                    <td>
+                        <span class="badge badge-primary">
+                            <?= escape($a['requirement_type']) ?>: <?= intval($a['requirement_value']) ?>
+                        </span>
+                    </td>
+                    <td>
+                        <?php if (($a['xp_reward'] ?? 0) > 0): ?>
+                            <span class="badge badge-warning">⚡ <?= intval($a['xp_reward']) ?> XP</span>
+                        <?php endif; ?>
+                        <?php if (($a['coin_reward'] ?? 0) > 0): ?>
+                            <span class="badge badge-success">🪙 <?= intval($a['coin_reward']) ?></span>
+                        <?php endif; ?>
+                    </td>
+                    <td><?= !empty($a['is_secret']) ? 'Sim' : 'Não' ?></td>
+                    <td>
+                        <div class="admin-actions">
+                            <button class="btn-action edit" title="Editar" onclick="toggleEdit(<?= $a['id'] ?>)">✏️</button>
+                            <form method="POST" onsubmit="return confirm('Remover esta conquista?')">
+                                <input type="hidden" name="action" value="delete">
                                 <input type="hidden" name="id" value="<?= $a['id'] ?>">
-                                <label>Nome
-                                    <input type="text" name="name" class="form-control" value="<?= escape($a['name']) ?>" required>
-                                </label>
-                                <label>Ícone
-                                    <input type="text" name="icon" class="form-control" value="<?= escape($a['icon']) ?>">
-                                </label>
-                                <label>Descrição
-                                    <textarea name="description" class="form-control" rows="2"><?= escape($a['description']) ?></textarea>
-                                </label>
-                                <div class="d-flex gap-2">
-                                    <label>XP
-                                        <input type="number" name="xp_reward" class="form-control" value="<?= intval($a['xp_reward'] ?? 0) ?>">
-                                    </label>
-                                    <label>Moedas
-                                        <input type="number" name="coin_reward" class="form-control" value="<?= intval($a['coin_reward'] ?? 0) ?>">
-                                    </label>
-                                </div>
-                                <div class="d-flex gap-2">
-                                    <label>Tipo de requisito
-                                        <select name="requirement_type" class="form-control">
-                                            <?php
-                                            $types = ['lessons_completed','courses_completed','streak','xp_earned','special'];
-                                            foreach ($types as $t):
-                                            ?>
-                                                <option value="<?= $t ?>" <?= $a['requirement_type'] === $t ? 'selected' : '' ?>><?= $t ?></option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </label>
-                                    <label>Valor requerido
-                                        <input type="number" name="requirement_value" class="form-control" value="<?= intval($a['requirement_value'] ?? 1) ?>">
-                                    </label>
-                                </div>
-                                <label class="d-flex align-center gap-1">
-                                    <input type="checkbox" name="is_secret" <?= !empty($a['is_secret']) ? 'checked' : '' ?>> Secreta
-                                </label>
-                                <div class="mt-2">
-                                    <button class="btn btn-success" type="submit">Salvar</button>
-                                    <button class="btn btn-secondary" type="button" onclick="toggleEdit(<?= $a['id'] ?>)">Cancelar</button>
-                                </div>
+                                <button class="btn-action delete" title="Deletar">🗑️</button>
                             </form>
                         </div>
-                    </div>
-                </td>
-            </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
-</div>
-
-<!-- Atribuir Conquista para Usuário -->
-<div class="card mt-4">
-    <div class="card-body">
-        <h3 class="card-title">Atribuir Conquista para Usuário</h3>
-        <form method="POST" class="d-flex gap-2 align-center">
-            <input type="hidden" name="action" value="unlock_for_user">
-            <select name="user_id" class="form-control">
-                <option value="">Selecione um usuário...</option>
-                <?php foreach ($users as $u): ?>
-                    <option value="<?= $u['id'] ?>">#<?= $u['id'] ?> - <?= escape($u['username']) ?> (<?= escape($u['full_name']) ?>)</option>
+                    </td>
+                </tr>
+                <tr id="edit-<?= $a['id'] ?>" hidden>
+                    <td colspan="8">
+                        <div class="card">
+                            <div class="card-body">
+                                <h4 class="card-title">Editar Conquista #<?= $a['id'] ?></h4>
+                                <form method="POST" class="grid-cols-2 gap-2">
+                                    <input type="hidden" name="action" value="update">
+                                    <input type="hidden" name="id" value="<?= $a['id'] ?>">
+                                    <label>Nome
+                                        <input type="text" name="name" class="form-control" value="<?= escape($a['name']) ?>" required>
+                                    </label>
+                                    <label>Ícone
+                                        <input type="text" name="icon" class="form-control" value="<?= escape($a['icon']) ?>">
+                                    </label>
+                                    <label>Descrição
+                                        <textarea name="description" class="form-control" rows="2"><?= escape($a['description']) ?></textarea>
+                                    </label>
+                                    <div class="d-flex gap-2">
+                                        <label>XP
+                                            <input type="number" name="xp_reward" class="form-control" value="<?= intval($a['xp_reward'] ?? 0) ?>">
+                                        </label>
+                                        <label>Moedas
+                                            <input type="number" name="coin_reward" class="form-control" value="<?= intval($a['coin_reward'] ?? 0) ?>">
+                                        </label>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <label>Tipo de requisito
+                                            <select name="requirement_type" class="form-control">
+                                                <?php
+                                                $types = ['lessons_completed','courses_completed','streak','xp_earned','special'];
+                                                foreach ($types as $t):
+                                                ?>
+                                                    <option value="<?= $t ?>" <?= $a['requirement_type'] === $t ? 'selected' : '' ?>><?= $t ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </label>
+                                        <label>Valor requerido
+                                            <input type="number" name="requirement_value" class="form-control" value="<?= intval($a['requirement_value'] ?? 1) ?>">
+                                        </label>
+                                    </div>
+                                    <label class="d-flex align-center gap-1">
+                                        <input type="checkbox" name="is_secret" <?= !empty($a['is_secret']) ? 'checked' : '' ?>> Secreta
+                                    </label>
+                                    <div class="mt-2">
+                                        <button class="btn btn-success" type="submit">Salvar</button>
+                                        <button class="btn btn-secondary" type="button" onclick="toggleEdit(<?= $a['id'] ?>)">Cancelar</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
                 <?php endforeach; ?>
-            </select>
-            <select name="achievement_id" class="form-control">
-                <option value="">Selecione uma conquista...</option>
-                <?php foreach ($achievements as $a): ?>
-                    <option value="<?= $a['id'] ?>">#<?= $a['id'] ?> - <?= escape($a['name']) ?></option>
-                <?php endforeach; ?>
-            </select>
-            <button class="btn btn-primary" type="submit">Atribuir</button>
-        </form>
+            </tbody>
+        </table>
     </div>
-</div>
 
-<!-- Paginação -->
-<?php if ($totalPages > 1): ?>
-<div class="d-flex justify-center gap-1 mt-4">
-    <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-        <?php if ($i == $page): ?>
-            <span class="btn btn-primary btn-sm"><?= $i ?></span>
-        <?php else: ?>
-            <a href="?page=<?= $i ?>&search=<?= urlencode($search) ?>&type=<?= urlencode($filterType) ?>" class="btn btn-secondary btn-sm"><?= $i ?></a>
-        <?php endif; ?>
-    <?php endfor; ?>
+    <!-- Atribuir Conquista para Usuário -->
+    <div class="card mt-4">
+        <div class="card-body">
+            <h3 class="card-title">Atribuir Conquista para Usuário</h3>
+            <form method="POST" class="d-flex gap-2 align-center">
+                <input type="hidden" name="action" value="unlock_for_user">
+                <select name="user_id" class="form-control">
+                    <option value="">Selecione um usuário...</option>
+                    <?php foreach ($users as $u): ?>
+                        <option value="<?= $u['id'] ?>">#<?= $u['id'] ?> - <?= escape($u['username']) ?> (<?= escape($u['full_name']) ?>)</option>
+                    <?php endforeach; ?>
+                </select>
+                <select name="achievement_id" class="form-control">
+                    <option value="">Selecione uma conquista...</option>
+                    <?php foreach ($achievements as $a): ?>
+                        <option value="<?= $a['id'] ?>">#<?= $a['id'] ?> - <?= escape($a['name']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <button class="btn btn-primary" type="submit">Atribuir</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Paginação -->
+    <?php if ($totalPages > 1): ?>
+    <div class="d-flex justify-center gap-1 mt-4">
+        <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+            <?php if ($i == $page): ?>
+                <span class="btn btn-primary btn-sm"><?= $i ?></span>
+            <?php else: ?>
+                <a href="?page=<?= $i ?>&search=<?= urlencode($search) ?>&type=<?= urlencode($filterType) ?>" class="btn btn-secondary btn-sm"><?= $i ?></a>
+            <?php endif; ?>
+        <?php endfor; ?>
+    </div>
 </div>
 <?php endif; ?>
 
