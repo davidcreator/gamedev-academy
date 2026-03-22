@@ -56,11 +56,16 @@ class Auth {
         return ['success' => false, 'message' => 'Erro ao criar conta. Tente novamente.'];
     }
     
-    public function login(string $email, string $password, bool $remember = false): array {
-        $user = $this->user->findByEmail($email);
+    public function login(string $identifier, string $password, bool $remember = false): array {
+        // aceita email ou username
+        if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
+            $user = $this->user->findByEmail($identifier);
+        } else {
+            $user = $this->user->findByUsername($identifier);
+        }
         
         if (!$user) {
-            return ['success' => false, 'message' => 'E-mail ou senha incorretos.'];
+            return ['success' => false, 'message' => 'E-mail/usuário ou senha incorretos.'];
         }
         
         if (!$user['is_active']) {
@@ -68,7 +73,7 @@ class Auth {
         }
         
         if (!password_verify($password, $user['password'])) {
-            return ['success' => false, 'message' => 'E-mail ou senha incorretos.'];
+            return ['success' => false, 'message' => 'E-mail/usuário ou senha incorretos.'];
         }
         
         $this->createSession($user['id']);

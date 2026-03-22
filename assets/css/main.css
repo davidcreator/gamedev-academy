@@ -1400,3 +1400,11 @@ select.form-control {
     .hero-title { font-size: 2.5rem; }
     .hero-stats { flex-direction: column; gap: 1.5rem; }
 }
+
+/* Oculta botão flutuante herdado que atrapalha navegação */
+#backToTop,
+.back-to-top {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}

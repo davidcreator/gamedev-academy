@@ -127,6 +127,33 @@ $modules = $courseModel->getModules($course['id']);
                     </tbody>
                 </table>
             </div>
+
+            <h3 class="mt-4">Conteúdo das aulas</h3>
+            <div class="card" style="padding:1rem; background: var(--gray-800); border:1px solid var(--gray-700); border-radius:12px;">
+                <?php foreach ($modules as $m): ?>
+                    <details style="margin-bottom:1rem;" <?= $m === reset($modules) ? 'open' : '' ?>>
+                        <summary style="cursor:pointer; font-weight:600; color:var(--gray-100);">
+                            📦 <?= escape($m['title']) ?> <small style="color:var(--gray-400);">• <?= intval($m['total_lessons'] ?? 0) ?> aulas</small>
+                        </summary>
+                        <ul style="list-style:none; padding-left:0; margin:0.5rem 0 0;">
+                            <?php foreach ($courseModel->getLessons($m['id']) as $l): ?>
+                                <li style="padding:.45rem .35rem; border-bottom:1px solid var(--gray-700); display:flex; justify-content:space-between; align-items:center;">
+                                    <div>
+                                        <div style="color:var(--gray-100); font-weight:500;"><?= escape($l['title']) ?></div>
+                                        <small style="color:var(--gray-400);">
+                                            <?= ucfirst($l['content_type']) ?> • <?= intval($l['xp_reward'] ?? 0) ?> XP
+                                            <?php if (!empty($l['is_free_preview'])): ?> • Prévia grátis<?php endif; ?>
+                                        </small>
+                                    </div>
+                                    <?php if (!empty($l['is_free_preview'])): ?>
+                                        <a class="btn btn-sm btn-outline" href="<?= url('learn.php?course=' . $course['slug'] . '&lesson=' . $l['id']) ?>">Assistir prévia</a>
+                                    <?php endif; ?>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </details>
+                <?php endforeach; ?>
+            </div>
         </div>
     </section>
     

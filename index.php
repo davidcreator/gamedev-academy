@@ -273,7 +273,7 @@ $totalCourses = $courseModel->count();
             
             <div class="news-grid">
                 <?php foreach ($latestNews as $news): ?>
-                <a href="<?= url('news/' . $news['slug']) ?>" class="news-card">
+                <a href="<?= url('news-detail.php?id=' . urlencode($news['slug'])) ?>" class="news-card">
                     <div class="news-thumbnail">
                         <?php if (!empty($news['thumbnail'])): ?>
                             <img src="<?= url('uploads/news/' . $news['thumbnail']) ?>" alt="">

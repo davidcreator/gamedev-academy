@@ -70,6 +70,30 @@ if (!function_exists('asset')) {
 }
 
 /**
+ * Gera um slug URL-friendly a partir de um texto
+ */
+if (!function_exists('slugify')) {
+    function slugify(string $text): string {
+        // Se o pacote cocur/slugify estiver presente, use-o
+        if (class_exists('\\Cocur\\Slugify\\Slugify')) {
+            static $slugger = null;
+            if ($slugger === null) {
+                $slugger = new \Cocur\Slugify\Slugify();
+            }
+            return $slugger->slugify($text);
+        }
+
+        // Fallback simples sem dependÃªncias externas
+        $text = iconv('UTF-8', 'ASCII//TRANSLIT', $text);
+        $text = preg_replace('/[^a-zA-Z0-9]+/', '-', $text);
+        $text = trim($text, '-');
+        $text = strtolower($text);
+
+        return $text !== '' ? $text : 'item';
+    }
+}
+
+/**
  * Redireciona para uma URL
  */
 if (!function_exists('redirect')) {

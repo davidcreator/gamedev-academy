@@ -45,7 +45,6 @@ CREATE TABLE `users` (
     `specialization`            VARCHAR(255)       DEFAULT NULL                      COMMENT 'Área de especialização',
     `total_points`              INT UNSIGNED       NOT NULL DEFAULT 0                COMMENT 'Cache pontos gamificação',
     `xp_total`                  INT UNSIGNED       NOT NULL DEFAULT 0                COMMENT 'XP total do usuário',
-    `experience_points`         INT UNSIGNED       NOT NULL DEFAULT 0                COMMENT 'Alias legacy para XP',
     `coins`                     INT UNSIGNED       NOT NULL DEFAULT 0                COMMENT 'Moedas do usuário',
     `level`                     INT UNSIGNED       NOT NULL DEFAULT 1                COMMENT 'Nível atual do usuário',
     `streak_days`               INT UNSIGNED       NOT NULL DEFAULT 0                COMMENT 'Dias seguidos de atividade',
@@ -166,7 +165,6 @@ CREATE TABLE `categories` (
     `icon`          VARCHAR(100)     DEFAULT NULL,
     `image`         VARCHAR(500)     DEFAULT NULL,
     `color`         VARCHAR(7)       DEFAULT '#6366f1',
-    `order_index`   INT              NOT NULL DEFAULT 0,
     `parent_id`     INT UNSIGNED     DEFAULT NULL,
     `sort_order`    INT              NOT NULL DEFAULT 0,
     `is_active`     TINYINT(1)       NOT NULL DEFAULT 1,
@@ -2755,7 +2753,7 @@ INSERT IGNORE INTO `categories` (`name`, `slug`, `description`, `icon`, `color`,
 -- Cursos de exemplo
 INSERT IGNORE INTO `courses` (`title`, `slug`, `short_description`, `description`, `instructor_id`, `category_id`, `level`, `duration_hours`, `xp_reward`, `coin_reward`, `is_published`, `is_featured`, `is_free`, `total_students`) VALUES
 ('Phaser 3: Do Zero ao Jogo Completo', 'phaser-3-zero-jogo', 'Aprenda Phaser 3 criando um RPG de aventura.', 'Neste curso você aprenderá todos os fundamentos do Phaser 3, desde o setup inicial até a publicação do seu jogo.', 3, 1, 'beginner', 12.5, 500, 50, 1, 1, 1, 120),
-('React para Desenvolvedores de Jogos', 'react-para-jogos', 'Interfaces dinâmicas para seus jogos web.', 'Aprenda a integrar React com motores de jogo e criar HUDs incríveis.', 3, 2, 'intermediate', 8.0, 350, 30, 1, 1, 0, 45);
+('React para Desenvolvedores de Jogos', 'react-para-jogos', 'Interfaces dinâmicas para seus jogos web.', 'Aprenda a integrar React com motores de jogo e criar HUDs incríveis.', 3,(3, 2, 'intermediate', 8.0, 350, 30, 1, 1, 0, 45);
 
 -- Instrutores adicionais (senha: password)
 INSERT IGNORE INTO `users` (`username`, `email`, `password`, `name`, `full_name`, `role`, `is_active`, `status`, `specialization`, `bio`, `avatar`) VALUES

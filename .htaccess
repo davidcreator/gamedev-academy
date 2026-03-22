@@ -1,1 +1,17 @@
 php_value upload_max_filesize 256M
+
+RewriteEngine On
+
+# Não reescrever arquivos ou pastas reais
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Cursos amigáveis: /course/slug -> course.php?slug=slug
+RewriteRule ^course/([^/]+)$ course.php?slug=$1 [L,QSA]
+
+# Notícias amigáveis: /news/slug -> news-detail.php?id=slug
+RewriteRule ^news/([^/]+)$ news-detail.php?id=$1 [L,QSA]
+
+# Página de listagem de notícias
+RewriteRule ^news/?$ news.php [L,QSA]

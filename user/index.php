@@ -395,7 +395,7 @@ include __DIR__ . '/includes/header.php';
                     </div>
                     
                     <h3 class="course-title">
-                        <a href="/course/<?= htmlspecialchars($course['slug']) ?>">
+                        <a href="<?= url('course.php?slug=' . urlencode($course['slug'])) ?>">
                             <?= htmlspecialchars($course['title']) ?>
                         </a>
                     </h3>
@@ -542,7 +542,7 @@ include __DIR__ . '/includes/header.php';
                 </div>
                 <div class="news-content">
                     <h3 class="news-title">
-                        <a href="/news/<?= htmlspecialchars($article['slug']) ?>">
+                        <a href="<?= url('news-detail.php?id=' . urlencode($article['slug'])) ?>">
                             <?= htmlspecialchars($article['title']) ?>
                         </a>
                     </h3>

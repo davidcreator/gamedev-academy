@@ -1,0 +1,1 @@
+db_config|a:5:{s:4:"host";s:9:"localhost";s:4:"name";s:8:"gda_test";s:4:"user";s:4:"root";s:4:"pass";s:0:"";s:4:"port";i:3306;}

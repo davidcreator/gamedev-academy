@@ -167,61 +167,67 @@ if ($lessonId <= 0) {
 }
 $currentLesson = $lessonId ? $db->fetch("SELECT * FROM course_lessons WHERE id = ?", [$lessonId]) : null;
 
+if (!$currentLesson) {
+    echo "<div style='padding:2rem; font-family:Inter,Arial; color:#e11d48;'>Nenhuma liÃ§Ã£o publicada encontrada para este curso. Crie mÃ³dulos e liÃ§Ãµes ou rode o seed de demo em <code>scripts/seed-demo-data.php</code>.</div>";
+    exit;
+}
+
+// Título para o header do painel do aluno
+$pageTitle = 'Estudar: ' . ($course['title'] ?? '');
+
+include __DIR__ . '/user/includes/header.php';
+
+echo showFlashMessages();
+
 ?>
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Estudar: <?= escape($course['title']) ?> - <?= SITE_NAME ?></title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="<?= asset('css/main.css') ?>">
-    <link rel="stylesheet" href="<?= asset('css/user.css') ?>">
-</head>
-<body>
-    <?php include __DIR__ . '/user/includes/header.php'; ?>
-    
-    <?= showFlashMessages() ?>
-    
-    <div class="d-flex">
+    <style>
+        .learn-layout { display: grid; grid-template-columns: 320px 1fr; gap: 1.5rem; }
+        .learn-sidebar { background: var(--gray-800); border: 1px solid var(--gray-700); border-radius: 12px; padding: 1rem; max-height: calc(100vh - 180px); overflow-y: auto; }
+        .learn-sidebar h3 { margin: 0 0 .5rem; font-size: 1.05rem; }
+        .learn-module { margin-top: 1rem; }
+        .learn-module-title { font-weight: 600; color: var(--gray-100); display: flex; align-items: center; gap: .5rem; }
+        .learn-lesson { display: flex; align-items: center; gap: .5rem; padding: .45rem .5rem; border-radius: 8px; color: var(--gray-200); text-decoration: none; }
+        .learn-lesson:hover { background: var(--gray-700); }
+        .learn-lesson.active { background: var(--primary-900, #1f2937); color: #fff; }
+        .learn-lesson small { color: var(--gray-400); }
+        .learn-content { background: var(--gray-800); border: 1px solid var(--gray-700); border-radius: 12px; padding: 1.25rem; }
+        .learn-header { display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1rem; }
+        @media (max-width: 900px) { .learn-layout { grid-template-columns: 1fr; } .learn-sidebar { max-height:none; } }
+    </style>
+
+    <div class="learn-layout">
         <!-- Sidebar do curso -->
-        <aside class="admin-sidebar">
-            <div class="admin-sidebar-header">
-                <div class="admin-sidebar-brand">
-                    <span>📚</span>
-                    <span><?= escape($course['title']) ?></span>
-                </div>
-            </div>
-            <nav class="admin-nav">
-                <?php foreach ($modules as $m): ?>
-                <div class="admin-nav-item">
-                    <span>📦</span>
-                    <span><?= escape($m['title']) ?></span>
-                </div>
+        <aside class="learn-sidebar">
+            <h3><?= escape($course['title']) ?></h3>
+            <?php foreach ($modules as $m): ?>
+            <div class="learn-module">
+                <div class="learn-module-title">📦 <?= escape($m['title']) ?></div>
                 <?php
                     $lessons = $courseModel->getLessons($m['id']);
                     foreach ($lessons as $l):
                         $active = ($currentLesson && $currentLesson['id'] == $l['id']);
                 ?>
-                <a href="<?= url('learn.php?course=' . $course['slug'] . '&lesson=' . $l['id']) ?>" class="admin-nav-item <?= $active ? 'active' : '' ?>">
+                <a href="<?= url('learn.php?course=' . $course['slug'] . '&lesson=' . $l['id']) ?>" class="learn-lesson <?= $active ? 'active' : '' ?>">
                     <span>📖</span>
-                    <span><?= escape($l['title']) ?></span>
+                    <div>
+                        <div><?= escape($l['title']) ?></div>
+                        <small><?= ucfirst($l['content_type']) ?> • <?= intval($l['xp_reward'] ?? 0) ?> XP</small>
+                    </div>
                 </a>
                 <?php endforeach; ?>
-                <?php endforeach; ?>
-            </nav>
+            </div>
+            <?php endforeach; ?>
         </aside>
         
         <!-- Player/Conteúdo -->
-        <main class="admin-main">
-            <div class="admin-header">
-                <h1><?= escape($currentLesson['title'] ?? 'Selecione uma lição') ?></h1>
-                <div class="d-flex align-center gap-2">
-                    <a href="<?= url('course.php?slug=' . $course['slug']) ?>" class="btn btn-sm btn-outline">Ver Curso</a>
+        <div class="learn-content">
+            <div class="learn-header">
+                <div>
+                    <div style="color:var(--gray-400); font-size:.9rem;"><?= escape($course['title']) ?></div>
+                    <h1 style="margin:.1rem 0 0; font-size:1.5rem;"><?= escape($currentLesson['title'] ?? 'Selecione uma lição') ?></h1>
                 </div>
+                <a href="<?= url('course.php?slug=' . $course['slug']) ?>" class="btn btn-sm btn-outline">Ver Curso</a>
             </div>
-            
-            <div class="admin-content">
                 <?php if ($currentLesson): ?>
                     <?php if ($currentLesson['content_type'] === 'video' && !empty($currentLesson['video_url'])): ?>
                         <div class="card p-4">
@@ -309,9 +315,4 @@ $currentLesson = $lessonId ? $db->fetch("SELECT * FROM course_lessons WHERE id =
                     </div>
                 <?php endif; ?>
             </div>
-        </main>
-    </div>
-    
-    <?php include __DIR__ . '/includes/footer.php'; ?>
-</body>
-</html>
+    <?php include __DIR__ . '/user/includes/footer.php'; ?>

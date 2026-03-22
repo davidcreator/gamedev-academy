@@ -410,10 +410,25 @@ require_once __DIR__ . '/includes/header.php';
             </div>
         <?php endif; ?>
         
-        <div class="row">
+        <style>
+            .profile-layout{display:grid;grid-template-columns:320px 1fr;gap:1.5rem;align-items:start;}
+            .profile-sidebar .card{border:1px solid var(--gray-700);background:var(--gray-800);}
+            .profile-sidebar .list-group-item{background:transparent;border-color:var(--gray-700);color:var(--gray-200);}
+            .profile-sidebar .list-group-item.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+            .profile-card{border:1px solid var(--gray-700);background:var(--gray-800);border-radius:12px;}
+            .profile-card .card-header{border-bottom:1px solid var(--gray-700);background:var(--gray-800);}
+            .profile-card .form-control{background:var(--gray-900);border:1px solid var(--gray-700);color:var(--gray-100);}
+            .profile-card .form-control:focus{border-color:var(--primary);box-shadow:none;}
+            .profile-form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem 1.25rem;}
+            .profile-avatar-preview{width:96px;height:96px;object-fit:cover;}
+            .profile-avatar-large{width:180px;height:180px;object-fit:cover;}
+            @media(max-width:992px){.profile-layout{grid-template-columns:1fr;}.profile-sidebar{position:relative;}}
+        </style>
+
+        <div class="profile-layout">
             
             <!-- SIDEBAR -->
-            <div class="col-lg-3 col-md-4 mb-4">
+            <div class="profile-sidebar">
                 
                 <!-- Card do Perfil -->
                 <div class="card shadow-sm mb-4">
@@ -499,7 +514,7 @@ require_once __DIR__ . '/includes/header.php';
             </div>
             
             <!-- CONTEÚDO PRINCIPAL -->
-            <div class="col-lg-9 col-md-8">
+            <div class="profile-content">
                 
                 <!-- TAB: Informações Pessoais -->
                 <?php if ($activeTab === 'personal'): ?>
