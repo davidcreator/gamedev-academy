@@ -1,243 +1,156 @@
-# 🏗️ Arquitetura do Projeto
+# Arquitetura Atual
 
-Este documento descreve a arquitetura e organização do GameDev Academy.
+## Visao geral
 
----
+O projeto roda hoje como uma aplicacao PHP server-rendered com entrypoints em paginas `.php` espalhadas na raiz, em `admin/` e em `user/`.
 
-## 📊 Visão Geral
-    ┌─────────────────────────────────────────────────────────────┐
-    │ GAMEDEV ACADEMY │
-    ├─────────────────────────────────────────────────────────────┤
-    │ ┌─────────────┐ ┌─────────────┐ ┌─────────────────────┐ │
-    │ │ TUTORIALS │ │ ASSETS │ │ EXAMPLES │ │
-    │ │ │ │ │ │ │ │
-    │ │ • Beginner │ │ • Sprites │ │ • Unity Projects │ │
-    │ │ • Intermed. │ │ • Sounds │ │ • Godot Projects │ │
-    │ │ • Advanced │ │ • Fonts │ │ • Pygame Projects │ │
-    │ └─────────────┘ └─────────────┘ └─────────────────────┘ │
-    ├─────────────────────────────────────────────────────────────┤
-    │ ┌─────────────┐ ┌─────────────┐ ┌─────────────────────┐ │
-    │ │ TEMPLATES │ │ TOOLS │ │ DOCS │ │
-    │ │ │ │ │ │ │ │
-    │ │ • Starters │ │ • Scripts │ │ • Guides │ │
-    │ │ • Boilerpl. │ │ • Utilities │ │ • API Reference │ │
-    │ └─────────────┘ └─────────────┘ └─────────────────────┘ │
-    └─────────────────────────────────────────────────────────────┘
+O fluxo principal em producao nao depende de um framework completo. Em vez disso, ele combina:
 
-## 📁 Estrutura de Diretórios
-    gamedev-academy/
-    │
-    ├── 📁 assets/ # Recursos reutilizáveis
-    │ ├── 📁 sprites/ # Imagens e spritesheets
-    │ │ ├── 📁 characters/
-    │ │ ├── 📁 environments/
-    │ │ ├── 📁 ui/
-    │ │ └── 📁 effects/
-    │ ├── 📁 sounds/ # Efeitos sonoros
-    │ │ ├── 📁 sfx/
-    │ │ └── 📁 music/
-    │ ├── 📁 fonts/ # Fontes para jogos
-    │ └── 📁 tilesets/ # Tilesets para level design
-    │
-    ├── 📁 docs/ # Documentação
-    │ ├── 📄 INSTALLATION.md
-    │ ├── 📄 GETTING-STARTED.md
-    │ ├── 📄 CONTRIBUTING.md
-    │ ├── 📄 CODE-OF-CONDUCT.md
-    │ ├── 📄 ARCHITECTURE.md
-    │ ├── 📄 API.md
-    │ ├── 📄 FAQ.md
-    │ └── 📄 CHANGELOG.md
-    │
-    ├── 📁 examples/ # Projetos de exemplo
-    │ ├── 📁 unity/
-    │ │ ├── 📁 pong/
-    │ │ ├── 📁 platformer/
-    │ │ └── 📁 rpg-starter/
-    │ ├── 📁 godot/
-    │ │ ├── 📁 space-shooter/
-    │ │ ├── 📁 puzzle-game/
-    │ │ └── 📁 top-down-rpg/
-    │ ├── 📁 pygame/
-    │ │ ├── 📁 snake/
-    │ │ ├── 📁 breakout/
-    │ │ └── 📁 asteroids/
-    │ └── 📁 phaser/
-    │ ├── 📁 endless-runner/
-    │ └── 📁 match-three/
-    │
-    ├── 📁 tutorials/ # Tutoriais organizados
-    │ ├── 📁 beginner/
-    │ │ ├── 📁 01-intro-gamedev/
-    │ │ ├── 📁 02-programming-basics/
-    │ │ ├── 📁 03-first-game/
-    │ │ └── 📁 04-game-loop/
-    │ ├── 📁 intermediate/
-    │ │ ├── 📁 01-physics/
-    │ │ ├── 📁 02-ai-basics/
-    │ │ ├── 📁 03-state-machines/
-    │ │ └── 📁 04-save-system/
-    │ ├── 📁 advanced/
-    │ │ ├── 📁 01-networking/
-    │ │ ├── 📁 02-shaders/
-    │ │ ├── 📁 03-procedural/
-    │ │ └── 📁 04-optimization/
-    │ └── 📁 engine-specific/
-    │ ├── 📁 unity/
-    │ ├── 📁 godot/
-    │ └── 📁 pygame/
-    │
-    ├── 📁 templates/ # Templates iniciais
-    │ ├── 📁 unity/
-    │ │ ├── 📁 2d-platformer/
-    │ │ └── 📁 3d-fps/
-    │ ├── 📁 godot/
-    │ │ ├── 📁 2d-adventure/
-    │ │ └── 📁 mobile-game/
-    │ └── 📁 pygame/
-    │ └── 📁 arcade-game/
-    │
-    ├── 📁 tools/ # Ferramentas e scripts
-    │ ├── 📁 scripts/
-    │ │ ├── 📄 setup.sh
-    │ │ ├── 📄 build.sh
-    │ │ └── 📄 verify.sh
-    │ ├── 📁 generators/
-    │ └── 📁 converters/
-    │
-    ├── 📁 .github/ # Configurações GitHub
-    │ ├── 📁 ISSUE_TEMPLATE/
-    │ ├── 📁 workflows/
-    │ └── 📄 PULL_REQUEST_TEMPLATE.md
-    │
-    ├── 📄 README.md # Documentação principal
-    ├── 📄 LICENSE # Licença do projeto
-    ├── 📄 CONTRIBUTING.md # Guia de contribuição (link)
-    └── 📄 .gitignore # Arquivos ignorados
+- paginas controlador;
+- classes de servico em `classes/`;
+- bootstrap e helpers legados em `includes/`;
+- conexao PDO e helper de banco em `classes/Database.php`.
 
-## 🎯 Princípios de Design
+## Camadas em uso no runtime principal
 
-### 1. Modularidade
-Cada componente é independente e reutilizável.
+### 1. Entry points HTTP
 
-    [Tutorial] ──uses──▶ [Assets]
-    │
-    └──references──▶ [Examples]
+Sao os arquivos que recebem a request diretamente:
 
-### 2. Progressão
-Conteúdo organizado por nível de dificuldade.
+- `index.php`
+- `courses.php`
+- `course.php`
+- `learn.php`
+- `news.php`
+- `login.php`, `register.php`, `logout.php`
+- `forgot-password.php`, `reset-password.php`
+- `admin/...`
+- `user/...`
 
-    Beginner ──▶ Intermediate ──▶ Advanced
-    │ │ │
-    ▼ ▼ ▼
-    Basics Systems Complex
-    Concepts Patterns Solutions
+### 2. Bootstrap e ambiente
 
-### 3. Consistência
-Estrutura uniforme em todos os tutoriais.
+- `includes/install-state.php`: garante que existe uma instalacao valida.
+- `config/database.php`: carrega constantes e cria `$pdo`.
+- `includes/config.php`: bootstrap de compatibilidade para o runtime legado.
+- `includes/functions.php`: helpers de URL, sessao, HTML, flash, seguranca e utilitarios.
 
-    tutorial/
-    ├── README.md # Introdução e objetivos
-    ├── assets/ # Recursos específicos
-    ├── src/ # Código fonte
-    ├── steps/ # Passo a passo
-    │ ├── step-01/
-    │ ├── step-02/
-    │ └── step-N/
-    └── final/ # Versão completa
+### 3. Servicos e modelos
 
-## 🔄 Fluxo de Dados
-    ┌──────────────────────────────────────────────────────────┐
-    │ USUÁRIO/ESTUDANTE │
-    └────────────────────────┬─────────────────────────────────┘
-    │
-    ▼
-    ┌──────────────────────────────────────────────────────────┐
-    │ README.md │
-    │ (Ponto de entrada principal) │
-    └────────────────────────┬─────────────────────────────────┘
-    │
-    ┌─────────────┼─────────────┐
-    ▼ ▼ ▼
-    ┌───────────┐ ┌───────────┐ ┌───────────┐
-    │ Tutorials │ │ Examples │ │ Docs │
-    └─────┬─────┘ └─────┬─────┘ └─────┬─────┘
-    │ │ │
-    └─────────────┴─────────────┘
-    │
-    ▼
-    ┌─────────────────┐
-    │ Assets │
-    │ (Recursos) │
-    └─────────────────┘
+Os comportamentos de negocio mais usados hoje ficam em `classes/`:
 
-## 📦 Dependências por Engine
+- `Auth`: login, logout, sessao, remember me, regras de acesso.
+- `Course`: catalogo, slug, matricula, modulos e licoes.
+- `User`: perfil, contagem, leaderboard, niveis.
+- `News`: listagem, destaque, busca, criacao e edicao de noticias.
+- `Gamification`: XP, moedas, achievements e leaderboard semanal.
+- `CertificateService`: elegibilidade e emissao de certificados.
+- `FinanceService`: indicadores financeiros, repasse e despesas.
+- `Setting`: leitura de configuracoes dinamicas.
 
-### Unity
-    Unity 2021.3 LTS
-    ├── TextMeshPro (incluso)
-    ├── 2D Tilemap Editor
-    └── Input System (novo)
+### 4. Persistencia
 
-### Godot
-    Godot 4.0+
-    ├── GDScript (principal)
-    └── C# (alternativo)
+Ha dois estilos de acesso a dados convivendo:
 
-### Pygame
-    Python 3.8+
-    ├── pygame 2.0+
-    ├── numpy (opcional)
-    └── pillow (opcional)
+- `classes/Database.php`: wrapper simples sobre PDO, muito usado nas paginas;
+- uso direto de `$pdo` e prepared statements em varios fluxos.
 
-## 🔐 Convenções de Nomenclatura
+## Fluxo de request mais importante: `learn.php`
 
-### Arquivos
+`learn.php` resume bem a arquitetura atual:
 
-| Tipo | Convenção | Exemplo |
-|------|-----------|---------|
-| Tutorial | kebab-case | `01-getting-started.md` |
-| Asset | kebab-case | `player-sprite.png` |
-| Script (Python) | snake_case | `player_controller.py` |
-| Script (C#) | PascalCase | `PlayerController.cs` |
-| Script (GDScript) | snake_case | `player_controller.gd` |
+1. carrega bootstrap e exige usuario autenticado;
+2. busca o curso por slug;
+3. garante matricula, inclusive autoenroll em curso gratis;
+4. responde a acoes `complete_lesson` e `submit_quiz`;
+5. atualiza progresso em `lesson_progress` e `enrollments`;
+6. dispara XP, moedas, leaderboard e certificado;
+7. renderiza a pagina de estudo diretamente.
 
-### Diretórios
-tipo-descricao/ # Geral
-01-nome-tutorial/ # Tutoriais numerados
-asset-category/ # Assets por categoria
+Esse fluxo toca autenticacao, cursos, progresso, gamificacao e certificados no mesmo entrypoint. Por isso, qualquer refactor nessa area deve ser incremental e bem testado.
 
-## 🚀 Performance e Otimização
+## Organizacao por dominios
 
-### Assets
-- Sprites: PNG com compressão
-- Áudio: OGG para efeitos, MP3 para música
-- Tamanho máximo por asset: 5MB
+### Catalogo e conteudo
 
-### Repositório
-- Uso de Git LFS para assets grandes
-- Branches leves para features
-- Histórico limpo e organizado
+- cursos: `courses.php`, `course.php`, `classes/Course.php`, `admin/courses/`, `admin/modules/`, `admin/lessons/`
+- noticias: `news.php`, `news-detail.php`, `classes/News.php`, `admin/news/`
 
----
+### Conta e acesso
 
-## 📈 Escalabilidade
+- `login.php`, `register.php`, `logout.php`
+- `forgot-password.php`, `reset-password.php`
+- `classes/Auth.php`
+- `includes/auth/`
 
-O projeto é desenhado para crescer:
+### Experiencia do aluno
 
-    Fase 1 (Atual)
-    ├── Tutoriais básicos
-    ├── 3 engines principais
-    └── Documentação inicial
+- `user/`
+- `learn.php`
+- `classes/Gamification.php`
+- `classes/CertificateService.php`
 
-    Fase 2 (Futuro)
-    ├── Tutoriais avançados
-    ├── Mais engines
-    ├── Ferramentas próprias
-    └── Comunidade
+### Administracao e operacao
 
-    Fase 3 (Longo prazo)
-    ├── Cursos completos
-    ├── Certificações
-    ├── Mentoria
-    └── Marketplace de assets
+- `admin/`
+- `classes/Setting.php`
+- `classes/FinanceService.php`
+
+### Instalacao e setup
+
+- `install/index.php`
+- `install/includes/`
+- `install/steps/`
+- `install/sql/create_tables.php`
+- `scripts/install-db.php`
+- `scripts/seed-demo-data.php`
+
+## Partes do repositorio que existem, mas nao sao a fonte principal de verdade
+
+### `core/`, `routes/` e `views/`
+
+Essas pastas sugerem uma migracao ou experimento de MVC/Router. Hoje elas nao comandam o runtime principal da plataforma. Use essas pastas com cautela e so depois de confirmar que a request real passa por elas.
+
+### `bootstrap.php`
+
+Tambem aponta para uma estrutura mais moderna, mas nao e o bootstrap dominante do fluxo atual.
+
+### `routes.php`
+
+Existe um mapa simples de rotas, mas ele nao representa sozinho a superficie real da aplicacao em uso.
+
+## Banco de dados
+
+Hoje existem duas trilhas de schema:
+
+- instalador web: `install/sql/create_tables.php`;
+- import CLI: `install/database/schema.sql`.
+
+Essa duplicidade e o principal ponto estrutural que a comunidade deve resolver no medio prazo.
+
+## Tensoes arquiteturais conhecidas
+
+- codigo legado e codigo parcialmente modernizado coexistem na mesma base;
+- helpers e configuracoes ainda concentram muita responsabilidade;
+- fluxos importantes misturam controller, regra de negocio e renderizacao no mesmo arquivo;
+- ainda nao existe uma malha consistente de testes automatizados;
+- alguns textos do instalador e alguns artefatos do repositorio ainda refletem estruturas antigas, como `/public`.
+
+## Diretriz de evolucao recomendada
+
+1. Definir o source of truth do schema.
+2. Cobrir login, matricula, progresso e admin com testes.
+3. Extrair casos de uso dos entrypoints grandes, comecando por `learn.php`.
+4. Consolidar gradualmente a arquitetura, em vez de tentar reescrever tudo de uma vez.
+5. Remover codigo paralelo somente quando houver substituto validado em runtime.
+
+## Regra pratica para contribuidores
+
+Se voce esta em duvida sobre onde mexer, priorize:
+
+- arquivos da raiz;
+- `admin/`;
+- `user/`;
+- `classes/`;
+- `includes/`.
+
+Trate `core/`, `routes/`, `views/` e `bootstrap.php` como contexto adicional, nao como a referencia principal do comportamento atual.

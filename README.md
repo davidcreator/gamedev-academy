@@ -1,239 +1,121 @@
-<div align="center">
+# GameDev Academy
 
-# 🎮 GameDev Academy
+Plataforma open-source de ensino para desenvolvimento de jogos, com catalogo publico de cursos, area do aluno, painel administrativo, gamificacao, emissao de certificados e instalador web.
 
-### Aprenda Desenvolvimento de Jogos do Zero ao Avançado
+Este repositorio foi consolidado para handoff comunitario em 23/03/2026. A partir deste ponto, a documentacao principal passa a refletir o estado real da aplicacao e os principais pontos de continuidade tecnica.
 
-[![GitHub stars](https://img.shields.io/github/stars/davidcreator/gamedev-academy?style=for-the-badge&logo=github)](https://github.com/davidcreator/gamedev-academy/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/davidcreator/gamedev-academy?style=for-the-badge&logo=github)](https://github.com/davidcreator/gamedev-academy/network/members)
-[![GitHub issues](https://img.shields.io/github/issues/davidcreator/gamedev-academy?style=for-the-badge&logo=github)](https://github.com/davidcreator/gamedev-academy/issues)
-[![License](https://img.shields.io/github/license/davidcreator/gamedev-academy?style=for-the-badge)](LICENSE.md)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=for-the-badge)](docs/CONTRIBUTING.md)
+## O que a aplicacao entrega hoje
 
-<p align="center">
-  <img src="assets/banner.png" alt="GameDev Academy Banner" width="800"/>
-</p>
+- Paginas publicas para landing page, catalogo de cursos, detalhes do curso, noticias e autenticacao.
+- Area do aluno com dashboard, perfil, ranking, conquistas e ambiente de estudo por curso.
+- Painel administrativo com gestao de usuarios, cursos, modulos, licoes, noticias, configuracoes e financeiro.
+- Instalador web em cinco etapas para configurar banco, gerar `config.php` e criar o primeiro admin.
+- Scripts de apoio para importar schema, popular dados demo e aplicar upgrade do modulo financeiro.
+- Base de gamificacao com XP, moedas, niveis, streaks, leaderboard semanal e conquista de certificados.
 
-**Uma plataforma educacional completa para desenvolvedores de jogos**
+## Stack principal
 
-[🚀 Começar Agora](#-início-rápido) •
-[📚 Documentação](docs/) •
-[💡 Exemplos](#-exemplos) •
-[🤝 Contribuir](docs/CONTRIBUTING.md)
+- PHP 8.1+ como requisito real de desenvolvimento e runtime.
+- MySQL ou MariaDB.
+- Composer para dependencias PHP e assets do EditorJS.
+- Frontend server-rendered em PHP, sem etapa obrigatoria de build em Node.
+- WAMP/Apache funciona bem para desenvolvimento local, mas a aplicacao tambem pode rodar em outros ambientes PHP tradicionais.
 
-</div>
+## Inicio rapido
 
----
-
-## 📋 Índice
-
-- [Sobre o Projeto](#-sobre-o-projeto)
-- [Funcionalidades](#-funcionalidades)
-- [Tecnologias](#-tecnologias)
-- [Início Rápido](#-início-rápido)
-- [Estrutura do Projeto](#-estrutura-do-projeto)
-- [Módulos de Aprendizado](#-módulos-de-aprendizado)
-- [Exemplos](#-exemplos)
-- [Roadmap](#-roadmap)
-- [Contribuição](#-contribuição)
-- [Licença](#-licença)
-- [Contato](#-contato)
-
----
-
-## 🎯 Sobre o Projeto
-
-O **GameDev Academy** é uma plataforma educacional open-source dedicada ao ensino de desenvolvimento de jogos. Nosso objetivo é fornecer recursos de alta qualidade, tutoriais práticos e projetos hands-on para desenvolvedores de todos os níveis.
-
-### 🌟 Por que GameDev Academy?
-
-- 📖 **Conteúdo Estruturado**: Trilhas de aprendizado organizadas do básico ao avançado
-- 🛠️ **Projetos Práticos**: Aprenda construindo jogos reais
-- 🎨 **Assets Gratuitos**: Biblioteca de recursos para seus projetos
-- 🌍 **Comunidade Ativa**: Conecte-se com outros desenvolvedores
-- 🇧🇷 **Em Português**: Conteúdo completo em português brasileiro
-
----
-
-## ✨ Funcionalidades
-
-| Categoria           | Descrição                                                |
-| ------------------- | -------------------------------------------------------- |
-| 📚 **Tutoriais**    | Guias passo-a-passo para diferentes engines e linguagens |
-| 🎮 **Projetos**     | Jogos completos com código-fonte comentado               |
-| 🧩 **Templates**    | Modelos prontos para iniciar seus projetos               |
-| 🎨 **Assets**       | Sprites, sons, músicas e efeitos gratuitos               |
-| 📝 **Exercícios**   | Desafios práticos para fixar o aprendizado               |
-| 🏆 **Certificados** | Reconhecimento ao completar trilhas                      |
-
----
-
-## 🛠️ Tecnologias
-
-<div align="center">
-
-### Game Engines
-
-![Unity](https://img.shields.io/badge/Unity-100000?style=for-the-badge&logo=unity&logoColor=white)
-![Godot](https://img.shields.io/badge/Godot-478CBF?style=for-the-badge&logo=godot-engine&logoColor=white)
-![Unreal](https://img.shields.io/badge/Unreal-0E1128?style=for-the-badge&logo=unreal-engine&logoColor=white)
-![GameMaker](https://img.shields.io/badge/GameMaker-000000?style=for-the-badge&logo=gamemaker&logoColor=white)
-
-### Linguagens
-
-![C#](https://img.shields.io/badge/C%23-239120?style=for-the-badge&logo=c-sharp&logoColor=white)
-![GDScript](https://img.shields.io/badge/GDScript-478CBF?style=for-the-badge&logo=godot-engine&logoColor=white)
-![C++](https://img.shields.io/badge/C++-00599C?style=for-the-badge&logo=c%2B%2B&logoColor=white)
-![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
-
-### Ferramentas
-
-![Blender](https://img.shields.io/badge/Blender-F5792A?style=for-the-badge&logo=blender&logoColor=white)
-![Aseprite](https://img.shields.io/badge/Aseprite-7D929E?style=for-the-badge&logo=aseprite&logoColor=white)
-![Audacity](https://img.shields.io/badge/Audacity-0000CC?style=for-the-badge&logo=audacity&logoColor=white)
-![Git](https://img.shields.io/badge/Git-F05032?style=for-the-badge&logo=git&logoColor=white)
-
-</div>
-
----
-
-## 🚀 Início Rápido
-
-### Pré-requisitos
-
-- Git instalado em sua máquina
-- Editor de código (VS Code recomendado)
-- Engine de sua escolha instalada
-
-### Instalação
+### Fluxo recomendado
 
 ```bash
-# Clone o repositório
 git clone https://github.com/davidcreator/gamedev-academy.git
-
-# Entre no diretório
 cd gamedev-academy
-
-# Explore os módulos
-ls -la modules/
+composer install
 ```
 
-## Primeiros Passos
+1. Aponte o servidor web para a raiz do projeto.
+2. Garanta permissao de escrita na raiz e nas pastas `config`, `uploads`, `cache` e `logs`.
+3. Acesse `/install/` no navegador e conclua o instalador.
+4. Entre com a conta de administrador criada na etapa 4 do instalador.
 
-📖 Leia a documentação de introdução
-🎯 Escolha sua trilha de aprendizado
-🛠️ Configure seu ambiente de desenvolvimento
-🎮 Comece com o primeiro projeto
+### Fluxo manual ou para desenvolvimento local
 
-## 📁 Estrutura do Projeto
+```bash
+composer install
+php scripts/install-db.php
+php scripts/seed-demo-data.php
+```
 
-    gamedev-academy/
-    ├── 📂 assets/                  # Recursos visuais e de áudio
-    │   ├── 📂 sprites/            # Imagens e animações
-    │   ├── 📂 audio/              # Sons e músicas
-    │   ├── 📂 fonts/              # Fontes tipográficas
-    │   └── 📂 ui/                 # Elementos de interface
-    │
-    ├── 📂 docs/                    # Documentação completa
-    │   ├── 📄 ARCHITECTURE.md     # Arquitetura do projeto
-    │   ├── 📄 CONTRIBUTING.md     # Guia de contribuição
-    │   ├── 📄 CODE_OF_CONDUCT.md  # Código de conduta
-    │   ├── 📄 FAQ.md              # Perguntas frequentes
-    │   └── 📄 ...                 # Outros documentos
-    │
-    ├── 📂 modules/                 # Módulos de aprendizado
-    │   ├── 📂 01-basics/          # Fundamentos
-    │   ├── 📂 02-intermediate/    # Intermediário
-    │   ├── 📂 03-advanced/        # Avançado
-    │   └── 📂 04-specializations/ # Especializações
-    │
-    ├── 📂 projects/                # Projetos práticos
-    │   ├── 📂 platformer/         # Jogo de plataforma
-    │   ├── 📂 rpg/                # RPG básico
-    │   ├── 📂 puzzle/             # Jogo de puzzle
-    │   └── 📂 shooter/            # Jogo de tiro
-    │
-    ├── 📂 templates/               # Templates prontos
-    │   ├── 📂 unity/              # Templates Unity
-    │   ├── 📂 godot/              # Templates Godot
-    │   └── 📂 gamemaker/          # Templates GameMaker
-    │
-    ├── 📂 tools/                   # Ferramentas auxiliares
-    │
-    ├── 📄 README.md               # Este arquivo
-    ├── 📄 LICENSE                 # Licença do projeto
-    └── 📄 CHANGELOG.md            # Histórico de mudanças
+Depois do seed, os acessos de desenvolvimento sao:
 
-## 📚 Módulos de Aprendizado
+- Admin: `admin@gamedev.test` / `admin123`
+- Aluno: `aluno@gamedev.test` / `123456`
 
-### 🟢 Nível Básico
+Use esses usuarios somente em ambiente local.
 
+## Scripts uteis
 
-|Módulo | Descrição | Duração |
-| ----- | --------- | ------- |
-| Introdução ao GameDev | Conceitos fundamentais | 2h |
-| Lógica de Programação | Base para qualquer engine | 4h |
-| Sua Primeira Engine | Escolha e configure | 3h |
-| Primeiro Jogo | Pong do zero | 5h |
+- `composer install`: instala dependencias e prepara assets do EditorJS.
+- `php scripts/install-db.php`: importa `install/database/schema.sql`.
+- `php scripts/seed-demo-data.php`: cria usuarios, cursos, modulos, licoes e ranking de exemplo.
+- `php scripts/install-business-finance-upgrade.php`: habilita a tabela `financial_expenses` e configuracoes extras para o painel financeiro em bancos antigos.
 
+## Estrutura do projeto
 
-### 🟡 Nível Intermediário
+```text
+gamedev-academy/
+|-- admin/                  Painel administrativo
+|-- assets/                 CSS, JS, imagens e libs frontend
+|-- classes/                Servicos e modelos em uso no fluxo principal
+|-- config/                 Bootstrap e conexao de banco
+|-- core/                   Estrutura MVC parcial/experimental
+|-- docs/                   Documentacao principal e handoff
+|-- includes/               Bootstrap legado, helpers e mailer
+|-- install/                Instalador web e SQL auxiliar
+|-- routes/                 Definicoes de rotas nao integradas ao runtime principal
+|-- scripts/                Scripts CLI de setup, import e manutencao
+|-- user/                   Area do aluno
+|-- views/                  Views de uma camada MVC parcial
+|-- course.php              Detalhe publico do curso
+|-- courses.php             Catalogo publico
+|-- index.php               Landing page atual
+|-- learn.php               Ambiente de estudo e progresso
+|-- login.php               Login
+|-- news.php                Lista publica de noticias
+`-- register.php            Cadastro
+```
 
-|Módulo | Descrição | Duração |
-| ----- | --------- | ------- |
-| Física de Jogos | Colisões e movimento | 6h |
-| IA para Jogos | Comportamentos inteligentes | 8h |
-| UI/UX em Jogos | Interfaces eficientes | 4h |
-| Audio Design | Sons e músicas | 5h |
+## Fonte de verdade para a comunidade
 
-### 🔴 Nível Avançado
+- Runtime atual: paginas PHP na raiz, `admin/`, `user/`, `classes/` e `includes/`.
+- Instalador web: `install/index.php` + `install/sql/create_tables.php`.
+- Instalacao via script: `scripts/install-db.php` + `install/database/schema.sql`.
+- Handoff tecnico: `docs/PROJECT-HANDOFF.md`.
 
-|Módulo | Descrição | Duração |
-| ----- | --------- | ------- |
-| Multiplayer Jogos | Em rede | 10h |
-| Otimização | Performance máxima | 6h |
-| Shaders | Efeitos visuais | 8h |
-| Publicação | Lance seu jogo | 4h |
+Observacao importante: hoje existem dois caminhos de schema em paralelo. Enquanto nao houver consolidacao, qualquer alteracao estrutural no banco deve considerar tanto `install/sql/create_tables.php` quanto `install/database/schema.sql`.
 
-## 💡 Exemplos
-### Projetos Inclusos
+## Mapa da documentacao
 
-<table> <tr> <td align="center"> <img src="assets/examples/platformer.gif" width="200"/><br/> <b>🏃 Platformer</b><br/> <a href="projects/platformer/">Ver Projeto</a> </td> <td align="center"> <img src="assets/examples/rpg.gif" width="200"/><br/> <b>⚔️ RPG</b><br/> <a href="projects/rpg/">Ver Projeto</a> </td> <td align="center"> <img src="assets/examples/puzzle.gif" width="200"/><br/> <b>🧩 Puzzle</b><br/> <a href="projects/puzzle/">Ver Projeto</a> </td> </tr> </table>
+- `docs/INSTALLATION.md`: instalacao detalhada.
+- `docs/GETTING-STARTED.md`: onboarding tecnico rapido para novos mantenedores.
+- `docs/ARCHITECTURE.md`: arquitetura atual, camadas e pontos de tensao.
+- `docs/API.md`: superficie HTTP e servicos expostos pelo projeto.
+- `docs/CONTRIBUTING.md`: como contribuir com seguranca para a continuidade do projeto.
+- `docs/FAQ.md`: respostas para as duvidas mais comuns de setup e manutencao.
+- `docs/SECURITY.md`: politica e checklist de seguranca.
+- `docs/PROJECT-HANDOFF.md`: estado atual, limites conhecidos e roadmap recomendado.
+- `docs/BUSINESS_FINANCE_PLAN.md`: racional do modulo financeiro e de certificados.
+- `docs/LESSONS.md`, `docs/NEWS.md` e `docs/EDITORJS.md`: referencias especificas de modulo.
 
-## 🗺️ Roadmap
-1. Estrutura inicial do projeto
-1. Módulos básicos
-1. Projetos exemplo
-1. Trilha completa de Unity
-1. Trilha completa de Godot
-1. Sistema de certificados
-1. Versão em inglês
-1. App mobile para estudos
-1. Plataforma web interativa
+## Estado atual do projeto
 
-** Veja o ROADMAP completo para mais detalhes. **
+O sistema esta funcional e organizado o suficiente para continuidade comunitaria, mas ainda convive com algumas camadas legadas e experimentais no mesmo repositorio. Os principais pontos de atencao para proximas iteracoes sao:
 
-## 🤝 Contribuição
-Contribuições são muito bem-vindas! Este é um projeto da comunidade para a comunidade.
+- consolidar a arquitetura entre `classes/` e `core/`;
+- unificar o source of truth do schema;
+- cobrir fluxos criticos com testes automatizados;
+- endurecer a operacao de producao, especialmente upload, seguranca do instalador e configuracao de ambiente.
 
-### Faça um Fork do projeto
-Crie sua Feature Branch (git checkout -b feature/NovaFeature)
-Commit suas mudanças (git commit -m 'Add: nova feature incrível')
-Push para a Branch (git push origin feature/NovaFeature)
-Abra um Pull Request
-Leia nosso Guia de Contribuição para mais detalhes.
+Esses pontos estao detalhados em `docs/PROJECT-HANDOFF.md`.
 
-## 📝 Licença
-Este projeto está sob a licença MIT. Veja o arquivo LICENSE para mais detalhes.
+## Licenca
 
-## 📬 Contato
-
-<div align="center">
-David Creator
-
-GitHub
-LinkedIn
-Twitter
-
-<p align="center"> Feito com ❤️ para a comunidade brasileira de gamedev </p><p align="center"> <a href="#-gamedev-academy">⬆️ Voltar ao topo</a> </p></div>
+Este projeto usa a licenca MIT. Consulte `LICENSE.md`.

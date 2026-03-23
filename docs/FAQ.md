@@ -1,184 +1,92 @@
-# ❓ Perguntas Frequentes (FAQ)
+# FAQ
 
-Encontre respostas para as dúvidas mais comuns sobre o GameDev Academy.
+## O que exatamente e este projeto hoje?
 
----
+Uma plataforma PHP server-rendered para cursos de desenvolvimento de jogos, com area publica, area do aluno, painel administrativo, instalador web, gamificacao e modulo financeiro opcional.
 
-## 📚 Índice
+## O projeto usa framework?
 
-- [Geral](#geral)
-- [Instalação](#instalação)
-- [Tutoriais](#tutoriais)
-- [Engines](#engines)
-- [Contribuição](#contribuição)
-- [Técnico](#técnico)
+Nao como runtime principal. Existe uma camada parcial em `core/`, `routes/` e `views/`, mas a aplicacao em uso hoje e guiada por paginas PHP na raiz, em `admin/` e em `user/`, com servicos em `classes/`.
 
----
+## Qual versao de PHP devo usar?
 
-## 🌐 Geral
+Use PHP 8.1 ou superior. Embora parte do instalador ainda aceite 7.4, o baseline real do projeto atual vem do `composer.json` e do codigo que roda em producao.
 
-### O que é o GameDev Academy?
+## Por que o sistema redireciona para `/install/`?
 
-O GameDev Academy é uma plataforma educacional open-source dedicada ao ensino de desenvolvimento de jogos. Oferecemos tutoriais, exemplos e recursos para desenvolvedores de todos os níveis.
+Porque `config.php` esta ausente, vazio ou invalido. O arquivo `includes/install-state.php` faz essa verificacao antes de carregar o sistema.
 
-### O conteúdo é gratuito?
+## O `config.php` vazio no repositorio e normal?
 
-Sim! Todo o conteúdo é 100% gratuito e open-source sob a licença MIT.
+Sim. Ele funciona como placeholder local e deve ser gerado pelo instalador ou criado manualmente a partir de `config dist.php`.
 
-### Preciso saber programar para começar?
+## Preciso de Node.js para rodar o projeto?
 
-Não! Temos uma trilha para iniciantes absolutos que começa do zero.
+Nao para o runtime normal. Os assets importantes ja sao versionados no repositorio e o projeto se apoia em Composer, nao em uma pipeline Node obrigatoria.
 
-### Em que idiomas o conteúdo está disponível?
-
-Atualmente em Português (BR). Contribuições para traduções são bem-vindas!
-
-### Posso usar os assets em meus jogos comerciais?
-
-Sim! Todos os assets estão sob licença permissiva. Verifique a licença específica de cada asset.
-
----
-
-## 🔧 Instalação
-
-### Como faço para clonar o repositório?
+## Qual e a forma mais rapida de subir um ambiente de desenvolvimento?
 
 ```bash
-git clone https://github.com/davidcreator/gamedev-academy.git
-cd gamedev-academy
+composer install
+php scripts/install-db.php
+php scripts/seed-demo-data.php
 ```
 
-## Preciso de algum software específico?
-Depende da trilha escolhida:
+Depois configure o servidor web para a raiz do projeto.
 
-* Unity: Unity Hub + Unity 2021.3 LTS
-* Godot: Godot 4.0+
-* Pygame: Python 3.8+
-* Phaser: Node.js 16+
+## Quais sao as credenciais demo?
 
-## O repositório é muito grande para clonar?
-Use clone superficial para download mais rápido:
+- Admin: `admin@gamedev.test` / `admin123`
+- Aluno: `aluno@gamedev.test` / `123456`
+
+Use apenas em ambiente local.
+
+## Qual schema eu altero quando mudo banco?
+
+Hoje, os dois:
+
+- `install/sql/create_tables.php`
+- `install/database/schema.sql`
+
+A comunidade ainda precisa unificar essa duplicidade.
+
+## Existe API REST pronta para integrar app mobile?
+
+Nao de forma estavel. `routes/api.php` existe, mas nao representa uma API de producao consolidada. A superficie principal e a propria aplicacao web server-rendered.
+
+## Onde eu mexo para ajustar cursos, modulos e licoes?
+
+- regra de negocio: `classes/Course.php`
+- tela publica: `courses.php`, `course.php`, `learn.php`
+- admin: `admin/courses/`, `admin/modules/`, `admin/lessons/`
+
+## Onde eu mexo para ajustar noticias?
+
+- regra de negocio: `classes/News.php`
+- admin: `admin/news/`
+- front: `news.php` e `news-detail.php`
+
+## Como habilito o financeiro completo em bancos antigos?
+
+Rode:
+
 ```bash
-git clone --depth 1 https://github.com/davidcreator/gamedev-academy.git
+php scripts/install-business-finance-upgrade.php
 ```
 
-## Como atualizo minha cópia local?
-```bash
-git pull origin main
-```
+## O projeto tem testes automatizados?
 
-## 📖 Tutoriais
-### Por onde devo começar?
-1. Se nunca programou: tutorials/beginner/01-intro-gamedev/
-1. Se já programa: tutorials/beginner/03-first-game/
-1. Se já fez jogos: tutorials/intermediate/
+Ainda nao em nivel suficiente para confiar apenas neles. Hoje a manutencao depende bastante de teste manual e verificacao dirigida por fluxo.
 
-#### Quanto tempo leva para completar um tutorial?
-| Nível |	Tempo Médio |
-| ----- | ------------ |
-| Beginner | 	1-2 horas |
-| Intermediate | 2-4 horas |
-| Advanced |	4-8 horas |
+## Por que existem `core/`, `routes/` e `views/` se a aplicacao roda por paginas?
 
-#### Os tutoriais têm pré-requisitos?
-Sim, cada tutorial lista seus pré-requisitos no README.md inicial.
+Porque o repositorio convive com uma camada parcial de modernizacao. Ela pode ser reutilizada no futuro, mas nao deve ser assumida como runtime principal sem confirmacao.
 
-#### Posso pular tutoriais?
-Pode, mas recomendamos seguir a ordem, especialmente nos níveis iniciais.
+## O que devo fazer antes de publicar em producao?
 
-#### Onde encontro ajuda se travar em um tutorial?
-1. Verifique a seção "Problemas Comuns" do tutorial
-1. Consulte o código final na pasta final/
-1. Abra uma issue no GitHub
-1. Pergunte na comunidade
-
-## 🎮 Engines
-#### Qual engine devo escolher?
-| Engine |	Melhor Para |
-| ------ | ------------ |
-| Unity | Jogos 2D/3D profissionais, mobile, VR |
-| Godot | Jogos 2D, open-source, aprendizado |
-| Pygame | Protótipos, aprender programação |
-| Phaser | Jogos web, HTML5 |
-
-#### Posso usar uma engine diferente?
-Sim! Os conceitos são transferíveis. Contribuições para outras engines são bem-vindas.
-
-#### Unity ou Unreal?
-Para iniciantes, recomendamos Unity. Unreal tem curva de aprendizado mais íngreme.
-
-#### Godot 3 ou 4?
-Recomendamos Godot 4 para novos projetos. Os tutoriais são atualizados para a versão mais recente.
-
-## 🤝 Contribuição
-### Como posso contribuir?
-* Reportar bugs
-* Sugerir features
-* Melhorar documentação
-* Adicionar tutoriais
-* Contribuir com assets
-*Leia o Guia de Contribuição completo.*
-
-### Preciso ser expert para contribuir?
-Não! Contribuições de todos os níveis são valorizadas, desde correção de typos até novos tutoriais.
-
-### Minha contribuição será creditada?
-Sim! Todos os contribuidores são reconhecidos no projeto.
-
-### Quanto tempo leva para um PR ser revisado?
-Geralmente 1-7 dias, dependendo da complexidade.
-
-## 🔧 Técnico
-### Quais são os requisitos mínimos de sistema?
-**Para desenvolvimento geral:**
-
-* 8GB RAM (16GB recomendado)
-* 10GB espaço em disco
-* Processador dual-core
-
-**Para Unity:**
-* GPU com suporte a DirectX 11/OpenGL 4.1
-
-### Por que meu projeto Unity não abre?
-1. Verifique a versão do Unity (2021.3 LTS)
-1. Abra pelo Unity Hub
-1. Deixe importar todos os assets
-
-### Pygame não instala corretamente?
-```bash
-# Atualize o pip
-pip install --upgrade pip
-
-# Instale com flag específica
-pip install pygame --pre
-```
-
-### Como reporto um bug?
-1. Verifique se já existe issue similar
-1. Use o template de bug report
-1. Inclua: OS, versão, passos para reproduzir
-
-### O código de exemplo não funciona?
-1. Verifique se seguiu todos os passos
-1. Compare com o código na pasta final/
-1. Verifique a versão da engine/linguagem
-1. Abra uma issue se o problema persistir
-
-## 🎯 Dicas Extras
-### Melhores práticas para estudar
-⏰ Dedique tempo regular (30min-1h/dia)
-💻 Digite o código, não copie/cole
-🔧 Experimente modificar os exemplos
-📝 Faça anotações
-🎮 Complete os projetos práticos
-
-## Recursos complementares
-* Game Programming Patterns
-* GDQuest (Godot)
-* Brackeys (Unity)
-
-## 🆘 Ainda com Dúvidas?
-Se sua pergunta não foi respondida:
-🔍 Pesquise nas Issues
-📝 Abra uma nova issue com a label question
-💬 Entre em contato com a comunidade
+- desligar `DEBUG_MODE`;
+- proteger `config.php`;
+- proteger ou remover `/install/`;
+- revisar permissao de `uploads`, `cache` e `logs`;
+- configurar HTTPS e cookies seguros;
+- revisar estrategia de backup.

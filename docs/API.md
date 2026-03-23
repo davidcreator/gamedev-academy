@@ -1,430 +1,202 @@
-# 📘 Referência de API e Código
+# Superficie da Aplicacao
 
-Este documento serve como referência rápida para padrões de código e APIs utilizadas nos tutoriais.
+O projeto nao expoe hoje uma API REST publica, versionada e estavel. A interface principal e feita por paginas PHP server-rendered e alguns endpoints de formulario ou instalacao.
 
----
+Este documento registra a superficie real que a comunidade precisa manter.
 
-## 📚 Índice
+## Endpoints publicos
 
-- [Unity/C#](#unityc)
-- [Godot/GDScript](#godotgdscript)
-- [Pygame/Python](#pygamepython)
-- [Phaser/JavaScript](#phaserjavascript)
+- `/`
+  - landing page atual.
+- `/courses.php`
+  - catalogo publico de cursos.
+- `/course.php?slug={slug}`
+  - detalhe do curso, grade e matricula.
+- `/news.php`
+  - listagem publica de noticias.
+- `/news-detail.php?id={slug-ou-id}`
+  - detalhe de noticia.
+- `/login.php`
+  - login.
+- `/register.php`
+  - cadastro.
+- `/logout.php`
+  - encerramento de sessao.
+- `/forgot-password.php`
+  - solicitacao de recuperacao.
+- `/reset-password.php`
+  - redefinicao de senha.
 
----
+## Endpoints da area do aluno
 
-## 🎮 Unity/C#
+- `/user/`
+  - dashboard.
+- `/user/profile.php`
+  - perfil.
+- `/user/courses.php`
+  - cursos do aluno.
+- `/user/achievements.php`
+  - conquistas.
+- `/user/leaderboard.php`
+  - ranking.
+- `/user/settings.php`
+  - configuracoes do aluno.
+- `/learn.php?course={slug}&lesson={id}`
+  - ambiente de estudo.
 
-### Estrutura Básica de um Script
+## Endpoints administrativos
 
-```csharp
-using UnityEngine;
+- `/admin/`
+  - dashboard principal.
+- `/admin/users/users.php`
+  - usuarios.
+- `/admin/courses/courses.php`
+  - cursos.
+- `/admin/modules/modules.php?course_id={id}`
+  - modulos por curso.
+- `/admin/lessons/lessons-list.php`
+  - listagem geral de licoes.
+- `/admin/news/news-list.php`
+  - noticias.
+- `/admin/settings/settings.php`
+  - configuracoes.
+- `/admin/finance/index.php`
+  - indicadores e despesas.
 
-public class PlayerController : MonoBehaviour
-{
-    // Variáveis serializadas (aparecem no Inspector)
-    [SerializeField] private float moveSpeed = 5f;
-    [SerializeField] private float jumpForce = 10f;
-    
-    // Componentes
-    private Rigidbody2D rb;
-    private Animator animator;
-    
-    // Unity Lifecycle Methods
-    private void Awake()
-    {
-        // Chamado quando o objeto é instanciado
-        rb = GetComponent<Rigidbody2D>();
-        animator = GetComponent<Animator>();
-    }
-    
-    private void Start()
-    {
-        // Chamado antes do primeiro frame
-    }
-    
-    private void Update()
-    {
-        // Chamado a cada frame
-        HandleInput();
-    }
-    
-    private void FixedUpdate()
-    {
-        // Chamado em intervalos fixos (física)
-        HandleMovement();
-    }
-    
-    private void HandleInput()
-    {
-        float horizontal = Input.GetAxisRaw("Horizontal");
-        // Processar input
-    }
-    
-    private void HandleMovement()
-    {
-        // Aplicar movimento
-    }
-}
-```
+## Acoes POST mais importantes
 
-## Padrões Comuns
-### Singleton
-```csharp
-public class GameManager : MonoBehaviour
-{
-    public static GameManager Instance { get; private set; }
-    
-    private void Awake()
-    {
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-        Instance = this;
-        DontDestroyOnLoad(gameObject);
-    }
-}
-```
+### Matricula em curso
 
-### Object Pooling
-```csharp
-public class ObjectPool : MonoBehaviour
-{
-    [SerializeField] private GameObject prefab;
-    [SerializeField] private int poolSize = 10;
-    
-    private Queue<GameObject> pool = new Queue<GameObject>();
-    
-    private void Start()
-    {
-        for (int i = 0; i < poolSize; i++)
-        {
-            GameObject obj = Instantiate(prefab);
-            obj.SetActive(false);
-            pool.Enqueue(obj);
-        }
-    }
-    
-    public GameObject Get()
-    {
-        if (pool.Count > 0)
-        {
-            GameObject obj = pool.Dequeue();
-            obj.SetActive(true);
-            return obj;
-        }
-        return Instantiate(prefab);
-    }
-    
-    public void Return(GameObject obj)
-    {
-        obj.SetActive(false);
-        pool.Enqueue(obj);
-    }
-}
-```
+- endpoint: `/course.php?slug={slug}`
+- payload:
+  - `action=enroll`
+- efeito:
+  - cria matricula ou confirma matricula existente;
+  - redireciona para `learn.php`.
 
-## 🤖 Godot/GDScript
-### Estrutura Básica de um Script
-```gdscript
-extends CharacterBody2D
+### Conclusao de licao
 
-# Constantes
-const SPEED := 200.0
-const JUMP_VELOCITY := -400.0
+- endpoint: `/learn.php?course={slug}&lesson={id}`
+- payload:
+  - `action=complete_lesson`
+  - `lesson_id`
+- efeito:
+  - atualiza `lesson_progress`;
+  - recalcula progresso em `enrollments`;
+  - adiciona XP e moedas;
+  - pode concluir o curso e emitir certificado.
 
-# Variáveis exportadas (aparecem no Inspector)
-@export var max_health: int = 100
+### Envio de quiz
 
-# Variáveis privadas
-var _current_health: int
-var _is_jumping: bool = false
+- endpoint: `/learn.php?course={slug}&lesson={id}`
+- payload:
+  - `action=submit_quiz`
+  - `lesson_id`
+  - `answers[...]`
+- efeito:
+  - corrige respostas;
+  - grava score;
+  - recompensa XP proporcional;
+  - recalcula progresso.
 
-# Referências a nós
-@onready var sprite: Sprite2D = $Sprite2D
-@onready var animation_player: AnimationPlayer = $AnimationPlayer
+### Registro de despesa
 
-# Chamado quando o nó entra na árvore
-func _ready() -> void:
-    _current_health = max_health
+- endpoint: `/admin/finance/index.php`
+- payload:
+  - `action=add_expense`
+  - `title`, `category`, `amount`, `expense_date`, `status`, `vendor_name`, `notes`
+- efeito:
+  - grava item em `financial_expenses`.
 
-# Chamado a cada frame
-func _process(delta: float) -> void:
-    _handle_animation()
+## Instalador e endpoints auxiliares
 
-# Chamado em intervalos fixos (física)
-func _physics_process(delta: float) -> void:
-    _handle_movement(delta)
-    move_and_slide()
+- `/install/`
+  - fluxo web de instalacao.
+- `/install/ajax/...`
+  - validacoes e criacao de estrutura durante o instalador.
 
-# Funções privadas
-func _handle_movement(delta: float) -> void:
-    # Gravidade
-    if not is_on_floor():
-        velocity.y += get_gravity().y * delta
-    
-    # Pulo
-    if Input.is_action_just_pressed("jump") and is_on_floor():
-        velocity.y = JUMP_VELOCITY
-    
-    # Movimento horizontal
-    var direction := Input.get_axis("move_left", "move_right")
-    if direction:
-        velocity.x = direction * SPEED
-    else:
-        velocity.x = move_toward(velocity.x, 0, SPEED)
+## Servicos que funcionam como API interna
 
-func _handle_animation() -> void:
-    if velocity.x > 0:
-        sprite.flip_h = false
-    elif velocity.x < 0:
-        sprite.flip_h = true
-```
+### `classes/Auth.php`
 
-## Padrões Comuns
-### Autoload (Singleton)
-```gdscript
-# Global.gd - Adicionar em Project Settings > Autoload
-extends Node
+- `register(array $data)`
+- `login(string $identifier, string $password, bool $remember = false)`
+- `logout()`
+- `isLoggedIn()`
+- `getCurrentUser()`
+- `requireLogin()`
+- `requireAdmin()`
 
-var score: int = 0
-var high_score: int = 0
+### `classes/Course.php`
 
-signal score_changed(new_score)
+- `find(int $id)`
+- `findBySlug(string $slug)`
+- `getAll(bool $publishedOnly = true, int $limit = 50)`
+- `getFeatured(int $limit = 6)`
+- `getModules(int $courseId)`
+- `getLessons(int $moduleId)`
+- `isEnrolled(int $userId, int $courseId)`
+- `enroll(int $userId, int $courseId)`
+- `getUserCourses(int $userId)`
 
-func add_score(points: int) -> void:
-    score += points
-    score_changed.emit(score)
-    if score > high_score:
-        high_score = score
-```
+### `classes/User.php`
 
-### State Machine
-```gdscript
-extends Node
+- `find(int $id)`
+- `findByEmail(string $email)`
+- `getAll(int $limit = 50, int $offset = 0)`
+- `getStats(int $userId)`
+- `getLeaderboard(int $limit = 10)`
 
-enum State { IDLE, WALKING, JUMPING, FALLING }
+### `classes/News.php`
 
-var current_state: State = State.IDLE
+- `getAll($page = 1, $perPage = 12, $category = null, $search = null)`
+- `getLatest($limit = 6)`
+- `getFeatured($limit = 3)`
+- `getRelated($newsId, $categoryId, $limit = 4)`
+- `getById($id)`
+- `create($data)`
+- `update($id, $data)`
+- `delete($id)`
 
-func change_state(new_state: State) -> void:
-    exit_state(current_state)
-    current_state = new_state
-    enter_state(new_state)
+### `classes/Gamification.php`
 
-func enter_state(state: State) -> void:
-    match state:
-        State.IDLE:
-            print("Entering IDLE")
-        State.WALKING:
-            print("Entering WALKING")
-        # ...
+- `addXP(...)`
+- `addCoins(...)`
+- `checkLevelUp(...)`
+- `checkAchievements(...)`
+- `getUserAchievements(...)`
+- `getXPHistory(...)`
+- `getProgressToNextLevel(...)`
+- `getWeeklyLeaderboard(...)`
 
-func exit_state(state: State) -> void:
-    match state:
-        State.IDLE:
-            print("Exiting IDLE")
-        # ...
-```
+### `classes/CertificateService.php`
 
-## 🐍 Pygame/Python
-### Estrutura Básica de um Jogo
-```python
-import pygame
-import sys
+- `issueForEnrollment(int $enrollmentId)`
 
-# Inicialização
-pygame.init()
+### `classes/FinanceService.php`
 
-# Constantes
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
-FPS = 60
+- `getOverview(...)`
+- `getRevenueBreakdown(...)`
+- `getInstructorPayoutPreview(...)`
+- `getRecentExpenses(...)`
+- `getExpenseCategorySummary(...)`
+- `createExpense(...)`
 
-# Cores
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
+## O que ainda nao deve ser tratado como API estavel
 
-# Setup
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Meu Jogo")
-clock = pygame.time.Clock()
+- `routes.php`
+- `routes/api.php`
+- `routes/web.php`
+- `routes/admin.php`
+- `core/`
+- `views/`
 
+Esses artefatos existem, mas nao representam sozinhos a interface realmente usada pela aplicacao hoje.
 
-class Player(pygame.sprite.Sprite):
-    def __init__(self, x: int, y: int):
-        super().__init__()
-        self.image = pygame.Surface((50, 50))
-        self.image.fill((255, 0, 0))
-        self.rect = self.image.get_rect()
-        self.rect.x = x
-        self.rect.y = y
-        self.speed = 5
-    
-    def update(self):
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_LEFT]:
-            self.rect.x -= self.speed
-        if keys[pygame.K_RIGHT]:
-            self.rect.x += self.speed
-        if keys[pygame.K_UP]:
-            self.rect.y -= self.speed
-        if keys[pygame.K_DOWN]:
-            self.rect.y += self.speed
-        
-        # Limites da tela
-        self.rect.clamp_ip(screen.get_rect())
+## Recomendacao para futuras evolucoes
 
+Se a comunidade decidir expor uma API publica de verdade, o caminho mais seguro e:
 
-class Game:
-    def __init__(self):
-        self.running = True
-        self.all_sprites = pygame.sprite.Group()
-        self.player = Player(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
-        self.all_sprites.add(self.player)
-    
-    def handle_events(self):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    self.running = False
-    
-    def update(self):
-        self.all_sprites.update()
-    
-    def draw(self):
-        screen.fill(BLACK)
-        self.all_sprites.draw(screen)
-        pygame.display.flip()
-    
-    def run(self):
-        while self.running:
-            self.handle_events()
-            self.update()
-            self.draw()
-            clock.tick(FPS)
-        
-        pygame.quit()
-        sys.exit()
-
-
-if __name__ == "__main__":
-    game = Game()
-    game.run()
-```
-
-## Padrões Comuns
-### Classe de Cena
-```python
-class Scene:
-    def __init__(self):
-        self.next_scene = None
-    
-    def handle_events(self, events):
-        raise NotImplementedError
-    
-    def update(self, dt):
-        raise NotImplementedError
-    
-    def draw(self, screen):
-        raise NotImplementedError
-
-
-class MenuScene(Scene):
-    def __init__(self):
-        super().__init__()
-        self.font = pygame.font.Font(None, 74)
-    
-    def handle_events(self, events):
-        for event in events:
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_RETURN:
-                    self.next_scene = GameScene()
-    
-    def update(self, dt):
-        pass
-    
-    def draw(self, screen):
-        screen.fill(BLACK)
-        text = self.font.render("Press ENTER to Start", True, WHITE)
-        screen.blit(text, (100, 300))
-```
-
-## 🌐 Phaser/JavaScript
-### Estrutura Básica de um Jogo
-```javascript
-// config.js
-const config = {
-    type: Phaser.AUTO,
-    width: 800,
-    height: 600,
-    physics: {
-        default: 'arcade',
-        arcade: {
-            gravity: { y: 300 },
-            debug: false
-        }
-    },
-    scene: [BootScene, MenuScene, GameScene]
-};
-
-const game = new Phaser.Game(config);
-```
-
-```javascript
-// scenes/GameScene.js
-class GameScene extends Phaser.Scene {
-    constructor() {
-        super({ key: 'GameScene' });
-    }
-    
-    preload() {
-        this.load.image('player', 'assets/player.png');
-        this.load.image('platform', 'assets/platform.png');
-    }
-    
-    create() {
-        // Plataformas
-        this.platforms = this.physics.add.staticGroup();
-        this.platforms.create(400, 568, 'platform').setScale(2).refreshBody();
-        
-        // Player
-        this.player = this.physics.add.sprite(100, 450, 'player');
-        this.player.setBounce(0.2);
-        this.player.setCollideWorldBounds(true);
-        
-        // Colisão
-        this.physics.add.collider(this.player, this.platforms);
-        
-        // Input
-        this.cursors = this.input.keyboard.createCursorKeys();
-    }
-    
-    update() {
-        if (this.cursors.left.isDown) {
-            this.player.setVelocityX(-160);
-        } else if (this.cursors.right.isDown) {
-            this.player.setVelocityX(160);
-        } else {
-            this.player.setVelocityX(0);
-        }
-        
-        if (this.cursors.up.isDown && this.player.body.touching.down) {
-            this.player.setVelocityY(-330);
-        }
-    }
-}
-```
-
-## 📚 Referências Úteis
-### Documentações Oficiais
-| Engine |	Link |
-| ------ | ---- |
-| Unity |	docs.unity3d.com |
-| Godot |	docs.godotengine.org |
-| Pygame | pygame.org/docs |
-| Phaser |	phaser.io/docs |
+1. mapear o comportamento atual por fluxo;
+2. extrair casos de uso dos entrypoints;
+3. criar endpoints REST apenas depois de haver testes para login, matricula, progresso e admin.

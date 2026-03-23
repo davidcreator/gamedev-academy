@@ -1,178 +1,135 @@
-# 🎯 Primeiros Passos
+# Getting Started
 
-Bem-vindo ao GameDev Academy! Este guia irá ajudá-lo a dar os primeiros passos na sua jornada de desenvolvimento de jogos.
+Este guia e para quem vai manter o projeto, nao apenas usa-lo.
 
----
-
-## 🗺️ Escolha sua Trilha
-
-### 🌱 Iniciante
-*Nunca programou antes? Comece aqui!*
-
-tutorials/beginner/
-├── 01-introducao-gamedev/
-├── 02-logica-programacao/
-├── 03-primeiro-jogo/
-└── 04-conceitos-basicos/
-
-
-**Tempo estimado:** 4-6 semanas
-
-### 🌿 Intermediário
-*Já sabe programar? Avance suas skills!*
-
-tutorials/intermediate/
-├── 01-fisica-jogos/
-├── 02-inteligencia-artificial/
-├── 03-sistemas-complexos/
-└── 04-otimizacao/
-
-
-**Tempo estimado:** 6-8 semanas
-
-
-**Tempo estimado:** 6-8 semanas
-
-### 🌳 Avançado
-*Pronto para desafios maiores?*
-
-tutorials/advanced/
-├── 01-multiplayer/
-├── 02-shaders/
-├── 03-procedural-generation/
-└── 04-publicacao/
-
-
-**Tempo estimado:** 8-12 semanas
-
----
-
-## 🎮 Seu Primeiro Projeto
-
-Vamos criar um jogo simples para entender o fluxo de trabalho!
-
-### Pong em 30 Minutos
+## Suba o projeto em ate 15 minutos
 
 ```bash
-# Navegue até o tutorial
-cd tutorials/beginner/03-primeiro-jogo/pong
-
-# Siga o README do projeto
-cat README.md
-```
-## Estrutura do Projeto Pong:
-    pong/
-    ├── 📄 README.md          # Instruções passo-a-passo
-    ├── 📁 assets/            # Sprites e sons
-    ├── 📁 src/               # Código fonte
-    ├── 📁 steps/             # Código de cada etapa
-    └── 📄 final/             # Versão completa
-
-## 📚 Recursos de Aprendizado
-### 📖 Documentação
-| Recurso | Descrição |
-| --- | --- |
-| Tutoriais | Guias passo-a-passo |
-| Exemplos | Projetos prontos |
-| Assets | Recursos gratuitos |
-| Templates | Estruturas iniciais |
-
-## 🎥 Formatos Disponíveis
-📝 Texto - Documentação detalhada em Markdown
-💻 Código - Exemplos comentados e funcionais
-🖼️ Diagramas - Fluxogramas e arquiteturas
-📊 Cheatsheets - Referências rápidas
-
-## 🛠️ Configuração do Ambiente
-### VS Code (Recomendado)
-Extensões úteis para game dev:
-```json
-{
-  "recommendations": [
-    "ms-dotnettools.csharp",        // Unity/C#
-    "geequlim.godot-tools",         // Godot
-    "ms-python.python",             // Pygame
-    "dbaeumer.vscode-eslint",       // JavaScript/Phaser
-    "yzhang.markdown-all-in-one"    // Documentação
-  ]
-}
+composer install
+php scripts/install-db.php
+php scripts/seed-demo-data.php
 ```
 
-## Estrutura de Workspace
-```bash
-# Crie seu workspace de desenvolvimento
-mkdir ~/gamedev-workspace
-cd ~/gamedev-workspace
+Depois:
 
-# Clone o academy
-git clone https://github.com/davidcreator/gamedev-academy.git
+1. aponte o servidor web para a raiz do repositorio;
+2. confirme que `config.php` esta configurado;
+3. entre com o admin demo em `/login.php`.
 
-# Crie pasta para seus projetos
-mkdir my-projects
-```
+Credenciais de desenvolvimento:
 
-## 📅 Plano de Estudos Sugerido
-### Semana 1-2: Fundamentos
- Introdução ao desenvolvimento de jogos
- Conceitos básicos de programação
- Estrutura de um game loop
- Primeiro projeto: Pong
+- `admin@gamedev.test` / `admin123`
+- `aluno@gamedev.test` / `123456`
 
-### Semana 3-4: Mecânicas Básicas
- Movimento e controles
- Colisões
- Sistema de pontuação
- Projeto: Breakout
+## Ordem recomendada de leitura
 
-### Semana 5-6: Elementos de Jogo
- Sprites e animações
- Áudio e efeitos sonoros
- Interface do usuário
- Projeto: Platformer simples
+1. `README.md`
+2. `docs/PROJECT-HANDOFF.md`
+3. `docs/ARCHITECTURE.md`
+4. `docs/INSTALLATION.md`
+5. `docs/CONTRIBUTING.md`
 
-### Semana 7-8: Projeto Final
- Planejamento do jogo
- Desenvolvimento
- Polimento
- Publicação
+Depois disso, va para o codigo conforme o tipo de tarefa.
 
-## ✨ Dicas para o Sucesso
-### ✅ Faça
-🎯 Defina metas pequenas e alcançáveis
-📝 Documente seu progresso
-🔄 Pratique todos os dias (mesmo que 30 min)
-🤝 Participe da comunidade
-🎮 Jogue jogos e analise-os
+## Onde comecar no codigo
 
-### ❌ Evite
-🚫 Pular etapas básicas
-🚫 Projetos muito ambiciosos no início
-🚫 Copiar código sem entender
-🚫 Desistir nos primeiros obstáculos
-🚫 Trabalhar isoladamente
+### Fluxos publicos
 
-## 🏆 Conquistas Desbloqueáveis
-Acompanhe seu progresso:
+- `index.php`: landing page atual.
+- `courses.php`: listagem publica de cursos.
+- `course.php`: pagina publica do curso e matricula.
+- `news.php` e `news-detail.php`: noticias.
+- `login.php`, `register.php`, `forgot-password.php`, `reset-password.php`: autenticacao.
 
-## Conquista	Descrição	Status
-🥚 First Steps	Clone o repositório	⬜
-🐣 Hello World	Complete o primeiro tutorial	⬜
-🐥 Game Dev	Finalize seu primeiro jogo	⬜
-🐓 Contributor	Faça sua primeira contribuição	⬜
-🦅 Master	Complete uma trilha inteira	⬜
+### Fluxos do aluno
 
-## 🆘 Onde Buscar Ajuda
-Se você tiver dúvidas, não hesite em buscar ajuda!
+- `learn.php`: player de estudo, progresso, quiz, certificado e gamificacao.
+- `user/index.php`: dashboard.
+- `user/profile.php`: perfil.
+- `user/courses.php`: cursos do aluno.
+- `user/achievements.php` e `user/leaderboard.php`: engagement.
 
-### Recursos Disponíveis
-Documentação - Consulte os guias na pasta docs/
-FAQ - Perguntas frequentes em FAQ.md
-Issues - Busque problemas similares
-Comunidade - Pergunte e ajude outros
+### Fluxos administrativos
 
-## ➡️ Próximos Passos
-Escolha seu caminho:
-📘 Tutorial Unity
-📗 Tutorial Godot
-📙 Tutorial Pygame
-📕 Tutorial Phaser
+- `admin/index.php`: dashboard.
+- `admin/courses/courses.php`: cursos.
+- `admin/modules/modules.php`: modulos.
+- `admin/lessons/`: licoes.
+- `admin/news/`: noticias.
+- `admin/users/`: usuarios.
+- `admin/settings/settings.php`: configuracoes.
+- `admin/finance/index.php`: relatorios e despesas.
+
+### Servicos centrais
+
+- `classes/Auth.php`
+- `classes/Course.php`
+- `classes/User.php`
+- `classes/News.php`
+- `classes/Gamification.php`
+- `classes/CertificateService.php`
+- `classes/FinanceService.php`
+- `classes/Setting.php`
+
+## Como navegar sem se perder
+
+O runtime principal ainda e baseado em paginas PHP server-rendered. Na pratica:
+
+- a pagina recebe a request;
+- carrega `config/database.php`, `includes/config.php` e helpers;
+- instancia classes em `classes/`;
+- acessa o banco via `classes/Database.php` ou PDO;
+- renderiza HTML direto.
+
+Existe tambem uma camada parcial em `core/`, `routes/` e `views/`, mas ela nao e o caminho principal de execucao da plataforma hoje.
+
+## Tarefas comuns
+
+### Adicionar ou corrigir um curso
+
+1. verifique a tela publica em `course.php`;
+2. revise regras em `classes/Course.php`;
+3. teste no admin em `admin/courses/courses.php`;
+4. se houver impacto de schema, atualize os dois caminhos de instalacao.
+
+### Mexer em licoes e progresso
+
+1. revise `learn.php`;
+2. confirme comportamento em `classes/Course.php` e `classes/Gamification.php`;
+3. teste criacao/edicao em `admin/lessons/`;
+4. valide se certificado continua sendo emitido ao concluir.
+
+### Ajustar noticias
+
+1. revise `classes/News.php`;
+2. teste `admin/news/`;
+3. confira `news.php` e `news-detail.php`.
+
+### Trabalhar no financeiro
+
+1. confirme se o banco tem `financial_expenses`;
+2. se nao tiver, rode `php scripts/install-business-finance-upgrade.php`;
+3. revise `classes/FinanceService.php` e `admin/finance/index.php`.
+
+## Riscos conhecidos antes de abrir PR
+
+- `install/sql/create_tables.php` e `install/database/schema.sql` coexistem.
+- `includes/functions.php` e `includes/config.php` carregam compatibilidade e codigo legado.
+- `routes.php`, `routes/*.php`, `core/` e `views/` nao sao a fonte principal de verdade do runtime atual.
+- O repositorio ainda nao tem uma suite forte de testes automatizados.
+
+## Primeiras contribuicoes boas para a comunidade
+
+- normalizar texto e mensagens do instalador;
+- cobrir fluxos criticos com testes;
+- reduzir divergencias entre schema web e schema CLI;
+- limpar duplicidade de helpers e configuracao;
+- melhorar observabilidade de erros em producao;
+- revisar docs especificos de modulo quando houver mudanca de comportamento.
+
+## Regras praticas para nao quebrar o projeto
+
+- nao refatore arquitetura e comportamento de negocio no mesmo PR;
+- mantenha entrypoints e URLs legadas enquanto o front atual depender delas;
+- descreva sempre o passo a passo de teste manual na entrega;
+- quando alterar banco, atualize schema, installer e seed quando necessario.

@@ -1,136 +1,172 @@
-# 🔧 Guia de Instalação
+# Instalacao
 
-Este guia irá ajudá-lo a configurar o GameDev Academy em sua máquina local.
+Este guia descreve a instalacao real da aplicacao como ela existe hoje no repositorio.
 
----
+## Requisitos reais
 
-## 📋 Pré-requisitos
+- PHP 8.1 ou superior.
+- MySQL 8+ ou MariaDB equivalente.
+- Composer.
+- Servidor web apontando para a raiz do projeto.
+- Extensoes PHP obrigatorias: `pdo`, `pdo_mysql`, `mysqli`, `json`, `mbstring`, `openssl`, `session`.
+- Extensoes recomendadas: `curl`, `gd`, `zip`, `fileinfo`, `xml`, `intl`.
 
-Antes de começar, certifique-se de ter instalado:
+Observacao: o instalador ainda valida PHP 7.4 como minimo em parte do codigo, mas o `composer.json` e o runtime atual exigem tratar PHP 8.1 como baseline oficial.
 
-### Obrigatórios
-- **Git** (versão 2.30 ou superior)
-  - [Download Git](https://git-scm.com/downloads)
-- **Editor de Código** (recomendamos VS Code)
-  - [Download VS Code](https://code.visualstudio.com/)
+## Pastas com escrita
 
-### Opcionais (dependendo da trilha escolhida)
+Garanta permissao de escrita para:
 
-| Ferramenta | Versão Mínima | Download |
-|------------|---------------|----------|
-| Unity | 2021.3 LTS | [unity.com](https://unity.com/download) |
-| Godot | 4.0+ | [godotengine.org](https://godotengine.org/download) |
-| Python | 3.8+ | [python.org](https://www.python.org/downloads/) |
-| Node.js | 16+ | [nodejs.org](https://nodejs.org/) |
+- raiz do projeto, para o instalador criar `config.php`;
+- `config/`;
+- `uploads/`, `uploads/avatars/`, `uploads/courses/`, `uploads/news/`;
+- `cache/`;
+- `logs/`.
 
----
-
-## 🚀 Instalação Passo a Passo
-
-### 1️⃣ Clone o Repositório
+## Fluxo recomendado: instalador web
 
 ```bash
-# Via HTTPS
 git clone https://github.com/davidcreator/gamedev-academy.git
-
-# Via SSH (recomendado)
-git clone git@github.com:davidcreator/gamedev-academy.git
-```
-
-### 2️⃣ Navegue até o Diretório
-```bash
 cd gamedev-academy
+composer install
 ```
-### 3️⃣ Verifique a Estrutura
+
+1. Crie um banco vazio no MySQL/MariaDB.
+2. Configure o host virtual ou document root para a raiz do projeto.
+3. Acesse `http://seu-host/install/`.
+4. Conclua as cinco etapas:
+   - validacao de requisitos;
+   - conexao com banco;
+   - criacao das tabelas;
+   - configuracao do primeiro admin;
+   - finalizacao.
+5. Entre no painel com a conta criada.
+
+### O que o instalador faz
+
+- valida extensoes, permissoes e configuracao basica do servidor;
+- grava o arquivo `config.php` na raiz;
+- cria a estrutura principal do banco a partir de `install/sql/create_tables.php`;
+- cria a conta administrativa inicial.
+
+## Fluxo manual ou de desenvolvimento local
+
+Quando voce quiser subir o projeto sem passar pela interface do instalador, use o template de configuracao e os scripts CLI.
+
+### 1. Criar `config.php`
+
+Use `config dist.php` como base:
+
 ```bash
-# Linux/Mac
-ls -la
-
-# Windows
-dir
+copy "config dist.php" config.php
 ```
-### 4️⃣ Escolha sua Trilha
+
+Depois ajuste pelo menos:
+
+- `DB_HOST`
+- `DB_NAME`
+- `DB_USER`
+- `DB_PASS`
+- `SITE_URL`
+- `SITE_NAME`
+- `TIMEZONE`
+- `DEBUG_MODE`
+
+### 2. Importar o schema
+
 ```bash
-# Para tutoriais de iniciante
-cd tutorials/beginner
-
-# Para exemplos prontos
-cd examples
+php scripts/install-db.php
 ```
 
-## 🎮 Configuração por Engine
-### Unity
+Esse script usa `install/database/schema.sql`.
+
+### 3. Popular dados de desenvolvimento
+
 ```bash
-# 1. Abra o Unity Hub
-# 2. Clique em "Add"
-# 3. Navegue até gamedev-academy/examples/unity
-# 4. Selecione a pasta do projeto desejado
+php scripts/seed-demo-data.php
 ```
 
-### Godot
+Credenciais criadas pelo seed:
+
+- Admin: `admin@gamedev.test` / `admin123`
+- Aluno: `aluno@gamedev.test` / `123456`
+
+Esses dados sao exclusivos para ambiente local.
+
+## Upgrade opcional do modulo financeiro
+
+Se o banco foi criado em uma versao anterior do projeto e ainda nao possui a tabela de despesas, rode:
+
 ```bash
-# 1. Abra o Godot
-# 2. Clique em "Import"
-# 3. Navegue até gamedev-academy/examples/godot
-# 4. Selecione o arquivo project.godot
+php scripts/install-business-finance-upgrade.php
 ```
 
-### Pygame
+O script:
+
+- cria `financial_expenses` caso ela nao exista;
+- registra chaves de negocio e financeiro em `settings`.
+
+## Observacoes sobre schema
+
+Hoje existem dois caminhos de instalacao de banco:
+
+- `install/sql/create_tables.php`, usado pelo instalador web;
+- `install/database/schema.sql`, usado por `scripts/install-db.php`.
+
+Eles precisam permanecer alinhados ate a comunidade unificar o source of truth do banco. Se voce alterar estrutura de tabela, revisao de indices ou seeds essenciais, atualize os dois caminhos.
+
+## Checklist apos instalar
+
+- confirme que `config.php` foi gerado com valores corretos;
+- acesse `/`, `/login.php`, `/admin/` e `/user/`;
+- valide upload em um fluxo administrativo, se ele fizer parte da sua entrega;
+- se for producao, bloqueie ou remova o acesso a `/install/`;
+- deixe `DEBUG_MODE` desligado em producao;
+- revise permissao de escrita apenas nas pastas necessarias.
+
+## Problemas comuns
+
+### A aplicacao redireciona sempre para `/install/`
+
+Normalmente significa uma destas situacoes:
+
+- `config.php` nao existe;
+- `config.php` existe, mas esta vazio;
+- alguma constante obrigatoria nao foi definida;
+- o arquivo existe, mas a URL base (`SITE_URL`) esta invalida.
+
+### `composer install` falha nos assets do EditorJS
+
+Verifique acesso ao repositorio do Composer e se o ambiente consegue baixar dependencias. O projeto usa `asset-packagist.org` no `composer.json`.
+
+### Erro de conexao com o banco
+
+Confirme:
+
+- host, porta, usuario e senha;
+- permissao do usuario MySQL para criar/alterar tabelas;
+- extensao `pdo_mysql` ativa.
+
+### O instalador conclui, mas a tela final fala em `/public`
+
+Esse texto ainda reflete uma estrutura antiga. O runtime atual responde a partir da raiz do projeto, com entrypoints como `index.php`, `course.php`, `learn.php`, `admin/` e `user/`.
+
+### Uploads ou logs nao funcionam
+
+Revise permissoes de:
+
+- `uploads/`
+- `cache/`
+- `logs/`
+
+## Ambiente recomendado para a comunidade
+
+Para contribuicoes e manutencao, o fluxo mais pratico hoje e:
+
 ```bash
-# Crie um ambiente virtual
-python -m venv venv
-
-# Ative o ambiente
-# Windows
-venv\Scripts\activate
-# Linux/Mac
-source venv/bin/activate
-
-# Instale as dependências
-pip install -r requirements.txt
+composer install
+php scripts/install-db.php
+php scripts/seed-demo-data.php
 ```
 
-## ✅ Verificação da Instalação
-Execute o script de verificação:
-```bash
-# Linux/Mac
-./scripts/verify-installation.sh
-
-# Windows
-scripts\verify-installation.bat
-```
-
-Saída esperada:
-```text
-✅ Git: Instalado (v2.40.0)
-✅ Estrutura: OK
-✅ Exemplos: Disponíveis
-✅ Pronto para começar!
-```
-
-## 🔄 Atualizações
-Mantenha seu repositório local atualizado:
-```bash
-# Buscar atualizações
-git fetch origin
-
-# Atualizar branch principal
-git pull origin main
-```
-
-## ❓ Problemas Comuns
-**Erro de Permissão (Linux/Mac)**
-```bash
-chmod +x scripts/*.sh
-```
-
-**Git não reconhecido (Windows)**
-Adicione o Git ao PATH do sistema ou reinstale marcando a opção "Add to PATH".
-
-**Projeto Unity não abre**
-Verifique se a versão do Unity instalada é compatível (2021.3 LTS ou superior).
-
-## 📞 Precisa de Ajuda?
-📖 Consulte a FAQ
-🐛 Abra uma Issue
-💬 Entre na nossa comunidade
+Esse caminho reduz dependencia da interface do instalador e facilita reproduzir bugs rapidamente.

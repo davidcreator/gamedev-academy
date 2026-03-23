@@ -1,113 +1,35 @@
-# 📋 Changelog
+# Changelog
 
-Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
+O projeto segue a estrutura do Keep a Changelog e usa SemVer como referencia.
 
-O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
-e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
-
----
+Observacao: o historico anterior a 23/03/2026 nao foi reconstruido em detalhe a partir do Git. A partir desta data, a documentacao de mudancas passa a registrar o estado do projeto de forma mais fiel.
 
 ## [Unreleased]
 
-### 🚀 Adicionado
-- Novos tutoriais em desenvolvimento
-- Melhorias na documentação
+### Added
 
-### 🔄 Alterado
-- Atualizações pendentes
+- `docs/PROJECT-HANDOFF.md` com snapshot tecnico para continuidade comunitaria.
 
-### 🐛 Corrigido
-- Correções em andamento
+### Changed
 
----
+- `README.md` reescrito para refletir a plataforma real.
+- `docs/INSTALLATION.md` atualizado com fluxo web, fluxo manual, seed e upgrade financeiro.
+- `docs/GETTING-STARTED.md` atualizado para onboarding de mantenedores.
+- `docs/ARCHITECTURE.md` atualizado com a arquitetura atual baseada em paginas PHP e servicos em `classes/`.
+- `docs/API.md` refeito para documentar a superficie HTTP e os servicos internos que existem hoje.
+- `docs/CONTRIBUTING.md`, `docs/SECURITY.md` e `docs/FAQ.md` alinhados ao estado atual do repositorio.
 
-## [1.0.0] - 2024-XX-XX
+## [1.0.0]
 
-### 🚀 Adicionado
+### Added
 
-#### Documentação
-- README.md principal com visão geral do projeto
-- Guia de instalação (INSTALLATION.md)
-- Primeiros passos (GETTING-STARTED.md)
-- Guia de contribuição (CONTRIBUTING.md)
-- Código de conduta (CODE-OF-CONDUCT.md)
-- Documentação de arquitetura (ARCHITECTURE.md)
-- FAQ completo (FAQ.md)
-- Este changelog (CHANGELOG.md)
+- base funcional da plataforma com area publica, autenticacao, area do aluno e painel administrativo;
+- instalador web;
+- gestao de cursos, modulos, licoes e noticias;
+- gamificacao com XP, niveis e leaderboard;
+- emissao de certificados;
+- modulo financeiro e plano de negocio associado.
 
-#### Tutoriais - Beginner
-- `01-intro-gamedev/` - Introdução ao desenvolvimento de jogos
-- `02-programming-basics/` - Fundamentos de programação
-- `03-first-game/` - Seu primeiro jogo (Pong)
-- `04-game-loop/` - Entendendo o game loop
+### Notes
 
-#### Tutoriais - Intermediate
-- `01-physics/` - Física em jogos
-- `02-ai-basics/` - Introdução à IA para jogos
-- `03-state-machines/` - Máquinas de estado
-- `04-save-system/` - Sistema de save/load
-
-#### Exemplos
-- Unity: Pong, Platformer básico
-- Godot: Space Shooter, Puzzle Game
-- Pygame: Snake, Breakout
-
-#### Assets
-- Sprites básicos para protótipos
-- Efeitos sonoros livres
-- Fontes pixel art
-
-#### Templates
-- Template 2D Platformer (Unity)
-- Template 2D Adventure (Godot)
-- Template Arcade (Pygame)
-
-#### Ferramentas
-- Script de setup inicial
-- Script de verificação de instalação
-
-### 🔄 Alterado
-- Estrutura inicial do projeto definida
-
-### 🐛 Corrigido
-- N/A (versão inicial)
-
----
-
-## [0.1.0] - 2024-XX-XX
-
-### 🚀 Adicionado
-- Estrutura inicial do repositório
-- README básico
-- Licença MIT
-- .gitignore configurado
-
----
-
-## Tipos de Mudanças
-
-- 🚀 **Adicionado** - Novas features
-- 🔄 **Alterado** - Mudanças em features existentes
-- ⚠️ **Deprecated** - Features que serão removidas
-- 🗑️ **Removido** - Features removidas
-- 🐛 **Corrigido** - Correção de bugs
-- 🔒 **Segurança** - Vulnerabilidades corrigidas
-
----
-
-## Versionamento
-
-Usamos [SemVer](https://semver.org/):
-
-- **MAJOR** (X.0.0): Mudanças incompatíveis
-- **MINOR** (0.X.0): Novas features compatíveis
-- **PATCH** (0.0.X): Correções compatíveis
-
----
-
-## Links
-
-- [Comparar versões](https://github.com/davidcreator/gamedev-academy/compare)
-- [Releases](https://github.com/davidcreator/gamedev-academy/releases)
-
----
+- esta entrada representa a baseline historica do codigo existente no repositorio, sem detalhamento retroativo de cada iteracao intermediaria.
