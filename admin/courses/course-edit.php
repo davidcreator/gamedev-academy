@@ -12,14 +12,27 @@ $course = $id ? $courseModel->find($id) : null;
 $isEdit = $course !== null;
 $pageTitle = $isEdit ? 'Editar Curso' : 'Novo Curso';
 
+if ($isEdit) {
+    adminRequireCourseAccess($course);
+}
+
 $categories = $courseModel->getCategories();
 $instructors = $db->fetchAll("SELECT id, full_name FROM users WHERE role IN ('instructor','admin') ORDER BY full_name");
+
+if (adminUserIsInstructor()) {
+    $instructors = [[
+        'id' => $currentUser['id'],
+        'full_name' => $currentUser['full_name'] ?? $currentUser['name'],
+    ]];
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $data = [
         'title' => trim($_POST['title'] ?? ''),
         'category_id' => intval($_POST['category_id'] ?? 0) ?: null,
-        'instructor_id' => intval($_POST['instructor_id'] ?? 0) ?: null,
+        'instructor_id' => adminUserIsInstructor()
+            ? (int) $currentUser['id']
+            : (intval($_POST['instructor_id'] ?? 0) ?: null),
         'short_description' => trim($_POST['short_description'] ?? ''),
         'description' => $_POST['description'] ?? '',
         'level' => $_POST['level'] ?? 'beginner',
@@ -187,14 +200,19 @@ EditorJSLoader::renderStyles();
 
                         <div class="mb-3">
                             <label class="form-label fw-bold">Instrutor</label>
-                            <select name="instructor_id" class="form-select border-2">
-                                <option value="">Selecione um instrutor</option>
-                                <?php foreach ($instructors as $ins): ?>
-                                    <option value="<?= $ins['id'] ?>" <?= ($course['instructor_id'] ?? null) == $ins['id'] ? 'selected' : '' ?>>
-                                        <?= escape($ins['full_name']) ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
+                            <?php if (adminUserIsInstructor()): ?>
+                                <input type="hidden" name="instructor_id" value="<?= (int) $currentUser['id'] ?>">
+                                <input type="text" class="form-control border-2" value="<?= escape($currentUser['full_name'] ?? $currentUser['name']) ?>" disabled>
+                            <?php else: ?>
+                                <select name="instructor_id" class="form-select border-2">
+                                    <option value="">Selecione um instrutor</option>
+                                    <?php foreach ($instructors as $ins): ?>
+                                        <option value="<?= $ins['id'] ?>" <?= ($course['instructor_id'] ?? null) == $ins['id'] ? 'selected' : '' ?>>
+                                            <?= escape($ins['full_name']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            <?php endif; ?>
                         </div>
 
                         <div class="row">

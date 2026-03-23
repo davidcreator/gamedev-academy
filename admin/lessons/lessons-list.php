@@ -17,6 +17,9 @@ $module = null;
 
 if ($courseId > 0) {
     $course = $db->fetch("SELECT * FROM courses WHERE id = ?", [$courseId]);
+    if ($course) {
+        adminRequireCourseAccess($course);
+    }
 }
 
 if ($moduleId > 0) {
@@ -110,7 +113,7 @@ showFlashMessages();
     </div>
     <div>
         <?php if ($moduleId > 0): ?>
-            <a href="<?= url('admin/lessons/create.php?module_id=' . $moduleId . '&course_id=' . $courseId) ?>" class="btn btn-primary">
+            <a href="<?= url('admin/lessons/lessons-create.php?module_id=' . $moduleId . '&course_id=' . $courseId) ?>" class="btn btn-primary">
                 <i class="fas fa-plus"></i> Nova Lição
             </a>
         <?php else: ?>
@@ -245,7 +248,7 @@ showFlashMessages();
                 <h4>Nenhuma lição encontrada</h4>
                 <?php if ($moduleId > 0): ?>
                     <p class="text-muted">Comece criando a primeira lição deste módulo</p>
-                    <a href="<?= url('admin/lessons/create.php?module_id=' . $moduleId . '&course_id=' . $courseId) ?>" class="btn btn-primary">
+                    <a href="<?= url('admin/lessons/lessons-create.php?module_id=' . $moduleId . '&course_id=' . $courseId) ?>" class="btn btn-primary">
                         <i class="fas fa-plus"></i> Criar Lição
                     </a>
                 <?php else: ?>

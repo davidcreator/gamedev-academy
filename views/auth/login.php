@@ -25,8 +25,8 @@
             
             <form method="POST">
                 <div class="form-group">
-                    <label>E-mail</label>
-                    <input type="email" name="email" class="form-control" required>
+                    <label>E-mail ou nome de usuário</label>
+                    <input type="text" name="identifier" class="form-control" autocomplete="username" required>
                 </div>
                 
                 <div class="form-group">

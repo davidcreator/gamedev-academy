@@ -6,11 +6,6 @@ $vendorDir = dirname(__DIR__);
 $baseDir = dirname($vendorDir);
 
 return array(
-    'App\\Controllers\\AdminController' => $baseDir . '/app/Controllers/AdminController.php',
-    'App\\Controllers\\AuthController' => $baseDir . '/app/Controllers/AuthController.php',
-    'App\\Controllers\\Controller' => $baseDir . '/app/Controllers/Controller.php',
-    'App\\Controllers\\HomeController' => $baseDir . '/app/Controllers/HomeController.php',
-    'App\\Controllers\\UserController' => $baseDir . '/app/Controllers/UserController.php',
     'Attribute' => $vendorDir . '/symfony/polyfill-php80/Resources/stubs/Attribute.php',
     'Brick\\Math\\BigDecimal' => $vendorDir . '/brick/math/src/BigDecimal.php',
     'Brick\\Math\\BigInteger' => $vendorDir . '/brick/math/src/BigInteger.php',

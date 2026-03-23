@@ -66,12 +66,8 @@
     },
     "autoload": {
         "psr-4": {
-            "App\\": "app/",
             "Core\\": "core/"
-        },
-        "files": [
-            "app/Helpers/helpers.php"
-        ]
+        }
     },
     "autoload-dev": {
         "psr-4": {

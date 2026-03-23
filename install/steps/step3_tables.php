@@ -78,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 'messages' => $installer->getSuccess(),
                 'stats'    => [
                     'tables_created'  => $installer->getTableCount(),
-                    'tables_expected' => 54,
+                    'tables_expected' => 55,
                 ],
             ];
         }
@@ -106,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 }
 
-// Lista de tabelas (54 tabelas conforme create_tables.php)
+// Lista de tabelas (55 tabelas conforme create_tables.php)
 $tables = [
     'users' => 'Usuários do sistema',
     'user_profiles' => 'Perfis de usuários',
@@ -161,7 +161,8 @@ $tables = [
     'audit_logs' => 'Logs de auditoria',
     'rate_limiting' => 'Controle de rate limiting',
     'user_consents' => 'Consentimentos LGPD/GDPR',
-    'scheduled_tasks' => 'Tarefas agendadas'
+    'scheduled_tasks' => 'Tarefas agendadas',
+    'financial_expenses' => 'Despesas operacionais da plataforma'
 ];
 ?>
 
@@ -183,7 +184,8 @@ $tables = [
             <h4>Criação da Estrutura do Banco de Dados</h4>
             <p class="mb-0">
                 Agora vamos criar as tabelas necessárias para o funcionamento do sistema.
-                Serão criadas 54 tabelas com toda a estrutura necessária.
+                Serão criadas 55 tabelas com toda a estrutura necessária.
+                O conteúdo demonstrativo poderá ser importado opcionalmente no passo 4.
             </p>
         </div>
     </div>
@@ -220,7 +222,7 @@ $tables = [
     <div class="tables-list" id="tablesList">
         <h5 class="section-title">
             <i class="fas fa-list"></i>
-            Tabelas que serão criadas (54 tabelas)
+            Tabelas que serão criadas (55 tabelas)
         </h5>
         <div class="table-grid">
             <?php foreach ($tables as $table => $description): 

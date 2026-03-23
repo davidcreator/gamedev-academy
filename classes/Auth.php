@@ -57,6 +57,12 @@ class Auth {
     }
     
     public function login(string $identifier, string $password, bool $remember = false): array {
+        $identifier = trim($identifier);
+
+        if ($identifier === '' || $password === '') {
+            return ['success' => false, 'message' => 'E-mail/usuário ou senha incorretos.'];
+        }
+
         // aceita email ou username
         if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
             $user = $this->user->findByEmail($identifier);
@@ -133,7 +139,17 @@ class Auth {
     
     public function isAdmin(): bool {
         $user = $this->getCurrentUser();
-        return $user && $user['role'] === 'admin';
+        return $user && in_array($user['role'], ['admin', 'super_admin'], true);
+    }
+
+    public function isInstructor(): bool {
+        $user = $this->getCurrentUser();
+        return $user && $user['role'] === 'instructor';
+    }
+
+    public function canAccessAdminPanel(): bool {
+        $user = $this->getCurrentUser();
+        return $user && in_array($user['role'], ['admin', 'super_admin', 'instructor'], true);
     }
     
     public function requireLogin(): void {

@@ -26,12 +26,20 @@ $lesson = $db->fetch("
     WHERE l.id = ?
 ", [$id]);
 
+$courseAccess = $lesson
+    ? $db->fetch("SELECT id, instructor_id FROM courses WHERE id = ?", [$lesson['course_id']])
+    : null;
+
 if (!$lesson) {
     flash('error', 'Lição não encontrada.');
     redirect(url('admin/lessons/lessons-list.php?module_id=' . $moduleId . '&course_id=' . $courseId));
 }
 
 // Atualizar IDs se não foram passados na URL
+if ($courseAccess) {
+    adminRequireCourseAccess($courseAccess);
+}
+
 if ($moduleId == 0) {
     $moduleId = $lesson['module_id'];
 }

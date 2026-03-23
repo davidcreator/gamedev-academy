@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $value = isset($_POST['settings'][$key]) ? '1' : '0';
             }
         }
-        $updated += $db->update('settings', ['setting_value' => $value, 'updated_by' => $currentUser['id']], 'setting_key = :key', ['key' => $key]);
+        $updated += $db->update('settings', ['setting_value' => $value], 'setting_key = :key', ['key' => $key]);
     }
     flash('success', "Configurações atualizadas ({$updated})!");
     redirect(url('admin/settings/settings.php'));
@@ -62,6 +62,7 @@ foreach ($categories as $cat) {
                                 echo '</label>';
                                 break;
                             case 'integer':
+                            case 'number':
                                 echo '<input type="number" name="' . $name . '" class="form-control" value="' . escape($value) . '">';
                                 break;
                             case 'json':

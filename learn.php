@@ -6,6 +6,7 @@ require_once __DIR__ . '/classes/Database.php';
 require_once __DIR__ . '/classes/Course.php';
 require_once __DIR__ . '/classes/User.php';
 require_once __DIR__ . '/classes/Auth.php';
+require_once __DIR__ . '/classes/CertificateService.php';
 require_once __DIR__ . '/classes/Gamification.php';
 require_once __DIR__ . '/includes/functions.php';
 
@@ -13,6 +14,7 @@ $auth = new Auth();
 $auth->requireLogin();
 $db = Database::getInstance();
 $courseModel = new Course();
+$certificateService = new CertificateService();
 $gamification = new Gamification();
 
 $slug = trim($_GET['course'] ?? '');
@@ -58,6 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'compl
             
             // Atualizar matrícula
             $enrollment = $db->fetch("SELECT * FROM enrollments WHERE user_id = ? AND course_id = ?", [$user['id'], $course['id']]);
+            $successMessage = 'Lição marcada como concluída!';
             if ($enrollment) {
                 $totalLessons = $db->fetch("SELECT COUNT(*) as total FROM course_lessons l JOIN course_modules m ON l.module_id = m.id WHERE m.course_id = ?", [$course['id']])['total'];
                 $completedLessons = $db->fetch("SELECT COUNT(*) as total FROM lesson_progress lp JOIN course_lessons l ON lp.lesson_id = l.id JOIN course_modules m ON l.module_id = m.id WHERE lp.user_id = ? AND lp.is_completed = 1 AND m.course_id = ?", [$user['id'], $course['id']])['total'];
@@ -85,9 +88,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'compl
                     }
                     $db->query("UPDATE enrollments SET status = 'completed', completed_at = NOW() WHERE id = ?", [$enrollment['id']]);
                 }
+
+                $certificateResult = $certificateService->issueForEnrollment((int) $enrollment['id']);
+                if (!empty($certificateResult['issued'])) {
+                    $successMessage .= ' Certificado emitido com sucesso!';
+                }
             }
             
             flash('success', 'Lição marcada como concluída!');
+            flash('success', $successMessage);
             redirect(url('learn.php?course=' . $course['slug'] . '&lesson=' . $lid));
         }
     }
@@ -136,6 +145,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'submi
             }
             // Atualiza matrícula
             $enrollment = $db->fetch("SELECT * FROM enrollments WHERE user_id = ? AND course_id = ?", [$user['id'], $course['id']]);
+            $successMessage = "Quiz enviado: {$correct}/{$total} corretas.";
             if ($enrollment) {
                 $totalLessons = $db->fetch("SELECT COUNT(*) as total FROM course_lessons l JOIN course_modules m ON l.module_id = m.id WHERE m.course_id = ?", [$course['id']])['total'];
                 $completedLessons = $db->fetch("SELECT COUNT(*) as total FROM lesson_progress lp JOIN course_lessons l ON lp.lesson_id = l.id JOIN course_modules m ON l.module_id = m.id WHERE lp.user_id = ? AND lp.is_completed = 1 AND m.course_id = ?", [$user['id'], $course['id']])['total'];
@@ -150,8 +160,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'submi
                     if ($courseCoins > 0) $gamification->addCoins($user['id'], $courseCoins);
                     $db->query("UPDATE enrollments SET status = 'completed', completed_at = NOW() WHERE id = ?", [$enrollment['id']]);
                 }
+
+                $certificateResult = $certificateService->issueForEnrollment((int) $enrollment['id']);
+                if (!empty($certificateResult['issued'])) {
+                    $successMessage .= ' Certificado emitido com sucesso!';
+                }
             }
-            flash('success', "Quiz enviado: {$correct}/{$total} corretas.");
+            flash('success', $successMessage);
             redirect(url('learn.php?course=' . $course['slug'] . '&lesson=' . $lid));
         }
     }

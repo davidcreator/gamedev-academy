@@ -17,11 +17,11 @@ if ($auth->isLoggedIn()) {
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = trim($_POST['email'] ?? '');
+    $identifier = trim($_POST['identifier'] ?? ($_POST['email'] ?? ''));
     $password = $_POST['password'] ?? '';
     $remember = isset($_POST['remember']);
     
-    $result = $auth->login($email, $password, $remember);
+    $result = $auth->login($identifier, $password, $remember);
     
     if ($result['success']) {
         $user = $result['user'];
@@ -55,9 +55,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             <form method="POST" action="">
                 <div class="form-group">
-                    <label class="form-label">E-mail</label>
-                    <input type="email" name="email" class="form-control" 
-                           placeholder="seu@email.com" value="<?= old('email') ?>" required>
+                    <label class="form-label">E-mail ou nome de usuário</label>
+                    <input type="text" name="identifier" class="form-control"
+                           placeholder="seu@email.com ou seuusuario" value="<?= old('identifier', $_POST['email'] ?? '') ?>"
+                           autocomplete="username" required>
                 </div>
                 
                 <div class="form-group">

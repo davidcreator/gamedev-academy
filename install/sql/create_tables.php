@@ -4,14 +4,14 @@
  * GAMEDEV ACADEMY - Script de Criação de Tabelas
  * ================================================================
  * 
- * Este script cria todas as 54 tabelas do banco de dados,
+ * Este script cria todas as 55 tabelas do banco de dados,
  * triggers, views e dados iniciais (seeds).
  * 
  * DEVE ser executado apenas pelo instalador (install/index.php)
  * Requer conexão PDO válida na variável $pdo
  * 
  * Versão: 2.0.0
- * Total de tabelas: 54
+ * Total de tabelas: 55
  * 
  * ================================================================
  */
@@ -34,7 +34,7 @@ class DatabaseInstaller
     private array $errors = [];
     private array $success = [];
     private int $tableCount = 0;
-    private int $expectedTables = 54;
+    private int $expectedTables = 55;
 
     public function __construct(PDO $pdo)
     {
@@ -60,12 +60,11 @@ class DatabaseInstaller
             $this->createLevel4Tables();  //  4 tabelas (lessons)
             $this->createLevel5Tables();  //  3 tabelas (quizzes)
             $this->createLevel6Tables();  //  1 tabela
-            $this->createAuditTable();    //  1 tabela
+            $this->createAuditTable();    //  2 tabelas
 
-            // Triggers, Views e Seeds
+            // Triggers e Views
             $this->createTriggers();
             $this->createViews();
-            $this->insertSeeds();
 
             // Restaurar configurações
             $this->restoreEnvironment();
@@ -173,7 +172,7 @@ class DatabaseInstaller
     }
 
     /**
-     * Verifica se todas as 54 tabelas foram criadas
+     * Verifica se todas as 55 tabelas foram criadas
      */
     private function verifyInstallation(): bool
     {
@@ -190,7 +189,7 @@ class DatabaseInstaller
             'ticket_messages', 'blog_comments', 'course_announcements',
             'course_bookmarks', 'report_abuse', 'lesson_progress', 'quizzes',
             'assignments', 'student_notes', 'quiz_questions', 'quiz_attempts',
-            'assignment_submissions', 'quiz_options', 'activity_log'
+            'assignment_submissions', 'quiz_options', 'activity_log', 'financial_expenses'
         ];
 
         $stmt = $this->pdo->query("SHOW TABLES");
@@ -1796,7 +1795,7 @@ class DatabaseInstaller
     // ================================================================
     // ================================================================
     //
-    //   TABELA DE AUDITORIA (1 tabela)
+    //   TABELAS DE AUDITORIA E FINANCEIRO (2 tabelas)
     //
     // ================================================================
     // ================================================================
@@ -1804,7 +1803,7 @@ class DatabaseInstaller
     private function createAuditTable(): void
     {
         // --------------------------------------------------------
-        // TABELA 54/54: activity_log
+        // TABELA 54/55: activity_log
         // --------------------------------------------------------
         $this->createTable('activity_log', "
             CREATE TABLE `activity_log` (
@@ -1829,6 +1828,33 @@ class DatabaseInstaller
                     REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
               COMMENT='Log de auditoria do sistema'
+        ");
+
+        // --------------------------------------------------------
+        // TABELA 55/55: financial_expenses
+        // --------------------------------------------------------
+        $this->createTable('financial_expenses', "
+            CREATE TABLE `financial_expenses` (
+                `id`           INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+                `title`        VARCHAR(255)     NOT NULL,
+                `category`     VARCHAR(100)     NOT NULL DEFAULT 'geral',
+                `amount`       DECIMAL(10,2)    NOT NULL,
+                `currency`     VARCHAR(3)       NOT NULL DEFAULT 'BRL',
+                `expense_date` DATE             NOT NULL,
+                `status`       ENUM('planned','approved','paid','cancelled')
+                                               NOT NULL DEFAULT 'planned',
+                `vendor_name`  VARCHAR(255)     DEFAULT NULL,
+                `notes`        TEXT             DEFAULT NULL,
+                `created_by`   INT UNSIGNED     DEFAULT NULL,
+                `created_at`   TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at`   TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+                PRIMARY KEY (`id`),
+                KEY `idx_finexp_date` (`expense_date`),
+                KEY `idx_finexp_status` (`status`),
+                KEY `idx_finexp_category` (`category`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+              COMMENT='Despesas operacionais da plataforma'
         ");
     }
 
@@ -2065,6 +2091,16 @@ class DatabaseInstaller
                 UNION ALL SELECT 'email_from_name', 'GameDev Academy', 'string', 'email', 'Nome remetente', 0
                 UNION ALL SELECT 'email_from_address', 'noreply@gamedevacademy.com', 'string', 'email', 'Email remetente', 0
                 UNION ALL SELECT 'certificate_enabled', 'true', 'boolean', 'features', 'Certificados', 0
+                UNION ALL SELECT 'certificate_free_on_completion', '1', 'boolean', 'finance', 'Certificado para curso gratuito ao concluir', 0
+                UNION ALL SELECT 'certificate_paid_requires_payment', '1', 'boolean', 'finance', 'Certificado para curso pago exige pagamento confirmado', 0
+                UNION ALL SELECT 'certificate_subscription_requires_active_paid_plan', '1', 'boolean', 'finance', 'Certificado por assinatura exige plano pago ativo', 0
+                UNION ALL SELECT 'finance_long_course_min_hours', '40', 'number', 'finance', 'Carga horaria minima para curso longo', 0
+                UNION ALL SELECT 'finance_paid_course_instructor_rate', '60', 'number', 'finance', 'Repasse do instrutor em cursos pagos avulsos', 0
+                UNION ALL SELECT 'finance_long_course_instructor_rate', '70', 'number', 'finance', 'Repasse do instrutor em cursos de longa duracao', 0
+                UNION ALL SELECT 'finance_subscription_instructor_pool_rate', '40', 'number', 'finance', 'Percentual da assinatura destinado ao pool de instrutores', 0
+                UNION ALL SELECT 'finance_payout_hold_days', '14', 'number', 'finance', 'Dias de retencao antes do repasse ao instrutor', 0
+                UNION ALL SELECT 'finance_payout_cycle', 'monthly', 'string', 'finance', 'Periodicidade do fechamento de repasses', 0
+                UNION ALL SELECT 'finance_expense_categories', '[\"infraestrutura\",\"marketing\",\"ferramentas\",\"suporte\",\"juridico\",\"tributos\",\"pessoal\"]', 'json', 'finance', 'Categorias padrao para lancamentos de despesas', 0
                 UNION ALL SELECT 'gamification_enabled', 'true', 'boolean', 'features', 'Gamificação', 0
                 UNION ALL SELECT 'forum_enabled', 'true', 'boolean', 'features', 'Fórum', 0
                 UNION ALL SELECT 'blog_enabled', 'true', 'boolean', 'features', 'Blog', 0
@@ -2231,7 +2267,7 @@ function executeDatabaseSetup(PDO $pdo): array
         'messages' => $installer->getSuccess(),
         'stats'    => [
             'tables_created'  => $installer->getTableCount(),
-            'tables_expected' => 54,
+            'tables_expected' => 55,
         ],
     ];
 }
@@ -2259,7 +2295,7 @@ $result = $installer->install();
 $installResults = [
     'success'     => $result,
     'tables'      => $installer->getTableCount(),
-    'expected'    => 54,
+    'expected'    => 55,
     'messages'    => $installer->getSuccess(),
     'errors'      => $installer->getErrors(),
 ];

@@ -29,10 +29,14 @@ class Auth
         }
     }
     
-    public function login($email, $password)
+    public function login($identifier, $password)
     {
-        $stmt = $this->db->getPdo()->prepare("SELECT * FROM users WHERE email = ? AND is_active = 1");
-        $stmt->execute([$email]);
+        $stmt = $this->db->getPdo()->prepare("
+            SELECT * FROM users
+            WHERE (email = ? OR username = ?) AND is_active = 1
+            LIMIT 1
+        ");
+        $stmt->execute([$identifier, $identifier]);
         $user = $stmt->fetch();
         
         if ($user && password_verify($password, $user['password'])) {

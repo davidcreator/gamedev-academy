@@ -16,6 +16,10 @@ if ($moduleId <= 0) {
 $module = $db->fetch("SELECT * FROM course_modules WHERE id = ?", [$moduleId]);
 $course = $courseId > 0 ? $db->fetch("SELECT * FROM courses WHERE id = ?", [$courseId]) : null;
 
+if ($course) {
+    adminRequireCourseAccess($course);
+}
+
 if (!$module) {
     flash('error', 'Módulo não encontrado.');
     redirect(url('admin/modules/modules.php?course_id=' . $courseId));

@@ -15,6 +15,10 @@ $courseId = intval($_GET['course_id'] ?? 0);
 $module = $db->fetch("SELECT * FROM course_modules WHERE id = ?", [$moduleId]);
 $course = $courseId > 0 ? $db->fetch("SELECT * FROM courses WHERE id = ?", [$courseId]) : null;
 
+if ($course) {
+    adminRequireCourseAccess($course);
+}
+
 if (!$module || !$course) {
     flash('error', 'Módulo ou curso não encontrado.');
     redirect(url('admin/courses/courses.php'));
@@ -102,13 +106,13 @@ showFlashMessages()
         <h2><?= escape($course['title']) ?> &nbsp;.&nbsp; <?= escape($module['title']) ?>&nbsp;&nbsp;</h2>
     </div>
     <div class="d-flex justify-beteween align-right gap-2">
-        <button class="btn btn-success" onclick="document.getElementById('lesson-create').removeAttribute('hidden')">Nova Lição</button>
+        <button class="btn btn-success" onclick="document.getElementById('create-lesson').removeAttribute('hidden')">Nova Lição</button>
     </div>
  </div>
  <br>
  <!-- Fim das Funções -->
  <!-- Criar Lição -->
- <div id="create-lesson" class="card mb-4">
+ <div id="create-lesson" class="card mb-4" hidden>
     <div class="card-body">
         <h3 class="card-title">Criar Lição</h3>
         <!-- Inicio do Formulário -->

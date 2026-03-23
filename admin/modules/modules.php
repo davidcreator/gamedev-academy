@@ -14,6 +14,8 @@ if (!$course) {
     redirect(url('admin/courses/courses.php'));
 }
 
+adminRequireCourseAccess($course);
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 

@@ -47,6 +47,8 @@ try {
     echo json_encode([
         'success' => $totalTables > 0,
         'message' => "Tabelas instaladas: {$totalTables}.",
+        'tables_created' => $totalTables,
+        'data_inserted' => false,
         'stats'   => [
             'tables_created'  => $totalTables,
             'errors'          => []

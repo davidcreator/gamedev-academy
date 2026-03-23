@@ -15,7 +15,10 @@
             const startBtn = document.getElementById('startInstallBtn');
             if (!startBtn) return;
 
-            startBtn.addEventListener('click', () => this.start());
+            startBtn.addEventListener('click', (event) => {
+                event.preventDefault();
+                this.start();
+            });
         },
 
         start: function() {
@@ -137,6 +140,8 @@
         },
 
         handleSuccess: function(data) {
+            const tablesCreated = data.tables_created || (data.stats && data.stats.tables_created) || 55;
+
             // Clear interval
             if (this.progressInterval) {
                 clearInterval(this.progressInterval);
@@ -159,13 +164,10 @@
             
             // Log success
             this.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
-            this.log('✓ Todas as tabelas foram criadas com sucesso!', 'success');
-            this.log(`✓ Total: ${data.tables_created || 46} tabelas criadas`, 'success');
-            
-            if (data.data_inserted) {
-                this.log('✓ Dados iniciais inseridos com sucesso', 'success');
-            }
-            
+            this.log('✓ Estrutura do banco criada com sucesso!', 'success');
+            this.log(`✓ Total: ${tablesCreated} tabelas criadas`, 'success');
+            this.log('✓ Nenhum conteúdo demonstrativo foi importado nesta etapa', 'success');
+            this.log('✓ No passo 4 você poderá escolher instalar o pacote demo', 'success');
             this.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
             
             // Show result
@@ -176,12 +178,12 @@
                 resultDiv.className = 'install-result success';
                 resultDiv.innerHTML = `
                     <h5><i class="fas fa-check-circle"></i> Instalação Concluída!</h5>
-                    <p>O banco de dados foi configurado com sucesso.</p>
+                    <p>A estrutura base do banco de dados foi configurada com sucesso.</p>
                     <ul>
-                        <li>${data.tables_created || 46} tabelas criadas</li>
+                        <li>${tablesCreated} tabelas criadas</li>
                         <li>Estrutura completa instalada</li>
-                        <li>Dados iniciais inseridos</li>
-                        <li>Sistema pronto para configuração do administrador</li>
+                        <li>Banco instalado em modo limpo</li>
+                        <li>No passo 4 você decide se quer conteúdo demonstrativo</li>
                     </ul>
                 `;
             }

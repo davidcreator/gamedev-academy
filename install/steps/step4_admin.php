@@ -421,6 +421,54 @@ $site_url = rtrim($protocol . $host . $path, '/');
             </div>
         </div>
 
+        <!-- Conteúdo Demonstrativo -->
+        <div class="form-section mt-4">
+            <h5 class="section-title">
+                <i class="fas fa-box-open"></i>
+                Conteúdo Demonstrativo (Opcional)
+            </h5>
+
+            <div class="alert alert-info mb-3">
+                <i class="fas fa-info-circle"></i>
+                <small>
+                    Se marcar esta opção, o instalador vai importar cursos, masterclasses, notícias,
+                    alunos com ranking, dados financeiros e dois usuários demo prontos para teste.
+                </small>
+            </div>
+
+            <div class="form-check mb-3">
+                <input type="checkbox"
+                       class="form-check-input"
+                       id="install_demo_content"
+                       name="install_demo_content"
+                       value="1">
+                <label class="form-check-label" for="install_demo_content">
+                    Importar conteúdo demonstrativo no passo final
+                </label>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card border-0 bg-light">
+                        <div class="card-body p-3">
+                            <strong>Login demo admin</strong><br>
+                            <small>Usuário: <code>demoadmin</code></small><br>
+                            <small>Senha: <code>102030</code></small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mt-3 mt-md-0">
+                    <div class="card border-0 bg-light">
+                        <div class="card-body p-3">
+                            <strong>Login demo instrutor</strong><br>
+                            <small>Usuário: <code>demoinstrutor</code></small><br>
+                            <small>Senha: <code>102030</code></small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Configurações Adicionais -->
         <div class="form-section mt-4">
             <h5 class="section-title">

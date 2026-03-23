@@ -5,28 +5,40 @@ $pageTitle = 'Gerenciar Cursos';
 include '../includes/header.php';
 
 $courseModel = new Course();
-$courses = $courseModel->getAll(false); // Incluir não publicados
+$courses = $courseModel->getAll(false);
 
-// Ação de publicar/despublicar
+if (adminUserIsInstructor()) {
+    $courses = array_values(array_filter($courses, static function (array $course) use ($currentUser): bool {
+        return (int) ($course['instructor_id'] ?? 0) === (int) ($currentUser['id'] ?? 0);
+    }));
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
-    $courseId = intval($_POST['course_id'] ?? 0);
-    
-    if ($action === 'toggle_publish' && $courseId) {
+    $courseId = (int) ($_POST['course_id'] ?? 0);
+
+    if ($action === 'toggle_publish' && $courseId > 0) {
         $course = $courseModel->find($courseId);
+        adminRequireCourseAccess($course);
+
         if ($course) {
             $courseModel->update($courseId, ['is_published' => !$course['is_published']]);
             flash('success', 'Status do curso atualizado!');
-            redirect(url('admin/courses/courses.php'));
         }
+
+        redirect(url('admin/courses/courses.php'));
     }
-    
-    if ($action === 'delete' && $courseId) {
-        if ($courseModel->delete($courseId)) {
-            flash('success', 'Curso excluído com sucesso!');
+
+    if ($action === 'delete' && $courseId > 0) {
+        $course = $courseModel->find($courseId);
+        adminRequireCourseAccess($course);
+
+        if ($course && $courseModel->delete($courseId)) {
+            flash('success', 'Curso excluido com sucesso!');
         } else {
             flash('error', 'Erro ao excluir curso.');
         }
+
         redirect(url('admin/courses/courses.php'));
     }
 }
@@ -36,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div>
         <p class="text-muted">Total de <?= count($courses) ?> cursos</p>
     </div>
-    
+
     <a href="<?= url('admin/courses/course-edit.php') ?>" class="btn btn-primary">
         + Novo Curso
     </a>
@@ -95,11 +107,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <td><?= formatDate($course['created_at']) ?></td>
                 <td>
                     <div class="admin-actions">
-                        <a href="<?= url('admin/courses/course-edit.php?id=' . $course['id']) ?>" 
+                        <a href="<?= url('admin/courses/course-edit.php?id=' . $course['id']) ?>"
                            class="btn-action edit" title="Editar">✏️</a>
-                        <a href="<?= url('admin/modules/modules.php?course_id=' . $course['id']) ?>" 
+                        <a href="<?= url('admin/modules/modules.php?course_id=' . $course['id']) ?>"
                            class="btn-action" title="Módulos">📚</a>
-                        <form method="POST" class="d-inline" 
+                        <form method="POST" class="d-inline"
                               onsubmit="return confirm('Tem certeza que deseja excluir este curso?')">
                             <input type="hidden" name="action" value="delete">
                             <input type="hidden" name="course_id" value="<?= $course['id'] ?>">

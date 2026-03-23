@@ -3,7 +3,8 @@
  * GameDev Academy - Reset Password Page
  */
 
-require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../install-state.php';
+gamedevRequireInstalledSystem();
 require_once __DIR__ . '/../includes/auth/PasswordReset.php';
 
 use GameDev\Auth\PasswordReset;

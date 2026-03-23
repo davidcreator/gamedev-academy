@@ -1,16 +1,16 @@
 -- ================================================================
 -- GAMEDEV ACADEMY - SCHEMA COMPLETO UNIFICADO CORRIGIDO
--- Versão: 5.0.0
+-- Versao: 5.0.0
 -- Total de tabelas: ~100
--- Correções v4.0:
+-- Correcoes v4.0:
 --   - 20 tabelas adicionadas (faltavam no schema anterior)
---   - 6 nomes de tabela corrigidos (modules→course_modules, etc.)
+--   - 6 nomes de tabela corrigidos (modules->course_modules, etc.)
 --   - AUTO_INCREMENT corrigido para refletir nomes reais
---   - FKs atualizadas após renomeações
--- Correções v5.0 (merge com schema-old v2.0):
---   - 19 tabelas do schema legado reintegradas e adaptadas ao padrão v4
---   - Dados iniciais (seed) adicionados: levels, achievements, categories,
---     badges, settings, usuários admin e demo
+--   - FKs atualizadas apos renomeacoes
+-- Correcoes v5.0 (merge com schema-old v2.0):
+--   - 19 tabelas do schema legado reintegradas e adaptadas ao padrao v4
+--   - Schema distribuido sem seed padrao
+--   - Conteudo demonstrativo separado em install/database/gamedev-demo.sql
 -- ================================================================
 
 SET FOREIGN_KEY_CHECKS = 0;
@@ -1302,6 +1302,29 @@ CREATE TABLE `instructor_payouts` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+DROP TABLE IF EXISTS `financial_expenses`;
+CREATE TABLE `financial_expenses` (
+    `id`           INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    `title`        VARCHAR(255)     NOT NULL,
+    `category`     VARCHAR(100)     NOT NULL DEFAULT 'geral',
+    `amount`       DECIMAL(10,2)    NOT NULL,
+    `currency`     VARCHAR(3)       NOT NULL DEFAULT 'BRL',
+    `expense_date` DATE             NOT NULL,
+    `status`       ENUM('planned','approved','paid','cancelled') NOT NULL DEFAULT 'planned',
+    `vendor_name`  VARCHAR(255)     DEFAULT NULL,
+    `notes`        TEXT             DEFAULT NULL,
+    `created_by`   INT UNSIGNED     DEFAULT NULL,
+    `created_at`   TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`   TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`id`),
+    KEY `idx_financial_expenses_date` (`expense_date`),
+    KEY `idx_financial_expenses_status` (`status`),
+    KEY `idx_financial_expenses_category` (`category`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Lancamentos de despesas operacionais da plataforma';
+
+
 -- ================================================================
 -- CORREÇÃO: messages e message_participants
 -- (referenciadas no AUTO_INCREMENT mas faltavam no schema)
@@ -2591,6 +2614,7 @@ ALTER TABLE `assignment_submissions` AUTO_INCREMENT = 1;
 ALTER TABLE `certificates`          AUTO_INCREMENT = 1;
 ALTER TABLE `discussions`           AUTO_INCREMENT = 1;
 ALTER TABLE `discussion_replies`    AUTO_INCREMENT = 1;
+ALTER TABLE `financial_expenses`    AUTO_INCREMENT = 1;
 ALTER TABLE `messages`              AUTO_INCREMENT = 1;
 ALTER TABLE `message_participants`  AUTO_INCREMENT = 1;
 ALTER TABLE `carts`                 AUTO_INCREMENT = 1;
@@ -2620,201 +2644,9 @@ SELECT
      WHERE table_schema = DATABASE()) AS total_views;
 
 -- ================================================================
--- DADOS INICIAIS (Seed) — migrados do schema-old v2.0
+-- ================================================================
+-- SCHEMA LIMPO
+-- Os dados demonstrativos foram movidos para install/database/gamedev-demo.sql
 -- ================================================================
 
--- Níveis de gamificação
-INSERT IGNORE INTO `levels` (`level_number`, `title`, `xp_required`, `badge_icon`, `color`, `perks`) VALUES
-(1,  'Iniciante',        0,     '🌱', '#10b981', 'Acesso aos cursos básicos'),
-(2,  'Aprendiz',         100,   '📚', '#6366f1', 'Desbloqueio de conquistas'),
-(3,  'Estudante',        300,   '✏️',  '#8b5cf6', 'Acesso a quizzes avançados'),
-(4,  'Praticante',       600,   '💻', '#ec4899', 'Projetos práticos'),
-(5,  'Desenvolvedor Jr', 1000,  '🚀', '#f59e0b', 'Certificados personalizados'),
-(6,  'Desenvolvedor',    1500,  '⚡', '#ef4444', 'Acesso a conteúdo exclusivo'),
-(7,  'Desenvolvedor Sr', 2500,  '🔥', '#dc2626', 'Mentoria com instrutores'),
-(8,  'Especialista',     4000,  '💎', '#0ea5e9', 'Criar seus próprios cursos'),
-(9,  'Mestre',           6000,  '👑', '#fbbf24', 'Acesso vitalício a todos os cursos'),
-(10, 'Lenda',            10000, '🏆', '#f59e0b', 'Reconhecimento especial na plataforma');
-
-
--- Conquistas iniciais
-INSERT IGNORE INTO `achievements` (`name`, `slug`, `description`, `icon`, `requirement_type`, `requirement_value`, `xp_reward`, `coin_reward`, `sort_order`, `is_active`) VALUES
-('Primeiro Passo',    'primeiro-passo',    'Complete sua primeira lição',         '🎯', 'lessons_completed',  1,    10,   5,    1,  1),
-('Estudante Dedicado','estudante-dedicado','Complete 10 lições',                  '📖', 'lessons_completed',  10,   50,   20,   2,  1),
-('Maratonista',       'maratonista',       'Complete 50 lições',                  '🏃', 'lessons_completed',  50,   150,  50,   3,  1),
-('Mestre das Lições', 'mestre-licoes',     'Complete 100 lições',                 '📚', 'lessons_completed',  100,  300,  100,  4,  1),
-('Formando',          'formando',          'Complete seu primeiro curso',          '🎓', 'courses_completed',  1,    100,  50,   5,  1),
-('Multitarefa',       'multitarefa',       'Complete 5 cursos',                   '🎖️','courses_completed',  5,    500,  200,  6,  1),
-('Acadêmico',         'academico',         'Complete 10 cursos',                  '🏅', 'courses_completed',  10,   1000, 500,  7,  1),
-('Constante',         'constante',         'Mantenha um streak de 7 dias',        '🔥', 'streak',             7,    70,   30,   8,  1),
-('Imparável',         'imparavel',         'Mantenha um streak de 30 dias',       '⚡', 'streak',             30,   300,  150,  9,  1),
-('Lenda Viva',        'lenda-viva',        'Mantenha um streak de 100 dias',      '💫', 'streak',             100,  1000, 500,  10, 1),
-('Nota Perfeita',     'nota-perfeita',     'Acerte 100% em um quiz',              '💯', 'perfect_quiz',       1,    50,   25,   11, 1),
-('Gênio',             'genio',             'Acerte 100% em 10 quizzes',           '🧠', 'perfect_quiz',       10,   200,  100,  12, 1),
-('Caçador de XP',     'cacador-xp',        'Ganhe 1000 XP',                       '⭐', 'xp_earned',          1000, 100,  50,   13, 1),
-('Mestre do XP',      'mestre-xp',         'Ganhe 10000 XP',                      '🌟', 'xp_earned',          10000,500,  250,  14, 1);
-
-
--- Cursos iniciais (instructor_id = 1 que é o admin)
-INSERT IGNORE INTO `courses` (`id`, `title`, `slug`, `short_description`, `description`, `instructor_id`, `category_id`, `level`, `price`, `is_published`, `status`) VALUES
-(1, 'Phaser 3 para Iniciantes', 'phaser-3-iniciantes', 'Aprenda a criar seu primeiro jogo HTML5', 'Neste curso você vai aprender as bases do Phaser 3, criando um jogo completo de plataforma.', 1, 1, 'beginner', 0.00, 1, 'published'),
-(2, 'React para Desenvolvedores de Jogos', 'react-para-jogos', 'Crie interfaces incríveis para seus jogos', 'Aprenda a usar React para criar UIs complexas, inventários e menus para jogos web.', 1, 2, 'intermediate', 49.90, 1, 'published'),
-(3, 'Arquitetura Avançada em Unity', 'unity-arquitetura-avancada', 'Domine padrões de projeto e performance', 'Curso focado em arquitetura limpa, ScriptableObjects e otimização para grandes projetos Unity.', 1, 6, 'advanced', 199.00, 1, 'published'),
-(4, 'Sistemas ECS e DOTS em Unity', 'unity-ecs-dots', 'Performance extrema com Data-Oriented Technology Stack', 'Neste curso avançado, você aprenderá a usar o Entity Component System da Unity para renderizar milhões de entidades.', 1, 6, 'expert', 299.00, 1, 'published');
-
-
--- Módulos iniciais
-INSERT IGNORE INTO `course_modules` (`id`, `course_id`, `title`, `sort_order`) VALUES
-(1, 1, 'Introdução ao Phaser', 1),
-(2, 1, 'Criando o Mundo', 2),
-(3, 2, 'React Hooks para Games', 1),
-(4, 3, 'Padrões de Projeto em C#', 1);
-
-
--- Lições iniciais
-INSERT IGNORE INTO `course_lessons` (`course_id`, `module_id`, `title`, `slug`, `content_type`, `content`, `sort_order`, `is_published`) VALUES
-(1, 1, 'Bem-vindo ao Curso', 'bem-vindo', 'text', 'Olá! Nesta aula vamos preparar nosso ambiente de desenvolvimento.', 1, 1),
-(1, 1, 'Configurando o Phaser', 'configuracao', 'video', 'Conteúdo em vídeo sobre configuração do framework.', 2, 1),
-(1, 2, 'Sprites e Assets', 'sprites', 'video', 'Como carregar e exibir imagens no jogo.', 1, 1),
-(2, 3, 'UseState no Inventário', 'react-hooks-inventario', 'video', 'Usando hooks para gerenciar o estado do inventário.', 1, 1),
-(3, 4, 'Singleton vs ScriptableObjects', 'singleton-scriptable', 'video', 'Análise profunda sobre persistência de dados.', 1, 1);
-
-
--- Desafios diários
-INSERT IGNORE INTO `daily_challenges` (`date`, `title`, `description`, `type`, `requirement_type`, `requirement_value`, `xp_reward`, `coin_reward`) VALUES
-(CURDATE(), 'Madrugador', 'Complete uma lição hoje', 'lesson', 'lessons_completed', 1, 50, 10),
-(DATE_ADD(CURDATE(), INTERVAL 1 DAY), 'Mestre dos Quizzes', 'Acerte um quiz com 100%', 'quiz', 'perfect_quiz', 1, 100, 20);
-
-
--- Notícias / Blog
-INSERT IGNORE INTO `blog_posts` (`title`, `slug`, `excerpt`, `content`, `author_id`, `category_id`, `status`, `is_featured`, `published_at`) VALUES
-('Bem-vindo à GameDev Academy!', 'bem-vindo-gda', 'Conheça a nova plataforma para desenvolvedores de jogos.', 'Estamos muito felizes em lançar a GameDev Academy! Aqui você encontrará os melhores cursos de desenvolvimento de jogos, uma comunidade vibrante e um sistema de gamificação para tornar seu aprendizado mais divertido.', 1, 5, 'published', 1, NOW()),
-('O que é Gamificação no Aprendizado?', 'gamificacao-aprendizado', 'Entenda como nosso sistema de XP e Conquistas ajuda você.', 'Aprender pode ser difícil, mas com jogos fica mais fácil. Nosso sistema recompensa sua dedicação com níveis, badges e itens exclusivos.', 1, 5, 'published', 0, NOW());
-
-
--- Categorias iniciais
-INSERT IGNORE INTO `categories` (`name`, `slug`, `description`, `icon`, `color`, `sort_order`, `is_active`, `status`) VALUES
-('Phaser 3',       'phaser-3',       'Framework JavaScript para desenvolvimento de jogos 2D', '🎮', '#6366f1', 1,  1, 'active'),
-('React',          'react',          'Biblioteca JavaScript para construção de interfaces',   '⚛️','#61dafb', 2,  1, 'active'),
-('JavaScript',     'javascript',     'Linguagem de programação essencial para web',           '📜', '#f7df1e', 3,  1, 'active'),
-('TypeScript',     'typescript',     'JavaScript com tipagem estática',                       '📘', '#3178c6', 4,  1, 'active'),
-('Game Design',    'game-design',    'Princípios e técnicas de design de jogos',              '🎨', '#ec4899', 5,  1, 'active'),
-('Unity',          'unity',          'Motor de jogos profissional multiplataforma',           '🎯', '#000000', 6,  1, 'active'),
-('Godot',          'godot',          'Motor de jogos open source',                            '🤖', '#478cbf', 7,  1, 'active'),
-('Pixel Art',      'pixel-art',      'Criação de arte em pixel para jogos',                  '🖼️','#ff6b6b', 8,  1, 'active'),
-('Game Audio',     'game-audio',     'Áudio e música para jogos',                            '🎵', '#9b59b6', 9,  1, 'active'),
-('Marketing Indie','marketing-indie','Marketing e publicação de jogos indie',                 '📈', '#2ecc71', 10, 1, 'active');
-
-
--- Badges iniciais
-INSERT IGNORE INTO `badges` (`name`, `slug`, `description`, `icon`, `category`, `criteria_type`, `criteria_value`, `points_reward`, `rarity`, `sort_order`, `is_active`) VALUES
-('Verificado',   'verificado',   'Perfil verificado',              '✓',   'special',     'special', 1, 0,   'common',    1, 1),
-('Instrutor',    'instrutor',    'Instrutor da plataforma',        '👨‍🏫','community',   'special', 1, 0,   'uncommon',  2, 1),
-('Premium',      'premium',      'Membro premium',                 '💎',  'special',     'special', 1, 0,   'rare',      3, 1),
-('Beta Tester',  'beta-tester',  'Testador beta da plataforma',    '🔬',  'special',     'special', 1, 100, 'epic',      4, 1),
-('Contribuidor', 'contribuidor', 'Contribuiu com o projeto',       '⭐',  'achievement', 'special', 1, 200, 'legendary', 5, 1);
-
-
--- Configurações padrão do sistema
-INSERT IGNORE INTO `settings` (`setting_key`, `setting_label`, `setting_value`, `setting_type`, `setting_group`, `description`, `is_public`) VALUES
-('site_name',              'Nome do Site',        'GameDev Academy',                                              'string',  'general',      'Nome exibido no site',                1),
-('site_description',       'Descrição do Site',   'Aprenda desenvolvimento de jogos do zero ao profissional',    'string',  'general',      'Descrição para SEO',                  1),
-('site_logo',              'Logo',                '/assets/images/logo.png',                                     'string',  'general',      'Logo do site',                        1),
-('contact_email',          'Email de Contato',    'contato@gamedev.academy',                                     'string',  'general',      'Email principal de contato',          1),
-('maintenance_mode',       'Modo Manutenção',     '0',                                                           'boolean', 'system',       'Ativa/desativa modo manutenção',      0),
-('registration_enabled',   'Permitir Registro',   '1',                                                           'boolean', 'system',       'Permite novos cadastros',             0),
-('xp_per_lesson',          'XP por Lição',        '10',                                                          'number',  'gamification', 'XP ganho ao completar lição',         0),
-('coins_per_lesson',       'Moedas por Lição',    '1',                                                           'number',  'gamification', 'Moedas ganhas ao completar lição',    0),
-('streak_bonus_multiplier','Multiplicador Streak','1.5',                                                          'string',  'gamification', 'Bônus de XP para streak ativo',       0),
-('default_theme',          'Tema Padrão',         'dark',                                                        'string',  'appearance',   'Tema padrão para novos usuários',     0),
-('default_language',       'Idioma Padrão',       'pt-BR',                                                       'string',  'appearance',   'Idioma padrão da plataforma',         0);
-
-
--- Usuário admin padrão (senha: admin123 — trocar imediatamente em produção)
-INSERT IGNORE INTO `users` (`username`, `email`, `password`, `name`, `full_name`, `role`, `total_points`, `is_active`, `status`, `email_verified_at`) VALUES
-('admin', 'admin@gamedev.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
- 'Admin', 'Administrador', 'admin', 0, 1, 'active', NOW());
-
--- Usuário demo (senha: demo123)
-INSERT IGNORE INTO `users` (`username`, `email`, `password`, `name`, `full_name`, `role`, `total_points`, `is_active`, `status`, `email_verified_at`) VALUES
-('demo', 'demo@gamedev.com', '$2y$10$4J4/XoQJBtV4nVqKcRwFbOUwP7rn1UTdDI5rDNr8oOvFnCy8MXKHO',
- 'Demo', 'Usuário Demo', 'student', 150, 1, 'active', NOW());
-
--- Instrutor de exemplo (senha: password)
-INSERT IGNORE INTO `users` (`username`, `email`, `password`, `name`, `full_name`, `role`, `is_active`, `status`, `specialization`, `bio`) VALUES
-('mestre_jogos', 'mestre@gamedev.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Mestre', 'Mestre dos Jogos', 'instructor', 1, 'active', 'Phaser 3 & Game Design', 'Especialista em desenvolvimento de jogos 2D com mais de 10 anos de experiência.');
-
--- Categorias de Cursos
-INSERT IGNORE INTO `categories` (`name`, `slug`, `description`, `icon`, `color`, `order_index`, `is_active`) VALUES
-('Phaser 3', 'phaser-3', 'Desenvolvimento de jogos 2D para web com Phaser.', '🎮', '#6366f1', 1, 1),
-('React & Games', 'react-games', 'Criação de interfaces e jogos usando React.', '⚛️', '#61dafb', 2, 1),
-('Unity', 'unity', 'Desenvolvimento de jogos 3D e 2D com Unity Engine.', '🛠️', '#222c37', 3, 1),
-('Game Design', 'game-design', 'Fundamentos e teorias de design de jogos.', '🎨', '#f59e0b', 4, 1),
-('Programação', 'programacao', 'Lógica de programação aplicada a jogos.', '💻', '#10b981', 5, 1);
-
--- Cursos de exemplo
-INSERT IGNORE INTO `courses` (`title`, `slug`, `short_description`, `description`, `instructor_id`, `category_id`, `level`, `duration_hours`, `xp_reward`, `coin_reward`, `is_published`, `is_featured`, `is_free`, `total_students`) VALUES
-('Phaser 3: Do Zero ao Jogo Completo', 'phaser-3-zero-jogo', 'Aprenda Phaser 3 criando um RPG de aventura.', 'Neste curso você aprenderá todos os fundamentos do Phaser 3, desde o setup inicial até a publicação do seu jogo.', 3, 1, 'beginner', 12.5, 500, 50, 1, 1, 1, 120),
-('React para Desenvolvedores de Jogos', 'react-para-jogos', 'Interfaces dinâmicas para seus jogos web.', 'Aprenda a integrar React com motores de jogo e criar HUDs incríveis.', 3, 2, 'intermediate', 8.0, 350, 30, 1, 1, 0, 45);
-
--- Instrutores adicionais (senha: password)
-INSERT IGNORE INTO `users` (`username`, `email`, `password`, `name`, `full_name`, `role`, `is_active`, `status`, `specialization`, `bio`, `avatar`) VALUES
-('ana_art', 'ana@gamedev.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Ana', 'Ana Silva (Pixel Art)', 'instructor', 1, 'active', 'Pixel Art & Animação 2D', 'Artista técnica com foco em estética retrô e animação frame-a-frame.', 'https://i.pravatar.cc/150?u=ana'),
-('bruno_unity', 'bruno@gamedev.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Bruno', 'Bruno Oliveira (Unity)', 'instructor', 1, 'active', 'Unity & C# Programming', 'Engenheiro de software especializado em arquitetura de sistemas para jogos 3D.', 'https://i.pravatar.cc/150?u=bruno');
-
--- Mais Cursos
-INSERT IGNORE INTO `courses` (`title`, `slug`, `short_description`, `description`, `instructor_id`, `category_id`, `level`, `duration_hours`, `xp_reward`, `coin_reward`, `is_published`, `is_featured`, `is_free`, `thumbnail`, `image`) VALUES
-('Pixel Art para Games: Estilo Top-Down', 'pixel-art-top-down', 'Domine a arte de criar cenários e personagens 2D.', 'Aprenda técnicas de sombreamento, paletas de cores e animação para jogos estilo RPG Maker e Zelda.', 4, 8, 'beginner', 10.0, 400, 40, 1, 1, 0, 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800', 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=1200'),
-('Godot 4: Do Zero ao Primeiro Jogo', 'godot-4-iniciantes', 'Explore o motor de jogos open-source que está conquistando o mundo.', 'Crie um jogo de plataforma completo usando GDScript e as novas ferramentas do Godot 4.', 3, 7, 'beginner', 14.5, 550, 55, 1, 0, 1, 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800', 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1200'),
-('Game Design: A Psicologia do Jogador', 'psicologia-game-design', 'Entenda o que faz um jogo ser divertido e viciante.', 'Aprenda sobre loops de gameplay, sistemas de recompensa e curva de dificuldade.', 3, 4, 'intermediate', 6.0, 300, 25, 1, 1, 0, 'https://images.unsplash.com/photo-1580234811497-9bd7fd04086e?w=800', 'https://images.unsplash.com/photo-1580234811497-9bd7fd04086e?w=1200');
-
--- Mais Notícias
-INSERT IGNORE INTO `blog_posts` (`title`, `slug`, `excerpt`, `content`, `author_id`, `category_id`, `status`, `is_featured`, `published_at`, `featured_image`) VALUES
-('O Futuro da WebGL no Desenvolvimento de Jogos', 'futuro-webgl-games', 'Como as novas APIs estão mudando o que é possível no navegador.', '<p>Com a chegada do WebGPU, os jogos de navegador estão prestes a dar um salto gigantesco em fidelidade visual.</p>', 3, 5, 'published', 1, NOW(), 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800'),
-('5 Dicas de Pixel Art para Iniciantes', 'dicas-pixel-art-iniciantes', 'Melhore sua arte com técnicas simples de cor e forma.', '<p>Muitos iniciantes cometem erros comuns em paletas. Aqui mostramos como evitar o efeito "dirty pixel".</p>', 4, 8, 'published', 0, NOW(), 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800');
-
--- Ranking (Leaderboard) - Dados fictícios para amostra
-INSERT IGNORE INTO `weekly_leaderboard` (`user_id`, `week_start`, `xp_earned`, `lessons_completed`) VALUES
-(1, DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY), 1250, 12),
-(2, DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY), 850, 8),
-(3, DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY), 2100, 15);
-
--- Amostra de Rankings Globais (Points na tabela users)
-UPDATE `users` SET `total_points` = 5000, `experience_points` = 5000 WHERE `id` = 1;
-UPDATE `users` SET `total_points` = 2500, `experience_points` = 2500 WHERE `id` = 2;
-UPDATE `users` SET `total_points` = 3800, `experience_points` = 3800 WHERE `id` = 3;
-UPDATE `users` SET `total_points` = 1200, `experience_points` = 1200 WHERE `id` = 4;
-UPDATE `users` SET `total_points` = 900, `experience_points` = 900 WHERE `id` = 5;
-
--- Exemplos de Matrículas (Enrollments) para preencher o site
-INSERT IGNORE INTO `enrollments` (`user_id`, `course_id`, `status`, `progress_percent`, `lessons_completed`, `enrolled_at`) VALUES
-(2, 1, 'active', 45.50, 5, DATE_SUB(NOW(), INTERVAL 10 DAY)),
-(5, 1, 'completed', 100.00, 12, DATE_SUB(NOW(), INTERVAL 30 DAY));
-
-COMMIT;
-
--- Módulos de exemplo
-INSERT IGNORE INTO `course_modules` (`course_id`, `title`, `description`, `sort_order`, `xp_reward`) VALUES
-(1, 'Introdução ao Phaser', 'Conhecendo o motor e ambiente.', 1, 50),
-(1, 'Primeiros Passos', 'Sprites, grupos e física.', 2, 50),
-(2, 'Fundamentos do React', 'Hooks e Componentes.', 1, 40);
-
--- Lições de exemplo
-INSERT IGNORE INTO `course_lessons` (`module_id`, `course_id`, `title`, `slug`, `content_type`, `video_url`, `video_provider`, `video_duration`, `xp_reward`, `coin_reward`, `sort_order`, `is_published`) VALUES
-(1, 1, 'O que é Phaser?', 'introducao-phaser', 'video', 'https://www.youtube.com/embed/dQw4w9WgXcQ', 'youtube', 10, 10, 1, 1, 1),
-(1, 1, 'Configurando o Ambiente', 'configurando-ambiente', 'video', 'https://www.youtube.com/embed/dQw4w9WgXcQ', 'youtube', 15, 10, 1, 2, 1),
-(2, 1, 'Trabalhando com Sprites', 'trabalhando-sprites', 'video', 'https://www.youtube.com/embed/dQw4w9WgXcQ', 'youtube', 20, 15, 2, 1, 1);
-
--- Conquistas (Achievements)
-INSERT IGNORE INTO `achievements` (`name`, `slug`, `description`, `icon`, `xp_reward`, `coin_reward`, `requirement_type`, `requirement_value`) VALUES
-('Primeiros Passos', 'primeiros-passos', 'Concluiu sua primeira lição.', '🌱', 50, 10, 'lessons_completed', 1),
-('Estudante Dedicado', 'estudante-dedicado', 'Concluiu 10 lições.', '📚', 200, 50, 'lessons_completed', 10),
-('Mestre do Phaser', 'mestre-phaser', 'Concluiu o curso de Phaser 3.', '👑', 500, 100, 'courses_completed', 1);
-
-
--- Notícias (Blog Posts)
-INSERT IGNORE INTO `blog_posts` (`title`, `slug`, `excerpt`, `content`, `author_id`, `category_id`, `status`, `is_featured`, `published_at`) VALUES
-('Bem-vindo ao GameDev Academy!', 'bem-vindo', 'Estamos felizes em anunciar nossa nova plataforma.', '<p>Olá desenvolvedores! É com muita alegria que lançamos a GameDev Academy, sua nova casa para aprender desenvolvimento de jogos.</p>', 1, 5, 'published', 1, NOW()),
-('Phaser 3.60: O que há de novo?', 'phaser-3-60-novidades', 'Confira as principais mudanças na nova versão do Phaser.', '<p>A nova versão do Phaser traz melhorias significativas em performance e novos recursos para física.</p>', 3, 1, 'published', 0, NOW());
-
-COMMIT;
+SET FOREIGN_KEY_CHECKS = 1;

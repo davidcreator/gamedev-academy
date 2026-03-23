@@ -21,12 +21,17 @@ if ($id <= 0) {
 $lesson = $db->fetch("
     SELECT l.*, 
            m.title as module_title,
-           c.title as course_title
+           c.title as course_title,
+           c.id as course_id
     FROM course_lessons l
      LEFT JOIN course_modules m ON l.module_id = m.id
     LEFT JOIN courses c ON m.course_id = c.id
     WHERE l.id = ?
 ", [$id]);
+
+$courseAccess = $lesson
+    ? $db->fetch("SELECT id, instructor_id FROM courses WHERE id = ?", [$courseId ?: ($lesson['course_id'] ?? 0)])
+    : null;
 
 if (!$lesson) {
     flash('error', 'LiÃ§Ã£o nÃ£o encontrada.');
@@ -34,6 +39,10 @@ if (!$lesson) {
 }
 
 // Se for requisiÃ§Ã£o POST, executar exclusÃ£o
+if ($courseAccess) {
+    adminRequireCourseAccess($courseAccess);
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Opcional: Excluir arquivos associados
     // if (!empty($lesson['attachment_url'])) {
